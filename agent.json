@@ -1,0 +1,148 @@
+{
+  "$schema": "http://desirecore/schemas/agent.json",
+  "version": "1.0.0",
+  "name": "合同审查统筹官",
+  "description": "合同审查团队组长。负责登记合同对象、编排 7 步固定工具链、执行输入治理门禁（判 reject 即终止流水线）、维护条款覆盖矩阵欠账表、检查成员回执并打回不合格产出、路由法务四类不可替代动作的 Human Gate。只编排不判断。",
+  "author": "DesireCore",
+  "avatar": {
+    "char": "统",
+    "color": "purple"
+  },
+  "llm": {
+    "routingMode": "smart",
+    "smart": {
+      "profile": {
+        "tier": "flagship",
+        "requiredCapabilities": [
+          "tool_use",
+          "long_context"
+        ],
+        "reasoning": "medium"
+      }
+    },
+    "maxRetryDelayMs": 32000
+  },
+  "capabilities": [
+    "contract-review",
+    "review-orchestration",
+    "pipeline-supervision",
+    "case-registration",
+    "coverage-matrix-maintenance",
+    "receipt-audit",
+    "gate-enforcement",
+    "human-gate-routing",
+    "delegation-coordination",
+    "team-supervision"
+  ],
+  "trigger_patterns": [
+    "审合同",
+    "审查合同",
+    "合同审查",
+    "帮我审",
+    "看一下这份合同",
+    "合同",
+    "协议",
+    "合同风险",
+    "合同评审",
+    "审查流程",
+    "审查进度",
+    "编排",
+    "统筹",
+    "工具链",
+    "覆盖矩阵",
+    "响应矩阵",
+    "欠账表",
+    "签核点",
+    "回执",
+    "打回重做",
+    "contract review",
+    "review contract",
+    "contract",
+    "agreement",
+    "orchestration",
+    "pipeline",
+    "coverage matrix",
+    "review progress",
+    "handoff receipt",
+    "human gate"
+  ],
+  "accepts_handoff": true,
+  "accepts_messages": true,
+  "max_concurrent_sessions": 3,
+  "command_authority": {
+    "enabled": true,
+    "allowed_targets": [
+      "contract-intake",
+      "clause-extractor",
+      "risk-scanner",
+      "jurisdiction-auditor",
+      "review-reporter"
+    ]
+  },
+  "default_enabled": {
+    "skills": [
+      "review-orchestration",
+      "coverage-matrix"
+    ],
+    "tools": []
+  },
+  "tool_permissions": {
+    "allowed": [
+      "Read",
+      "Ls",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit",
+      "Skill",
+      "MathCalc",
+      "GenerateUUID",
+      "AskUserQuestion",
+      "Delegate",
+      "SendMessage",
+      "FileDigest"
+    ],
+    "denied": [
+      "Bash",
+      "PowerShell",
+      "TerminalControl",
+      "HttpRequest",
+      "WebFetch",
+      "WebSearch",
+      "ComputeCredential",
+      "ControlDesireCoreGui",
+      "BrowserTakeover",
+      "RecallConversation",
+      "RecallWorkContext",
+      "CompactSession",
+      "ManageAgent",
+      "ManageTeam",
+      "GenerateImage",
+      "ExportDocument",
+      "spawn_agent"
+    ]
+  },
+  "network_security": {
+    "enableSsrfProtection": true
+  },
+  "file_security": {
+    "restrictToWorkDirs": true
+  },
+  "compute_credentials": {
+    "allowed_providers": []
+  },
+  "tools": {
+    "ask_user_question": {
+      "wait_mode": "always_wait"
+    }
+  },
+  "env": {
+    "enabled": true,
+    "includeWeekday": true,
+    "includeLocalTime": true,
+    "includeSessionStart": true,
+    "includeOs": false,
+    "includeRuntime": false,
+    "includeManagedRuntimes": false
+  }
+}
