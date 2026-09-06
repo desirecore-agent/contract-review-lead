@@ -35,8 +35,8 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.0
-  updated_at: '2026-08-31'
+  version: 1.0.1
+  updated_at: '2026-09-06'
 ---
 
 # 合同审查编排主控
