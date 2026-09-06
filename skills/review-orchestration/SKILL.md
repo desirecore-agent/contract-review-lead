@@ -9,7 +9,7 @@ description: >-
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
   7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.1
+version: 1.0.2
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,8 +35,8 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.1
-  updated_at: '2026-09-06'
+  version: 1.0.2
+  updated_at: '2026-09-07'
 ---
 
 # 合同审查编排主控
@@ -240,6 +240,39 @@ contextReason: "合同案件版本对比与独立复核报告。"
 | 四大冻结未全成立，或 `manifest_digest_unavailable` | `risk_direction` 只能是 `undetermined`；禁止任何一致性结论（`rules.md#R-013`） |
 
 **交接块必须剔除的内容**（`rules.md#R-003`）：前序成员的推理过程、理由陈述、置信度自评、结论草稿。可以传的是：原文绝对路径、结构化事实（条款表 / 文档对象 / 规则包版本）、覆盖矩阵骨架、上游的 `failure_mark`（那是事实，不是推理）。
+
+**发给 `review-reporter` 的交接契约（强制）**：报告复核官按 `review-scoring` 的 R0.1 在入口拒收缺字段载荷。交接块必须同时包含以下字段，字段名不得改写或用同义字段替代：
+
+```yaml
+handoff:
+  to: review-reporter
+  from: contract-review-lead
+  case_id: case-2026-0831-001
+  step: 6-7
+  ledger_path: /abs/path/.../orchestration-ledger.yaml
+  object:
+    contract_object_id: YCIT-SAAS-2025-0206
+    object_title: SaaS服务协议
+    version_label: YCIT-SAAS-2025-0206
+    content_digest: unknown
+    submission_mode: single             # 必填；无历史版本也必须显式写 single
+  artifacts:
+    source_documents: [/abs/path/.../contract.md]
+    clause_table: /abs/path/.../clauses.yaml
+    risk_list: /abs/path/.../risks.yaml
+    jurisdiction_report: /abs/path/.../jurisdiction.yaml
+  confirmed:                              # 必填；不得写成 confirmed_facts
+    - 输入治理 verdict=conditional，无 BLK
+    - 条款、风险与法域产物均已完成并通过形式检查
+  pending: []                              # 必填；逐条透传上游 pending
+  scope:
+    frozen_baseline: {master_version: YCIT-SAAS-2025-0206, page_range: "body: 1-10"}
+    consistency_conclusion_allowed: false
+    compliance_conclusion_allowed: false
+  do_not_pass: [对话历史, 前序 Agent 推理过程, 结论草稿]
+```
+
+`source_artifacts`、`confirmed_facts` 等旧字段不能替代上述字段；交接前按 `R0.1` 自检 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、两个结论开关、`do_not_pass` 以及四类绝对产物路径，任一缺失就先在本 Agent 内修正载荷，不得把必然会被拒收的交接发送给复核官。
 
 ### O5 Human Gate
 
@@ -447,6 +480,8 @@ freeze:
 - [ ] **没有对 `review-reporter` 使用 `mode: subtask`**
 - [ ] 交接块里没有对话历史、没有前序推理、没有其他成员的结论草稿
 - [ ] 发给 `clause-extractor` 的交接块带有可读的绝对 `receipt_path`，且指向本案 `contract-intake` 回执
+- [ ] 发给 `review-reporter` 的交接块含 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、`consistency_conclusion_allowed`、`compliance_conclusion_allowed`、`do_not_pass` 与四类绝对产物路径
+- [ ] 发给 `review-reporter` 的字段名没有使用 `confirmed_facts` / `source_artifacts` 替代契约字段
 - [ ] `task` / `context` 中每一个文件引用都是绝对路径
 
 **回执与打回**
