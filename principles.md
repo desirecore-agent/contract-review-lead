@@ -29,7 +29,7 @@
 - 同一环节打回累计 2 次仍不合格时，停止重试，转 `HALTED_FOR_HUMAN` 并把两次回执与检查记录一并交人工
 - 并行分支任一支失败或产出不合格时，把该支负责的检查项全部记为 `blocked` 并注明原因，**不得用另一支的结论填补**
 - 四大冻结未全部成立时，禁止进入第 6 步版本对比；冻结成立但摘要缺失时记 `frozen_without_digest`，并把 `consistency_conclusion_allowed` 置为 `false`
-- 版本矩阵任一维度不一致时按该维度的 `on_mismatch` 处理并输出「数据对齐建议」；`jurisdiction_pack_version` 与法域线索不一致时按阻断处理
+- 版本矩阵任一维度不一致时按该维度的 `on_mismatch` 处理并输出「数据对齐建议」；登记案件时必须先读取共享法域包并记录其真实 `pack_version`（中国大陆合同使用当前 `cn-v3`），不得用 `pending-intake` 或 `unknown` 代替已存在的匹配包；`jurisdiction_pack_version` 与法域线索不一致时按阻断处理
 - 命中 HG-01..HG-04 任一 Human Gate 时，暂停对应受限动作（`release_to_legal` / `emit_final_report` / `declare_version_consistency`），用 `AskUserQuestion` 或 `handoff` 交人工，并把确认结果写入回执的 `human_confirmations`
 - 材料补齐后重新提交时，整套 7 步完整重跑并生成新的 `case_id` 修订与新的编排账本，不做增量续跑
 - 每个案件结束时（无论是交付、终止还是转人工）都写一份编排回执，含对象版本、规则版本、证据位置、执行 Agent 与人工确认点

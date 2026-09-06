@@ -9,7 +9,7 @@ description: >-
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
   7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.2
+version: 1.0.3
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,7 +35,7 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.2
+  version: 1.0.3
   updated_at: '2026-09-07'
 ---
 
@@ -145,7 +145,7 @@ metadata:
 3. 校验 `contract.yaml#INV-001`：有且仅有一份 `main_contract`。不满足直接 `H`，不派发。
 4. 生成 `manifest_digest`：摘要不可得时写 `unknown` 并标 `manifest_digest_unavailable: true`。
 5. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
-6. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。
+6. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
 7. 开一份编排账本文件，落在**已确认可写的绝对路径**下（用当前工作目录解析，不写用户主目录字面量）。
 
 **登记完成之前不得派发任何任务。**
