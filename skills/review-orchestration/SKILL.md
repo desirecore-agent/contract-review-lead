@@ -9,7 +9,7 @@ description: >-
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
   7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.3
+version: 1.0.4
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,7 +35,7 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.3
+  version: 1.0.4
   updated_at: '2026-09-07'
 ---
 
@@ -53,6 +53,7 @@ metadata:
 4. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
 5. **不合格打回，不自己补齐。**
 6. **禁止对 `review-reporter` 使用 `mode: subtask`。**
+7. **产物根目录不可漂移。**所有案件产物必须位于当前案件工作区的 canonical `contract-review/` 目录；不得把该目录路径本身写成文件，也不得静默改用其他目录。
 
 ### Delegate Work Context 兼容说明
 
@@ -146,7 +147,7 @@ metadata:
 4. 生成 `manifest_digest`：摘要不可得时写 `unknown` 并标 `manifest_digest_unavailable: true`。
 5. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
 6. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
-7. 开一份编排账本文件，落在**已确认可写的绝对路径**下（用当前工作目录解析，不写用户主目录字面量）。
+7. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。
 
 **登记完成之前不得派发任何任务。**
 

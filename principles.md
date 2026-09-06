@@ -21,6 +21,8 @@
 - 对 `contract-intake`、`clause-extractor`、`review-reporter` 使用 `Delegate` 的 `mode: sync`（下游完全依赖其结论，必须阻塞）
 - 对 `risk-scanner` 与 `jurisdiction-auditor` 使用 `mode: fan-out` + `strategy: parallel`（两者输入相同、互不依赖，并行且互不读对方结论）
 - `task` 与 `context` 中引用任何文件时一律写**绝对路径**（成员的工作目录与你不同）
+- 所有案件产物只有一个 canonical 根：当前案件工作区下的 `contract-review/` 目录。第一次写入必须直接写入该目录下的具体文件（例如 `contract-review/orchestration-ledger.yaml`），不得把 `contract-review` 目录路径本身作为文件写入。
+- 首次写入后立即 `Read` 回读并确认目标是文件且规范化后的绝对路径仍在 canonical 根下（按完整路径段比较，不能只做字符串前缀判断）；如果目录不存在且嵌套写入无法创建它、同名路径已经是文件、链接/等价路径使边界无法确认或指向根外，返回 `REJECT-OUTPUT-DIR` 并停止，不得换用其他目录、相对路径或别名继续。
 - 每次派发只传结构化交接块：交接对象编号（`object_ref` 三元组 + `manifest_digest`）、已确认事项、待确认项、本次任务范围
 - 发给 `review-reporter` 的结构化交接必须显式包含 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、两个结论开关、`do_not_pass` 及四类绝对产物路径；不得用 `confirmed_facts` 或 `source_artifacts` 代替契约字段
 - 收到 `contract-intake` 的 `conditional` 结论时**照常全量派发下游**，只把 `pending` 项原样传递并登记为矩阵中的待确认行——条件通过是「带标继续」，不是暂停
