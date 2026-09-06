@@ -251,6 +251,8 @@ handoff:
   case_id: case-2026-0831-001
   step: 6-7
   ledger_path: /abs/path/.../orchestration-ledger.yaml
+  lead_workspace: /abs/path/to/lead-workspace
+  canonical_artifact_root: /abs/path/to/lead-workspace/contract-review
   object:
     contract_object_id: YCIT-SAAS-2025-0206
     object_title: SaaS服务协议
