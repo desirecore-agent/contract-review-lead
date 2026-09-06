@@ -2,7 +2,7 @@
 name: review-orchestration
 description: >-
   合同审查团队的编排主控。登记案件与合同对象、按 7 步固定工具链派发任务（结构化解析 → 完整性检查 →
-  条款抽取 → 法域知识注入 → 风险判读 → 版本对比 → 报告输出）、执行输入治理门禁（judge=reject 即终止流水线）、
+  条款抽取 → 法域知识注入 → 风险判读 → 版本对比 → 报告输出）、执行输入治理门禁（verdict=blocked 即终止流水线）、
   按环节选择 Delegate 模式（sync / fan-out parallel，复核环节禁用 subtask）、对成员回执执行六项检查并打回
   不合格产出、在法务四类不可替代动作上路由 Human Gate。用户提到审合同、合同审查、审查进度、编排、
   流水线、派发、打回重做、签核点时使用。
@@ -70,7 +70,7 @@ metadata:
                     ┌──────▼───────┐
                     │ O1 INTAKE    │  第 1-2 步：结构化解析 + 完整性检查
                     └──────┬───────┘
-             verdict=reject│         verdict=passed / conditional
+            verdict=blocked│         verdict=passed / conditional
               ┌────────────┴────────────┐
               ▼                         ▼
     ┌───────────────────┐        ┌──────────────┐
@@ -266,7 +266,7 @@ contextReason: "合同案件版本对比与独立复核报告。"
 
 | 环节 | 目标 | `mode` | 其他参数 | 为什么是它 |
 |---|---|---|---|---|
-| 第 1-2 步 | `contract-intake` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:intake` + `contextReason` | 门禁结论是后续全部步骤的准入条件。非阻塞意味着在 `reject` 未知时就已启动下游，直接违反「阻断即终止」 |
+| 第 1-2 步 | `contract-intake` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:intake` + `contextReason` | 门禁结论是后续全部步骤的准入条件。非阻塞意味着在 `blocked` 与否未知时就已启动下游，直接违反「阻断即终止」 |
 | 第 3 步 | `clause-extractor` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:extract` + `contextReason` | 条款表是四个下游的共同输入；输入未定就派发，产出不可复现 |
 | 第 4-5 步 | `risk-scanner` + `jurisdiction-auditor` | `fan-out` | `strategy: parallel` + `targets` + 每个目标一个 `contextSelections`（均为 `isolated`、稳定 `intentId`、`contextReason`） | 两者输入相同、互不依赖；并行省时，且避免后跑一方被先跑一方锚定 |
 | 第 6-7 步 | `review-reporter` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:report` + `contextReason` | 需要它的评分与 Human Gate 判定才能收尾；且必须是**显式结构化交接** |
