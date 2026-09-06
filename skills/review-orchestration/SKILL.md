@@ -9,7 +9,7 @@ description: >-
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
   7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.4
+version: 1.0.5
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,7 +35,7 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.4
+  version: 1.0.5
   updated_at: '2026-09-07'
 ---
 
@@ -147,7 +147,7 @@ metadata:
 4. 生成 `manifest_digest`：摘要不可得时写 `unknown` 并标 `manifest_digest_unavailable: true`。
 5. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
 6. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
-7. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。
+7. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。每次 lead handoff 必须显式携带绝对 `canonical_artifact_root` 与 `lead_workspace`；所有 artifacts 路径都从该根派生并再次做路径段边界校验。
 
 **登记完成之前不得派发任何任务。**
 
@@ -251,6 +251,8 @@ handoff:
   case_id: case-2026-0831-001
   step: 6-7
   ledger_path: /abs/path/.../orchestration-ledger.yaml
+  lead_workspace: /abs/path/to/lead-workspace
+  canonical_artifact_root: /abs/path/to/lead-workspace/contract-review
   object:
     contract_object_id: YCIT-SAAS-2025-0206
     object_title: SaaS服务协议
