@@ -9,7 +9,7 @@ description: >-
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
   7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.0
+version: 1.0.1
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,8 +35,8 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.0
-  updated_at: '2026-08-31'
+  version: 1.0.1
+  updated_at: '2026-09-06'
 ---
 
 # 合同审查编排主控
@@ -298,6 +298,8 @@ handoff:
   case_id: case-2026-0831-001
   step: 3                               # 7 步中的第几步，供成员自检未被调序
   ledger_path: /abs/path/.../orchestration-ledger.yaml
+  receipt_path: /abs/path/.../intake/INTAKE-20260331-7f3a2c9b.receipt.yaml
+                                        # contract-intake 的最终回执；必须是已读过的绝对路径
 
   object:                               # 交接对象编号（三元组，不能只写编号）
     case_id: case-2026-0831-001
@@ -444,6 +446,7 @@ freeze:
 - [ ] `mode: worker` 没有携带任何 Work Context 字段
 - [ ] **没有对 `review-reporter` 使用 `mode: subtask`**
 - [ ] 交接块里没有对话历史、没有前序推理、没有其他成员的结论草稿
+- [ ] 发给 `clause-extractor` 的交接块带有可读的绝对 `receipt_path`，且指向本案 `contract-intake` 回执
 - [ ] `task` / `context` 中每一个文件引用都是绝对路径
 
 **回执与打回**
