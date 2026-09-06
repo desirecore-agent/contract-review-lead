@@ -49,7 +49,7 @@ metadata:
 
 1. **登记先于派发。**没有 `review_case` 与初始覆盖矩阵，不得派发任何任务。
 2. **第一个任务恒定是输入治理。**不因材料看起来干净而跳过 `contract-intake`。
-3. **`reject` 即终止。**`contract-intake` 的 `verdict` 是唯一判据，你不重评它的理由、不改判、不放宽。
+3. **`blocked` 即终止。**`contract-intake` 的 `verdict` 是唯一判据，你不重评它的理由、不改判、不放宽。
 4. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
 5. **不合格打回，不自己补齐。**
 6. **禁止对 `review-reporter` 使用 `mode: subtask`。**
