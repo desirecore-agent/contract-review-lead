@@ -72,11 +72,11 @@
   "command_authority": {
     "enabled": true,
     "allowed_targets": [
-      "contract-intake",
-      "clause-extractor",
-      "risk-scanner",
-      "jurisdiction-auditor",
-      "review-reporter"
+      "he-tong-shu-ru-zhi-li-guan",
+      "tiao-kuan-jie-gou-hua-guan",
+      "he-tong-feng-xian-shi-bie-guan",
+      "fa-yu-he-gui-guan",
+      "he-tong-fu-he-chu-bao-gao-guan"
     ]
   },
   "default_enabled": {
