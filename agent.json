@@ -1,6 +1,6 @@
 {
   "$schema": "http://desirecore/schemas/agent.json",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "name": "合同审查统筹官",
   "description": "合同审查团队组长。负责登记合同对象、编排 7 步固定工具链、执行输入治理门禁（判 reject 即终止流水线）、维护条款覆盖矩阵欠账表、检查成员回执并打回不合格产出、路由法务四类不可替代动作的 Human Gate。只编排不判断。",
   "author": "DesireCore",
@@ -72,11 +72,11 @@
   "command_authority": {
     "enabled": true,
     "allowed_targets": [
-      "he-tong-shu-ru-zhi-li-guan",
-      "tiao-kuan-jie-gou-hua-guan",
-      "he-tong-feng-xian-shi-bie-guan",
-      "fa-yu-he-gui-guan",
-      "he-tong-fu-he-chu-bao-gao-guan"
+      "contract-intake",
+      "clause-extractor",
+      "risk-scanner",
+      "jurisdiction-auditor",
+      "review-reporter"
     ]
   },
   "default_enabled": {
