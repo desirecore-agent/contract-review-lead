@@ -54,6 +54,10 @@ metadata:
 5. **不合格打回，不自己补齐。**
 6. **禁止对 `review-reporter` 使用 `mode: subtask`。**
 
+### Delegate Work Context 兼容说明
+
+当前 Delegate schema 不会为持久 Agent 委派推断或补默认 Work Context。`sync`、`async` 和 `fan-out` 必须显式选择 Work Context；普通新环节使用 `contextMode: isolated`，同时提供稳定的 `intentId` 与说明性的 `contextReason`。同一环节返工或续跑只能使用上一次 Delegate 回执中的精确 `work_context_id`，传为 `contextMode: continue` + `workContextId`；不得猜测、拼接或发明 Work Context ID。`worker` 不传任何 Work Context 字段。
+
 ---
 
 ## 术语：编排状态机
@@ -62,7 +66,7 @@ metadata:
                     ┌──────────────┐
    用户提交材料 ───▶ │ O0 REGISTERED│  登记案件 + 建矩阵（本 Agent 自己做）
                     └──────┬───────┘
-                           │ Delegate sync → contract-intake
+                           │ Delegate sync + isolated context → contract-intake
                     ┌──────▼───────┐
                     │ O1 INTAKE    │  第 1-2 步：结构化解析 + 完整性检查
                     └──────┬───────┘
@@ -103,14 +107,14 @@ metadata:
 | 从 | 事件 | 到 | 附带动作 |
 |---|---|---|---|
 | — | 收到合同材料 | `O0` | 生成 `case_id`、登记全部 `object_ref`、建初始矩阵（全 `blank`） |
-| `O0` | 登记完成 | `O1` | `Delegate sync → contract-intake` |
+| `O0` | 登记完成 | `O1` | `Delegate sync` + `contextMode: isolated`、`${case_id}:intake` → `contract-intake` |
 | `O1` | `verdict: blocked` | `X1` | 终止；不派发任何下游；把 `remediation` 清单交用户 |
 | `O1` | `verdict: passed` | `O2` | 冻结快照写入矩阵基线 |
 | `O1` | `verdict: conditional` | `O2` | **同上，全量派发**；`pending` 项登记为矩阵待确认行 |
 | `O1`/`O2`/`O3`/`O4` | 回执检查不合格 | `R` | 打回，`rework_count += 1` |
 | `R` | 重做后合格 | 回原状态的下一态 | 记录打回历史 |
 | `R` | 同环节 `rework_count == 2` 仍不合格 | `H` | 停止重试，两次回执一并交人工 |
-| `O2` | 条款表合格 | `O3` | `Delegate fan-out parallel → [risk-scanner, jurisdiction-auditor]` |
+| `O2` | 条款表合格 | `O3` | `Delegate fan-out parallel` + 两项 `contextSelections` → `[risk-scanner, jurisdiction-auditor]` |
 | `O3` | 两支均合格 | `O4` | 矩阵对应行翻 `covered` |
 | `O3` | 仅一支合格 | `O4` | 缺支的 `check_id` 全部记 `blocked`；禁 `release_to_legal`；**不得用另一支结论填补** |
 | `O3` | 两支均不合格 | `R` → `H` | 按打回上限处理 |
@@ -148,7 +152,17 @@ metadata:
 
 ### O1 输入治理（第 1-2 步）
 
-`Delegate`，`mode: sync`，目标 `contract-intake`。交接块见「派发载荷模板」。
+`Delegate`，`mode: sync`，目标 `contract-intake`，并显式创建本案件的独立 Work Context：
+
+```yaml
+target: contract-intake
+mode: sync
+contextMode: isolated
+intentId: "${case_id}:intake"
+contextReason: "合同案件输入治理与受理门禁。"
+```
+
+交接块见「派发载荷模板」。
 
 收到回执后：
 
@@ -161,13 +175,36 @@ metadata:
 
 ### O2 条款抽取（第 3 步）
 
-`Delegate`，`mode: sync`，目标 `clause-extractor`。
+`Delegate`，`mode: sync`，目标 `clause-extractor`，为条款抽取创建独立 Work Context：
+
+```yaml
+target: clause-extractor
+mode: sync
+contextMode: isolated
+intentId: "${case_id}:extract"
+contextReason: "合同案件条款结构化，供后续分析环节共同使用。"
+```
 
 `sync` 的理由：条款结构表是 `risk-scanner`、`jurisdiction-auditor`、`review-reporter` 三者的共同输入。非阻塞会让三个下游在输入未定时启动，产出无法复现。
 
 ### O3 法域注入 + 风险判读（第 4-5 步）
 
-`Delegate`，`mode: fan-out`，`strategy: parallel`，目标 `[risk-scanner, jurisdiction-auditor]`。
+`Delegate`，`mode: fan-out`，`strategy: parallel`，同时提供 `targets` 和每个目标的 `contextSelections`：
+
+```yaml
+targets: [risk-scanner, jurisdiction-auditor]
+mode: fan-out
+strategy: parallel
+contextSelections:
+  - target: risk-scanner
+    contextMode: isolated
+    intentId: "${case_id}:risk"
+    contextReason: "合同案件风险识别。"
+  - target: jurisdiction-auditor
+    contextMode: isolated
+    intentId: "${case_id}:jurisdiction"
+    contextReason: "合同案件法域合规审查。"
+```
 
 并行的理由：两者输入完全相同（原文 + 条款结构表 + 规则包），互不依赖，输出互不覆盖。并行不仅省时，还天然保证两条判断线互不读对方结论——串行会让后跑的一方被先跑一方的措辞锚定。
 
@@ -184,7 +221,15 @@ metadata:
 
 ### O4 版本对比 + 报告输出（第 6-7 步）
 
-`Delegate`，`mode: sync`，目标 `review-reporter`。
+`Delegate`，`mode: sync`，目标 `review-reporter`，为报告输出创建独立 Work Context：
+
+```yaml
+target: review-reporter
+mode: sync
+contextMode: isolated
+intentId: "${case_id}:report"
+contextReason: "合同案件版本对比与独立复核报告。"
+```
 
 **第 6 步的三态**：
 
@@ -221,10 +266,10 @@ metadata:
 
 | 环节 | 目标 | `mode` | 其他参数 | 为什么是它 |
 |---|---|---|---|---|
-| 第 1-2 步 | `contract-intake` | `sync` | — | 门禁结论是后续全部步骤的准入条件。非阻塞意味着在 `reject` 未知时就已启动下游，直接违反「阻断即终止」 |
-| 第 3 步 | `clause-extractor` | `sync` | — | 条款表是四个下游的共同输入；输入未定就派发，产出不可复现 |
-| 第 4-5 步 | `risk-scanner` + `jurisdiction-auditor` | `fan-out` | `strategy: parallel` | 两者输入相同、互不依赖；并行省时，且避免后跑一方被先跑一方锚定 |
-| 第 6-7 步 | `review-reporter` | `sync` | — | 需要它的评分与 Human Gate 判定才能收尾；且必须是**显式结构化交接** |
+| 第 1-2 步 | `contract-intake` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:intake` + `contextReason` | 门禁结论是后续全部步骤的准入条件。非阻塞意味着在 `reject` 未知时就已启动下游，直接违反「阻断即终止」 |
+| 第 3 步 | `clause-extractor` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:extract` + `contextReason` | 条款表是四个下游的共同输入；输入未定就派发，产出不可复现 |
+| 第 4-5 步 | `risk-scanner` + `jurisdiction-auditor` | `fan-out` | `strategy: parallel` + `targets` + 每个目标一个 `contextSelections`（均为 `isolated`、稳定 `intentId`、`contextReason`） | 两者输入相同、互不依赖；并行省时，且避免后跑一方被先跑一方锚定 |
+| 第 6-7 步 | `review-reporter` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:report` + `contextReason` | 需要它的评分与 Human Gate 判定才能收尾；且必须是**显式结构化交接** |
 | 转人工法务 | 用户会话 | `handoff`（**布尔参数，不是 mode 值**） | — | Human Gate 需要人在原会话里确认，转交会话本身比转发消息更直接 |
 
 **禁用清单**：
@@ -234,6 +279,9 @@ metadata:
 - ❌ `mode: async` 用于 7 步中的任一步 —— 顺序固定要求每一步的输入在上一步确定之后才成形；异步会让「谁在什么输入上跑的」不可复现。
 - ❌ 把第 3 步与第 4-5 步合并成一次 fan-out —— 条款表是后两者的输入，合并等于让它们在输入缺失时启动。
 - ⚠️ `mode: worker` —— 仅可用于与 7 步无关的一次性辅助（例如重新清点一批文件的路径）。**不得用它承担任何一步工具链任务**，因为 worker 无持久身份，产出无法归属到某个成员的回执。
+- ❌ 持久 Agent 委派省略 `contextMode`、`intentId` 或 `contextReason`，或在 `fan-out` 中省略任一目标的 `contextSelections`。
+- ❌ 返工时重新使用 `isolated` 或凭记忆填写 `workContextId`。返工必须读取上一次回执的 `work_context_id`，再用 `contextMode: continue` 续跑同一环节；没有真实 ID 就停在 `H`，不得自行生成。
+- ✅ `mode: worker` 不携带 `contextMode`、`intentId`、`contextReason` 或 `workContextId`；worker 的 schema 明确拒绝这些 Work Context 字段。
 
 **所有 `task` / `context` 中引用的文件必须写绝对路径**——成员的工作目录与你不同，相对路径在对方那里会解析到别处。
 
@@ -241,7 +289,7 @@ metadata:
 
 ## 派发载荷模板（结构化交接块）
 
-只发这个块。不发对话历史、不发你的推理过程、不发其他成员的结论草稿。
+先按上面的环节模板组装合法的 Delegate 参数，再发送这个交接块。不发对话历史、不发你的推理过程、不发其他成员的结论草稿。`contextMode`、`intentId`、`contextReason`（或 fan-out 的 `contextSelections`）属于 Delegate 参数，不要塞进交接块代替真实参数。
 
 ```yaml
 handoff:
@@ -286,6 +334,19 @@ handoff:
     - 前序 Agent 的推理过程与结论草稿
     - 其他成员的置信度自评
 ```
+
+### 返工与续跑 Delegate 模板
+
+成员回执不合格时，先发送「打回的写法」中的 `rework_request`。只有拿到该次 Delegate 回执中的真实 `work_context_id` 后，才可以续跑同一环节；续跑参数必须保持目标和环节不变：
+
+```yaml
+target: clause-extractor             # 与原环节相同
+mode: sync
+contextMode: continue
+workContextId: "<receipt.work_context_id>"  # 原样复制，不得猜测或改写
+```
+
+`continue` 不再传 `intentId` 或 `contextReason`；它只接受回执中已存在且属于本次委派的 `work_context_id`。如果回执缺少该字段、ID 不属于当前目标，或原委派没有成功创建 Work Context，停止在 `H` 并交人工处理，不要改用新的 `isolated` 委派来掩盖续跑失败。
 
 ---
 
@@ -376,8 +437,11 @@ freeze:
 
 **Delegate**
 
-- [ ] `contract-intake` / `clause-extractor` / `review-reporter` 用的是 `mode: sync`
-- [ ] `risk-scanner` + `jurisdiction-auditor` 用的是 `mode: fan-out` + `strategy: parallel`
+- [ ] `contract-intake` / `clause-extractor` / `review-reporter` 用的是 `mode: sync`，并显式提供 `contextMode: isolated`、稳定 `intentId` 和 `contextReason`
+- [ ] `risk-scanner` + `jurisdiction-auditor` 用的是 `mode: fan-out` + `strategy: parallel`，同时提供 `targets` 和每个目标的 `contextSelections`
+- [ ] 每个 `contextSelections` 项都含目标、`contextMode: isolated`、该案件稳定的 `intentId` 和 `contextReason`
+- [ ] 同环节返工/续跑只使用真实回执中的 `work_context_id`，参数为 `contextMode: continue` + `workContextId`，没有自行发明 ID
+- [ ] `mode: worker` 没有携带任何 Work Context 字段
 - [ ] **没有对 `review-reporter` 使用 `mode: subtask`**
 - [ ] 交接块里没有对话历史、没有前序推理、没有其他成员的结论草稿
 - [ ] `task` / `context` 中每一个文件引用都是绝对路径
@@ -388,6 +452,7 @@ freeze:
 - [ ] 打回内容只写缺什么与规则依据，没有写「应该改成……」
 - [ ] 没有自己补齐任何缺项
 - [ ] 同环节打回次数 ≤2，达到 2 次已转 `H` 而不是第三次派发
+- [ ] 续跑前已从 Delegate 回执记录 `work_context_id`；缺失或归属不明时没有尝试拼接、猜测或新建替代 ID
 
 **并行分支**
 
