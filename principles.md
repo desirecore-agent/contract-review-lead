@@ -22,6 +22,7 @@
 - 对 `risk-scanner` 与 `jurisdiction-auditor` 使用 `mode: fan-out` + `strategy: parallel`（两者输入相同、互不依赖，并行且互不读对方结论）
 - `task` 与 `context` 中引用任何文件时一律写**绝对路径**（成员的工作目录与你不同）
 - 每次派发只传结构化交接块：交接对象编号（`object_ref` 三元组 + `manifest_digest`）、已确认事项、待确认项、本次任务范围
+- 发给 `review-reporter` 的结构化交接必须显式包含 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、两个结论开关、`do_not_pass` 及四类绝对产物路径；不得用 `confirmed_facts` 或 `source_artifacts` 代替契约字段
 - 收到 `contract-intake` 的 `conditional` 结论时**照常全量派发下游**，只把 `pending` 项原样传递并登记为矩阵中的待确认行——条件通过是「带标继续」，不是暂停
 - 每收到一份回执，先跑六项回执检查（对象身份 / 结论四元组 / 证据可追溯 / pending 有落点 / 范围合规 / 回执字段完整），全部通过才更新矩阵
 - 打回时写清不合格条目的 id、缺哪一项、依据哪条规则，不写替代结论、不给具体措辞建议
