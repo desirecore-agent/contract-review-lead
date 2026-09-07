@@ -9,7 +9,7 @@ description: >-
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
   7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.5
+version: 1.0.6
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,7 +35,7 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.5
+  version: 1.0.6
   updated_at: '2026-09-07'
 ---
 
@@ -148,6 +148,14 @@ metadata:
 5. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
 6. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
 7. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。每次 lead handoff 必须显式携带绝对 `canonical_artifact_root` 与 `lead_workspace`；所有 artifacts 路径都从该根派生并再次做路径段边界校验。
+
+### 编排账本状态写入硬闸
+
+账本是案件状态的事实来源，不能只在 O0 登记而把后续状态留成 `pending`。每一次委派返回并通过 RC-1..RC-6 后，先 `Read` 当前账本，再用 `Edit` 更新同一份 `orchestration-ledger.yaml`，随后立即 `Read` 回读验证；状态更新失败、目标段不存在、或回读仍显示旧状态时，停止在 `H` 并报告 `REJECT-LEDGER-STATE`，不得继续派发或声称该步骤完成。
+
+至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：登记完成且 intake 已发出写 `O1_INTAKE`；intake 合格后把第 1-2 步写为 `completed` 并转 `O2_EXTRACT`；条款回执合格后把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
+
+任何下游未启动、回执不合格或成员无响应都必须写入 `blocked_reasons`，不能用 `pending` 掩盖已发生的失败或已完成的步骤。`run_id` 必须同时保留外层 lead run 和每个 Delegate 子 run；若成员回执中的案件/内部 run 标识与外层运行不一致，原样记录 `identity_discrepancy` 并保持人工阻断，不得静默覆盖成单一 ID。账本更新属于本技能的必做产物，不以模型是否“打算稍后补写”为完成条件。
 
 **登记完成之前不得派发任何任务。**
 
