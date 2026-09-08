@@ -7,9 +7,10 @@ description: >-
   不合格产出、在法务四类不可替代动作上路由 Human Gate。用户提到审合同、合同审查、审查进度、编排、
   流水线、派发、打回重做、签核点时使用。
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
-  7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
+  7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
+  synchronous isolated context, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.7
+version: 1.0.8
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,7 +36,7 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.7
+  version: 1.0.8
   updated_at: '2026-09-08'
 ---
 
@@ -52,11 +53,12 @@ metadata:
 1. **登记先于派发。**没有 `review_case` 与初始覆盖矩阵，不得派发任何任务。
 2. **第一个任务恒定是输入治理。**不因材料看起来干净而跳过 `contract-intake`。
 3. **`blocked` 即终止。**`contract-intake` 的 `verdict` 是唯一判据，你不重评它的理由、不改判、不放宽。
-4. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
-5. **不合格打回，不自己补齐。**
-6. **禁止对 `review-reporter` 使用 `mode: subtask`。**
-7. **产物根目录不可漂移。**所有案件产物必须位于当前案件工作区的 canonical `contract-review/` 目录；不得把该目录路径本身写成文件，也不得静默改用其他目录。
-8. **材料提交是 O0 的唯一入口。**没有当前用户提交的合同或明确文件指向，不得执行 O0 的 `Ls` / `Glob`，不得通过扫描历史工作区来推定材料已提交。
+4. **O1 只委派，不代写。**`intake.yaml`、输入治理回执、`verdict` 与 `pending` 的作者只能是 `contract-intake`。O1 等待其有效回执期间，lead 只能写编排账本中的派发、等待与阻断状态；不得读取材料后自行生成、编辑、合成或补全上述 intake 产物，也不得把已派发当成已完成。
+5. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
+6. **不合格打回，不自己补齐。**
+7. **禁止对 `review-reporter` 使用 `mode: subtask`。**
+8. **产物根目录不可漂移。**所有案件产物必须位于当前案件工作区的 canonical `contract-review/` 目录；不得把该目录路径本身写成文件，也不得静默改用其他目录。
+9. **材料提交是 O0 的唯一入口。**没有当前用户提交的合同或明确文件指向，不得执行 O0 的 `Ls` / `Glob`，不得通过扫描历史工作区来推定材料已提交。
 
 ### Delegate Work Context 兼容说明
 
@@ -178,6 +180,8 @@ contextReason: "合同案件输入治理与受理门禁。"
 
 收到回执后：
 
+- **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径，确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
+- **回执缺失或无效时停在 O1。**记录 `O1_INTAKE_RECEIPT_INVALID` 和具体原因到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。只有本次真实 Delegate 回执提供了归属正确的 `work_context_id` 时，才可按打回上限使用 `contextMode: continue` 有界重试；否则转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
 - 先跑六项回执检查（见「回执检查」一节）。
 - 读 `verdict` 字段：
   - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
