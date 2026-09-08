@@ -9,7 +9,7 @@ description: >-
   Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
   7-step tool chain to team members, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.6
+version: 1.0.7
 type: procedural
 risk_level: medium
 status: enabled
@@ -35,15 +35,17 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.6
-  updated_at: '2026-09-07'
+  version: 1.0.7
+  updated_at: '2026-09-08'
 ---
 
 # 合同审查编排主控
 
 ## 何时使用
 
-收到任何合同审查请求时**第一个**执行本技能。它是本团队唯一的流程入口——五个成员都不自行启动，全部由本技能派发。
+收到用户已经提交合同材料、或当前消息明确指向由用户提交的合同文件时**第一个**执行本技能。它是本团队唯一的流程入口——五个成员都不自行启动，全部由本技能派发。
+
+用户只是在询问“审查需要什么材料”或表达审查意愿、当前消息没有合同/附件或明确文件指向时，不进入本技能和 O0。先用自然语言索要合同正文、全部附件、我方身份、适用法域/争议解决地和审查目标；可选索要历史版本与交易背景。此咨询节点为**零工具**：不得扫描工作区或历史会话，不得登记案件、生成 ID、写账本或派发成员。工作区残留文件不构成本轮用户提交。
 
 ## 不可协商的前提
 
@@ -54,6 +56,7 @@ metadata:
 5. **不合格打回，不自己补齐。**
 6. **禁止对 `review-reporter` 使用 `mode: subtask`。**
 7. **产物根目录不可漂移。**所有案件产物必须位于当前案件工作区的 canonical `contract-review/` 目录；不得把该目录路径本身写成文件，也不得静默改用其他目录。
+8. **材料提交是 O0 的唯一入口。**没有当前用户提交的合同或明确文件指向，不得执行 O0 的 `Ls` / `Glob`，不得通过扫描历史工作区来推定材料已提交。
 
 ### Delegate Work Context 兼容说明
 
