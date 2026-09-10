@@ -35,6 +35,17 @@ function o1Transitions(o1) {
   )
 }
 
+function intakeGateMappings(o1) {
+  const block = o1.match(/```yaml\nintake_gate_coverage:\n([\s\S]*?)```/)
+  assert.ok(block, 'O1 must publish a machine-readable intake gate mapping')
+  const requiredSteps = block[1].match(/required_steps: \[([^\]]+)\]/)?.[1].split(',').map((value) => value.trim())
+  const entries = [...block[1].matchAll(
+    /- coverage_id: (?<coverageId>CHK-INTAKE-[A-Z0-9-]+)\n\s+intake_gate_step: (?<step>S[1-8])\n\s+receipt_check_name: (?<name>.+)/g,
+  )].map(({ groups }) => ({ ...groups }))
+
+  return { requiredSteps, entries }
+}
+
 test('agent version is semantic and O1 has the required isolated sync Delegate contract', async () => {
   const [agentText, skill] = await Promise.all([source('agent.json'), source('skills/review-orchestration/SKILL.md')])
   const agent = JSON.parse(agentText)
@@ -96,6 +107,43 @@ test('O1 receipt transitions distinguish passed, conditional, blocked, and inval
   assert.match(invalidRule, /work_context_id/)
   assert.match(invalidRule, /contextMode: continue/)
   assert.match(invalidRule, /HALTED_FOR_HUMAN/)
+})
+
+test('O1 consumes all eight real Intake checks through distinct Lead coverage IDs', async () => {
+  const [skill, persona, principles, matrixSkill] = await Promise.all([
+    source('skills/review-orchestration/SKILL.md'),
+    source('persona.md'),
+    source('principles.md'),
+    source('skills/coverage-matrix/SKILL.md'),
+  ])
+  const o1 = section(skill, '### O1 输入治理（第 1-2 步）', '### O2 条款抽取（第 3 步）')
+  const { requiredSteps, entries } = intakeGateMappings(o1)
+  const expected = [
+    { coverageId: 'CHK-INTAKE-S1-SCOPE', step: 'S1', name: '受理范围清点' },
+    { coverageId: 'CHK-INTAKE-S2-MASTER-VERSION', step: 'S2', name: '主版本冻结' },
+    { coverageId: 'CHK-INTAKE-S3-PAGE-RANGE', step: 'S3', name: '页码连续性' },
+    { coverageId: 'CHK-INTAKE-S4-ATTACHMENT-MANIFEST', step: 'S4', name: '附件清单对账' },
+    { coverageId: 'CHK-INTAKE-S5-EXECUTION-STATUS', step: 'S5', name: '签章状态' },
+    { coverageId: 'CHK-INTAKE-S6-PLACEHOLDER', step: 'S6', name: '占位符扫描' },
+    { coverageId: 'CHK-INTAKE-S7-PARTY-AND-AMOUNT', step: 'S7', name: '一致性（主体身份 / 金额大小写）' },
+    { coverageId: 'CHK-INTAKE-S8-VERSION-MATRIX', step: 'S8', name: '版本矩阵对齐' },
+  ]
+
+  assert.deepEqual(requiredSteps, expected.map(({ step }) => step))
+  assert.deepEqual(entries, expected)
+  assert.equal(new Set(entries.map(({ coverageId }) => coverageId)).size, 8)
+  assert.equal(new Set(entries.map(({ step }) => step)).size, 8)
+  assert.match(o1, /intake_gate_steps_required: \[S1, S2, S3, S4, S5, S6, S7, S8\]/)
+  assert.match(o1, /O1_INTAKE_GATE_STEPS_INVALID/)
+  assert.match(o1, /缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符/)
+  assert.match(o1, /只可要求 `contract-intake`.*补全或重做/)
+  assert.match(o1, /不能将 `S6` 解释为唯一主合同/)
+  assert.match(o1, /不能漏掉 `S8`/)
+
+  const corpus = [persona, principles, matrixSkill].join('\n')
+  assert.match(corpus, /`contract\.yaml#INV-001`.*Lead.*O0/)
+  assert.match(corpus, /不得与矩阵 `check_id` 混用/)
+  assert.doesNotMatch(o1, /coverage_id: S[1-8]/)
 })
 
 test('digest rules prefer FileDigest and bind a receipt to its registered input version', async () => {

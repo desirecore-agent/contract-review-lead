@@ -8,7 +8,7 @@ description: >-
   Use when building and maintaining the clause coverage matrix (a ledger of outstanding checks):
   rows are pre-generated from the check catalog before any dispatch, flipped to covered only by
   conforming member receipts, and uncovered items stay explicitly blank rather than silently passing.
-version: 1.0.0
+version: 1.0.1
 type: procedural
 risk_level: low
 status: enabled
@@ -29,8 +29,8 @@ requires:
     - MathCalc
 metadata:
   author: DesireCore
-  version: 1.0.0
-  updated_at: '2026-08-31'
+  version: 1.0.1
+  updated_at: '2026-09-10'
 ---
 
 # 条款覆盖矩阵（欠账表）
@@ -71,7 +71,7 @@ metadata:
 
 | 字段 | 必填 | 类型 | 说明 |
 |---|---|---|---|
-| `check_id` | 是 | string | 检查项标识，引用规则集条目 id（如 `liability-cap`、`cn-arbitration-agreement-validity`、`S4`） |
+| `check_id` | 是 | string | 检查项标识，引用规则集条目 id（如 `liability-cap`、`cn-arbitration-agreement-validity`、`CHK-INTAKE-S4-ATTACHMENT-MANIFEST`）。Intake 回执的 `S1`–`S8` 是其 `checks[].id`，不得与矩阵 `check_id` 混用。 |
 | `check_title` | 是 | string | 人类可读的检查项名称 |
 | `check_source` | 是 | string | 该行来自哪个清单，写成 `<文件>#<id>`（如 `base/missing-clauses.yaml#liability-cap`）。**没有来源的行不允许存在**——它意味着有人临时加了一个无据可查的检查项 |
 | `stage` | 是 | integer | 属于 7 步中的第几步（1-7），用于校验顺序未被调乱 |
@@ -156,6 +156,8 @@ O0 阶段按以下五个来源穷举生成行。**每一行都要有 `check_sour
 | 生效法域包 `rules.yaml` 中适用的规则条目 | 按包 | 4 | `jurisdiction-auditor` |
 | `custom` 层企业红线（如已加载） | 按配置 | 5 | `risk-scanner` |
 | 蓝本第十五节五类拆分检查的收口行 | 5 | 6-7 | `review-reporter` |
+
+Intake 的八行使用 `review-orchestration#O1 Intake 覆盖映射` 定义的独立 `CHK-INTAKE-*` 行 ID，并以 `contract-intake.receipt.checks#S<n>` 作为 `check_source`；回执中必须仍写真实 `S1`–`S8`。`contract.yaml#INV-001` 的唯一主合同校验是 Lead 的 O0 所有权，既不是 Intake S6，也不生成 `CHK-INTAKE-*` 行。
 
 **九项关键缺失条款**（`base/missing-clauses.yaml`）：`liability-cap` / `breach-remedy` / `grace-period` / `termination-convenience` / `subcontracting` / `audit-right` / `dispute-resolution` / `force-majeure` / `data-export`。
 

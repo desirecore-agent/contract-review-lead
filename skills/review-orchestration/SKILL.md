@@ -10,7 +10,7 @@ description: >-
   7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
   synchronous isolated context, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.8
+version: 1.0.9
 type: procedural
 risk_level: medium
 status: enabled
@@ -36,8 +36,8 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.8
-  updated_at: '2026-09-08'
+  version: 1.0.9
+  updated_at: '2026-09-10'
 ---
 
 # 合同审查编排主控
@@ -178,18 +178,62 @@ intentId: "${case_id}:intake"
 contextReason: "合同案件输入治理与受理门禁。"
 ```
 
+O1 交接块必须单列完整、顺序固定的 Intake 步骤要求；这组值是对 `contract-intake` 的真实回执 `checks[].id` 的要求，不是 Lead 矩阵 ID：
+
+```yaml
+handoff:
+  intake_gate_steps_required: [S1, S2, S3, S4, S5, S6, S7, S8]
+```
+
 交接块见「派发载荷模板」。
 
 收到回执后：
 
 - **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径，确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
-- **回执缺失或无效时停在 O1。**记录 `O1_INTAKE_RECEIPT_INVALID` 和具体原因到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。只有本次真实 Delegate 回执提供了归属正确的 `work_context_id` 时，才可按打回上限使用 `contextMode: continue` 有界重试；否则转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
+- **八项 Intake 步骤是有效回执的必要组成。**`checks[]` 必须逐项且恰好一次给出本节映射表中的真实 `S1`–`S8`，并保留其对应的真实检查语义；不得用相近名称猜测、重排或自造同名编号。只有先按 RC-1..RC-6 核验该回执，再按本节映射消费其有效 `checks[]`，Lead 才能更新相应的 `CHK-INTAKE-*` 矩阵行。`pass` 的真实检查及其回执证据才可按既有矩阵协议翻 `covered`；非 `pass` 的项保留原始状态与证据/阻断原因，不能由 Lead 补成 `covered`。
+- **回执缺失或无效时停在 O1。**缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符、或未通过 RC-1..RC-6 时，记录 `O1_INTAKE_GATE_STEPS_INVALID`（及具体缺失/错映原因）和 `O1_INTAKE_RECEIPT_INVALID` 到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。只可要求 `contract-intake` 用本次真实 Delegate 回执中归属正确的 `work_context_id` 以 `contextMode: continue` 补全或重做；达到打回上限或缺少真实上下文则转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
 - 先跑六项回执检查（见「回执检查」一节）。
 - 读 `verdict` 字段：
   - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
   - `conditional` → 进 `O2`，**全量派发、范围不缩减**，把 `pending[]` 逐条登记为矩阵待确认行并原样传给下游。
   - `passed` → 进 `O2`。
 - 把 `freeze` 四项与 `consistency_conclusion_allowed` 写入矩阵基线。四项未全成立时，在编排账本标 `version_compare_allowed: false`（O4 的第 6 步据此处理）。
+
+#### O1 Intake 覆盖映射（Lead 账本契约）
+
+以下 `coverage_id` 是 Lead 覆盖矩阵中的独立行标识；`intake_gate_step` 才是 `contract-intake` 回执的 `checks[].id`。两者不得互换。O0 的 `contract.yaml#INV-001`（有且仅有一份 `main_contract`）仍完全由 Lead 执行，**不属于 Intake S6，也不得委派为任何 `CHK-INTAKE-*` 行。**
+
+```yaml
+intake_gate_coverage:
+  required_steps: [S1, S2, S3, S4, S5, S6, S7, S8]
+  entries:
+    - coverage_id: CHK-INTAKE-S1-SCOPE
+      intake_gate_step: S1
+      receipt_check_name: 受理范围清点
+    - coverage_id: CHK-INTAKE-S2-MASTER-VERSION
+      intake_gate_step: S2
+      receipt_check_name: 主版本冻结
+    - coverage_id: CHK-INTAKE-S3-PAGE-RANGE
+      intake_gate_step: S3
+      receipt_check_name: 页码连续性
+    - coverage_id: CHK-INTAKE-S4-ATTACHMENT-MANIFEST
+      intake_gate_step: S4
+      receipt_check_name: 附件清单对账
+    - coverage_id: CHK-INTAKE-S5-EXECUTION-STATUS
+      intake_gate_step: S5
+      receipt_check_name: 签章状态
+    - coverage_id: CHK-INTAKE-S6-PLACEHOLDER
+      intake_gate_step: S6
+      receipt_check_name: 占位符扫描
+    - coverage_id: CHK-INTAKE-S7-PARTY-AND-AMOUNT
+      intake_gate_step: S7
+      receipt_check_name: 一致性（主体身份 / 金额大小写）
+    - coverage_id: CHK-INTAKE-S8-VERSION-MATRIX
+      intake_gate_step: S8
+      receipt_check_name: 版本矩阵对齐
+```
+
+建矩阵时预生成以上八行，`check_source` 写为 `contract-intake.receipt.checks#S<n>`，`owner_agent` 为 `contract-intake`，初始 `status: blank`。Lead 只在上述有效回执的实际检查结果上更新行：不能将 `S6` 解释为唯一主合同、不能漏掉 `S8`，不能将任一 `CHK-INTAKE-*` 伪装成 Intake 产出的 `checks[].id`。
 
 ### O2 条款抽取（第 3 步）
 
