@@ -114,7 +114,7 @@ metadata:
 
 | 从 | 事件 | 到 | 附带动作 |
 |---|---|---|---|
-| — | 收到合同材料 | `O0` | 生成 `case_id`、登记全部 `object_ref`、建初始矩阵（全 `blank`） |
+| — | 收到合同材料 | `O0` | 生成 `case_id`、登记全部 `object_ref`、规则源预检后按 coverage policy 建初始矩阵 |
 | `O0` | 登记完成 | `O1` | `Delegate sync` + `contextMode: isolated`、`${case_id}:intake` → `contract-intake` |
 | `O1` | `verdict: blocked` | `X1` | 终止；不派发任何下游；把 `remediation` 清单交用户 |
 | `O1` | `verdict: passed` | `O2` | 冻结快照写入矩阵基线 |
@@ -154,8 +154,8 @@ metadata:
 3. 校验 `contract.yaml#INV-001`：有且仅有一份 `main_contract`。不满足直接 `H`，不派发。
 4. 若 `FileDigest` 明确提示把数组 JSON 文本误传为字符串，这只是参数格式错误：只可在同一已登记文件范围内纠正一次为上述形状，再读取真实返回；不得沿用旧任务的失败诊断将其记为工具不可用，也不得把提示当成无限重试授权。只有 `FileDigest` 对本次完整文件集**全部成功**时，才将其 `aggregate.digest` 记为 `attachment_manifest_digest`（亦即交接中的 `manifest_digest`）。任何真实单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时，逐个失败文件写 `content_digest: unknown` + 工具返回的精确原因；清单摘要写 `unknown`、`manifest_digest_unavailable: true` 和同一可核验原因。不得为残缺集合记录 aggregate、以单文件 aggregate 冒充完整清单，也不得用 `Bash` / `PowerShell` 代算。
 5. 摘要只证明固定算法下的内容字节；它不能单独确认对象身份、文件版本、用户提交意图、授权或任何法律事实。只有回执的 `case_id`、`object_id`、`version_label`、规范化绝对路径和相应摘要都与组长账本同一登记行一致，才可作为本案同一输入版本的摘要凭证；组长按这一检查更新账本，不能只因摘要相同就放行。
-6. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
-7. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
+6. 在建立矩阵前完成 `coverage-matrix` 的规则源预检：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml` **和** `rules.yaml`，把 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本。无匹配包、路径不可定位或读取失败是 `RULE_SOURCE_UNAVAILABLE`：把来源与工具失败原因记账并停在 H，不得把它写成用户 `SCOPE-*` 材料缺失、`deferred` 或“全 blank”的初始矩阵。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
+7. 仅在规则源预检成功后调用 `coverage-matrix` 建立初始矩阵。行必须只来自该技能的已解析 catalog；大多数新行从 `blank` 开始，optional-absent custom 的唯一声明行按该技能写为 `not_applicable`。`contract.yaml#INV-001` 仍只留在 Lead 账本，不得生成任何 `INV-001-MAIN-CONTRACT` 矩阵行。按该技能的同一 `rows` 计算并写回五态 summary 与 MathCalc 回执。
 8. 先执行 Lead canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将 Lead 根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体 Lead 文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 Lead 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。该根后续只用于 Lead 的账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
 ### 编排账本状态写入硬闸

@@ -1,0 +1,12 @@
+{
+  "cases": [
+    {"name":"covered valid receipt","facts":{"receipt":"valid","quadruplet":true,"evidence":true},"expected":"covered"},
+    {"name":"missing receipt is blank","facts":{"receipt":"missing"},"expected":"blank"},
+    {"name":"missing receipt cannot hide owner failure","facts":{"receipt":"missing","owner_terminal_failure":true},"expected":"blocked"},
+    {"name":"missing receipt cannot hide intake material fact","facts":{"receipt":"missing","scope_missing_material":true},"expected":"deferred"},
+    {"name":"an untrusted scope claim is not deferred","facts":{"receipt":"missing","scope_claim_untrusted":true},"expected":"blank"},
+    {"name":"missing receipt cannot hide contract inapplicability","facts":{"receipt":"missing","contract_inapplicable":true},"expected":"not_applicable"},
+    {"name":"rule source failure is not user deferred","facts":{"receipt":"missing","rule_source_unavailable":true},"expected":"pre_dispatch_failure"},
+    {"name":"unconfirmed human gate remains blank","facts":{"receipt":"valid","quadruplet":true,"evidence":true,"human_gate_pending":true},"expected":"blank"}
+  ]
+}
