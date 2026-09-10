@@ -165,3 +165,33 @@ test('digest rules prefer FileDigest and bind a receipt to its registered input 
   assert.match(corpus, /不得用 `Bash`|不使用 `Bash`/)
   assert.doesNotMatch(corpus, /当前平台无可用哈希工具|平台也没有内置哈希工具/)
 })
+
+test('O2 preserves a single bound extraction and target-owned artifact', async () => {
+  const [persona, principles, skill] = await Promise.all([
+    source('persona.md'),
+    source('principles.md'),
+    source('skills/review-orchestration/SKILL.md'),
+  ])
+  const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
+  const delegateYaml = o2.match(/```yaml\n([\s\S]*?)```/)
+  const corpus = [persona, principles, skill].join('\n')
+
+  assert.ok(delegateYaml, 'O2 must contain Delegate parameters')
+  assert.deepEqual(yamlFields(delegateYaml[1]), {
+    target: 'clause-extractor',
+    mode: 'sync',
+    contextMode: 'isolated',
+    intentId: '${case_id}:extract',
+    contextReason: '合同案件条款结构化，供后续分析环节共同使用。',
+  })
+  assert.match(o2, /O2_WAITING_OR_UNKNOWN/)
+  assert.match(o2, /O2_BINDING_UNAVAILABLE/)
+  assert.match(o2, /不得对同一 `case_id:extract` 另发 `isolated`/)
+  assert.match(o2, /child run \/ Work Context 为 `active` 或状态未知/)
+  assert.match(o2, /最终回执.*RC-1\.\.RC-6/)
+  assert.match(o2, /`artifact_path`/)
+  assert.match(o2, /不得.*指定 `clauses\.yaml`/)
+  assert.match(corpus, /成员在各自确认的 workspace 创建唯一产物/)
+  assert.match(corpus, /不得以 `isolated` 重置计数/)
+  assert.match(corpus, /等待超时不等于成员终止/)
+})

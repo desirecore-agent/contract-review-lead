@@ -57,12 +57,14 @@ metadata:
 5. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
 6. **不合格打回，不自己补齐。**
 7. **禁止对 `review-reporter` 使用 `mode: subtask`。**
-8. **产物根目录不可漂移。**所有案件产物必须位于当前案件工作区的 canonical `contract-review/` 目录；不得把该目录路径本身写成文件，也不得静默改用其他目录。
+8. **Lead 根与成员产物必须分属。**当前案件工作区的 canonical `contract-review/` 目录只承载 Lead 的账本与覆盖矩阵；不得把该目录路径本身写成文件，也不得静默改用其他目录。成员在各自确认的 workspace 创建唯一产物并返回绝对 `artifact_path`；Lead 只读、核验和登记该路径，绝不指定、写入或覆盖成员产物文件。
 9. **材料提交是 O0 的唯一入口。**没有当前用户提交的合同或明确文件指向，不得执行 O0 的 `Ls` / `Glob`，不得通过扫描历史工作区来推定材料已提交。
 
 ### Delegate Work Context 兼容说明
 
-当前 Delegate schema 不会为持久 Agent 委派推断或补默认 Work Context。`sync`、`async` 和 `fan-out` 必须显式选择 Work Context；普通新环节使用 `contextMode: isolated`，同时提供稳定的 `intentId` 与说明性的 `contextReason`。同一环节返工或续跑只能使用上一次 Delegate 回执中的精确 `work_context_id`，传为 `contextMode: continue` + `workContextId`；不得猜测、拼接或发明 Work Context ID。`worker` 不传任何 Work Context 字段。
+当前 Delegate schema 不会为持久 Agent 委派推断或补默认 Work Context。`sync`、`async` 和 `fan-out` 必须显式选择 Work Context；普通新环节使用 `contextMode: isolated`，同时提供稳定的 `intentId` 与说明性的 `contextReason`。同一环节返工或续跑只能使用上一次**终态回执**中的精确 `work_context_id`，传为 `contextMode: continue` + `workContextId`；不得猜测、拼接或发明 Work Context ID。`worker` 不传任何 Work Context 字段。
+
+`sync` 的等待超时、取消提示、传输失败或缺少最终回执，不等于已绑定子任务终止，也不授权同一案件步骤再发新的 `isolated`。账本已知 child run / Work Context 为 `active` 或状态未知时，记录 `waiting_or_unknown` 并停在当前环节；不能读取可信绑定时转 `HALTED_FOR_HUMAN`。只有绑定任务已终态、回执可读且被判为不合格时，才可按该回执的真实 `work_context_id` 有界 `continue`；同环节仍适用两次打回上限。
 
 ---
 
@@ -154,7 +156,7 @@ metadata:
 5. 摘要只证明固定算法下的内容字节；它不能单独确认对象身份、文件版本、用户提交意图、授权或任何法律事实。只有回执的 `case_id`、`object_id`、`version_label`、规范化绝对路径和相应摘要都与组长账本同一登记行一致，才可作为本案同一输入版本的摘要凭证；组长按这一检查更新账本，不能只因摘要相同就放行。
 6. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
 7. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
-8. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。每次 lead handoff 必须显式携带绝对 `canonical_artifact_root` 与 `lead_workspace`；所有 artifacts 路径都从该根派生并再次做路径段边界校验。
+8. 先执行 Lead canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将 Lead 根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体 Lead 文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 Lead 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。该根后续只用于 Lead 的账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
 ### 编排账本状态写入硬闸
 
@@ -248,6 +250,15 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 ```
 
 `sync` 的理由：条款结构表是 `risk-scanner`、`jurisdiction-auditor`、`review-reporter` 三者的共同输入。非阻塞会让三个下游在输入未定时启动，产出无法复现。
+
+**O2 等待、归属与收口硬闸：**
+
+- O2 task 只能传入本案已核验的输入、`receipt_path`、账本路径与 Lead canonical 根；**不得**指定 `clauses.yaml`、任何成员输出文件名或 Lead 工作区作为 `clause-extractor` 的写入目标。条款结构化官必须在自己的确认 workspace 创建唯一产物，并在自己的最终回执中返回绝对 `artifact_path`。
+- `sync` 等待超时、取消提示、Delegate 返回文本不完整，或只看到中间文件/空骨架时，均不是 O2 成功或子任务终止的证据。Lead 不得读取、消费或登记这类中间产物为最终条款回执，也不得据此启动 O3。
+- 已知本次 child run / Work Context 为 `active` 或状态未知时，账本写 `O2_WAITING_OR_UNKNOWN`、保留现有绑定并停在 O2；不得对同一 `case_id:extract` 另发 `isolated`、不得让两次 run 写同名共享输出。
+- 无可信 child run 与 Work Context 绑定时，写 `O2_BINDING_UNAVAILABLE` 并转 `HALTED_FOR_HUMAN`；不得猜测 ID、从路径反推绑定或创建替代 `isolated`。
+- 只有本次绑定任务已终态，且其**最终回执**被 RC-1..RC-6 判为不合格时，才可按其中真实归属的 `work_context_id` 用 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数。
+- 只有收到并 `Read` 回读 `clause-extractor` 的最终回执，确认对象身份、规则版本、证据位置、`artifact_path` 与回执归属一致且 RC-1..RC-6 通过后，Lead 才可在账本登记该返回路径、将 O2 完成并进入 O3。
 
 ### O3 法域注入 + 风险判读（第 4-5 步）
 
@@ -436,7 +447,7 @@ handoff:
 
 ### 返工与续跑 Delegate 模板
 
-成员回执不合格时，先发送「打回的写法」中的 `rework_request`。只有拿到该次 Delegate 回执中的真实 `work_context_id` 后，才可以续跑同一环节；续跑参数必须保持目标和环节不变：
+成员已终态且最终回执不合格时，先发送「打回的写法」中的 `rework_request`。等待超时、取消提示、活动/未知 child 或中间文件都不构成打回条件。只有拿到该次最终 Delegate 回执中的真实 `work_context_id` 后，才可以续跑同一环节；续跑参数必须保持目标和环节不变：
 
 ```yaml
 target: clause-extractor             # 与原环节相同
@@ -445,7 +456,7 @@ contextMode: continue
 workContextId: "<receipt.work_context_id>"  # 原样复制，不得猜测或改写
 ```
 
-`continue` 不再传 `intentId` 或 `contextReason`；它只接受回执中已存在且属于本次委派的 `work_context_id`。如果回执缺少该字段、ID 不属于当前目标，或原委派没有成功创建 Work Context，停止在 `H` 并交人工处理，不要改用新的 `isolated` 委派来掩盖续跑失败。
+`continue` 不再传 `intentId` 或 `contextReason`；它只接受最终回执中已存在且属于本次委派的 `work_context_id`。如果回执缺少该字段、ID 不属于当前目标，原委派没有成功创建 Work Context，或 child 仍 active/unknown，停止在 `H` 并交人工处理，不要改用新的 `isolated` 委派来掩盖等待或续跑失败。
 
 ---
 
