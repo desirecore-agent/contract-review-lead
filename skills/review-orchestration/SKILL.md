@@ -162,7 +162,7 @@ metadata:
 
 账本是案件状态的事实来源，不能只在 O0 登记而把后续状态留成 `pending`。每一次委派返回并通过 RC-1..RC-6 后，先 `Read` 当前账本，再用 `Edit` 更新同一份 `orchestration-ledger.yaml`，随后立即 `Read` 回读验证；状态更新失败、目标段不存在、或回读仍显示旧状态时，停止在 `H` 并报告 `REJECT-LEDGER-STATE`，不得继续派发或声称该步骤完成。
 
-至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：登记完成且 intake 已发出写 `O1_INTAKE`；intake 合格后把第 1-2 步写为 `completed` 并转 `O2_EXTRACT`；条款回执合格后把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
+至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：登记完成且 intake 已发出写 `O1_INTAKE`；intake 合格后把第 1-2 步写为 `completed` 并转 `O2_EXTRACT`；Clause v2 的同次 Compose 命名观察与 release-owned contract 全通过后才把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
 
 任何下游未启动、回执不合格或成员无响应都必须写入 `blocked_reasons`，不能用 `pending` 掩盖已发生的失败或已完成的步骤。`run_id` 必须同时保留外层 lead run 和每个 Delegate 子 run；若成员回执中的案件/内部 run 标识与外层运行不一致，原样记录 `identity_discrepancy` 并保持人工阻断，不得静默覆盖成单一 ID。账本更新属于本技能的必做产物，不以模型是否“打算稍后补写”为完成条件。
 
@@ -239,6 +239,35 @@ intake_gate_coverage:
 
 ### O2 条款抽取（第 3 步）
 
+#### Clause v2 自动消费前置（接口冻结前保持 HOLD）
+
+Clause v2 的 `ready_for_handoff`、子 Agent 声明的 schema/digest、路径、统计、quote 或工具摘要都不是 Lead 的自动验收证据。只有平台已注册并实际可调用一次性 `StructuredFileValidateCompose` 时，才可自动消费 v2：同一次调用必须捕获 artifact、已信任的 Intake frozen baseline 与每个 delivered part，返回全部命名 SHA/size，并由 release-owned 数据提供 pinned schema、通用 assertion 与 artifact-derived literal selector。Lead 不得重抄 quote、用后续 Read/FileDigest/Grep 拼接该证据，也不得把同 hash 当对象身份或法律确认。
+
+未注册、不可调用、授权/路径/解析/Schema/Compose 回执失败，或回执缺少任一命名观察时，记录 `O2_CLAUSE_V2_COMPOSE_UNAVAILABLE` 并保持 `HOLD`；不得进入 O3、更新 coverage 或将其改写为用户材料 deferred。现有 RC-1..RC-6 只能支持人工调查，不能替代该 v2 自动接受门槛。
+
+release-owned Compose 数据必须自描述地列出：命名 artifact/baseline/delivered-part 集合、pinned schema text/digest、parts 与 baseline 的 unique/required/reference/equality/count 关系、coverage catalog exactly-once/counter 关系，以及从 v2 parsed artifact 字段派生的 literal selector。generic 算子目前不能表达的跨记录/生命周期/业务语义必须保留为明确 `HOLD` 或后续受限 assertion 数据，不得以自然语言宣称机器已校验。
+
+已冻结的 release 数据至少按下列形状生成；`artifact`、`baseline` 与 `part_<index>` 是本次 Compose 的命名 source，不是模型提供的路径或角色权限。固定 index 来自已经 trusted 的 Intake baseline，不能由 Clause artifact 选择：
+
+```yaml
+compose_release_contract:
+  schema_target: artifact
+  required_names: [artifact, baseline, pinned_schema, part_0]
+  assertions:
+    - {type: unique_keys, file: artifact, arrayPointer: /clause_extraction/parts, keys: [id]}
+    - {type: required_set, file: artifact, arrayPointer: /clause_extraction/coverage, member: field_group, values: <frozen-19-field-groups>, exact: true}
+    - {type: array_length_equals, file: artifact, arrayPointer: /clause_extraction/parts, expected: {kind: value, file: artifact, pointer: /clause_extraction/part_count}}
+    - {type: count_where_equals, file: artifact, arrayPointer: /clause_extraction/coverage, member: status, value: covered, expected: <release-computed-covered-count-operand>}
+    - {type: equals, left: {kind: value, file: artifact, pointer: /clause_extraction/contract_schema/sha256}, right: {kind: snapshot, file: pinned_schema, field: sha256}}
+    - {type: equals, left: {kind: value, file: artifact, pointer: /clause_extraction/parts/0/sha256}, right: {kind: snapshot, file: part_0, field: sha256}}
+    - {type: references, file: artifact, arrayPointer: /clause_extraction/parts, member: id, target: {kind: value, file: baseline, pointer: /frozen_baseline/parts/ids}}
+  literal_selectors: <generated only from parsed artifact evidence arrays; quote/source/SHA/position members and every required delivered part are fixed release data>
+```
+
+`unique_keys + required_set` 可确定 frozen coverage catalog 的 exactly-once；固定 index 的 `equals` 可逐 delivered part 对比 captured SHA/size，`array_length_equals`/`count_where_equals` 可校验已预先投影为标量的 part/coverage counters。v2 schema 的 `oneOf` 可确定 ready/handoff 形状及 delivered=false 的 null size/SHA/typed debt 形状，但不把 schema success 当业务验收。
+
+当前 generic operand 不能做数组 join 或动态 member selector，故 release 生成器必须为每个已信任 baseline index 展开固定 assertion。最小不可表达反例：artifact `parts` 可把 `id: A` 与 baseline `A` 对齐，却把 `source/pages` 取自 baseline `B`；`references` 只能证明 `A` 存在，不能比较同 id 两行的 tuple。coverage/payload 的 `field_group`/record 交叉计数、每个 `not_present` 的动态 required part 集合及 lifecycle 与 trusted Delegate binding 也不能由现有单数组算子证明；这些仍是后续受限 join/assertion 或平台 binding 输入的实现目标，当前必须 HOLD。
+
 `Delegate`，`mode: sync`，目标 `clause-extractor`，为条款抽取创建独立 Work Context：
 
 ```yaml
@@ -257,8 +286,8 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 - `sync` 等待超时、取消提示、Delegate 返回文本不完整，或只看到中间文件/空骨架时，均不是 O2 成功或子任务终止的证据。Lead 不得读取、消费或登记这类中间产物为最终条款回执，也不得据此启动 O3。
 - 已知本次 child run / Work Context 为 `active` 或状态未知时，账本写 `O2_WAITING_OR_UNKNOWN`、保留现有绑定并停在 O2；不得对同一 `case_id:extract` 另发 `isolated`、不得让两次 run 写同名共享输出。
 - 无可信 child run 与 Work Context 绑定时，写 `O2_BINDING_UNAVAILABLE` 并转 `HALTED_FOR_HUMAN`；不得猜测 ID、从路径反推绑定或创建替代 `isolated`。
-- 只有本次绑定任务已终态，且其**最终回执**被 RC-1..RC-6 判为不合格时，才可用「可信续接绑定」中同一目标/child run 的已登记 ID 以 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数或把 `continue` 当作 action resume。
-- 只有收到并 `Read` 回读 `clause-extractor` 的最终回执后，Lead 才可处理其 `artifact_path`：原样复制完整绝对路径，不得删除 UUID 或 `agents` 路径段、不得猜测或重拼路径；再对该精确路径执行真实 `Read`。任一读取失败时，RC-1..RC-6 不得判为通过，且不得凭最终文本、工具摘要或中间文件声称已检查。仅在对象身份、规则版本、证据位置、读回的 `artifact_path` 与回执归属一致且 RC-1..RC-6 通过后，Lead 才可在账本登记该返回路径、将 O2 完成并进入 O3。
+- 只有本次绑定任务已终态，且 v2 Compose/contract 结果不合格时，才可用「可信续接绑定」中同一目标/child run 的已登记 ID 以 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数或把 `continue` 当作 action resume。RC-1..RC-6 不能单独触发或替代 v2 自动验收。
+- 只有收到并 `Read` 回读 `clause-extractor` 的最终回执后，Lead 才可处理其 `artifact_path`：原样复制完整绝对路径，不得删除 UUID 或 `agents` 路径段、不得猜测或重拼路径；再对该精确路径执行真实 `Read`。该 Read 仅用于归属/路径准入与人工调查，不是 v2 语义或证据验收。任一读取失败不得凭最终文本、工具摘要或中间文件声称已检查。v2 只有同一次有效 `StructuredFileValidateCompose` 对 artifact、baseline、pinned_schema 与每个 delivered `part_<index>` 的命名观察全部成功，并且 release-owned contract 全通过后，才可登记该返回路径、将 O2 完成并进入 O3；Compose 未注册、失败或缺任一命名观察一律保持 HOLD。RC-1..RC-6 不得形成替代自动放行路径。
 
 ### O3 法域注入 + 风险判读（第 4-5 步）
 

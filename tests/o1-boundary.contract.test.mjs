@@ -181,11 +181,11 @@ test('O2 preserves a single bound extraction and target-owned artifact', async (
     source('skills/review-orchestration/SKILL.md'),
   ])
   const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
-  const delegateYaml = o2.match(/```yaml\n([\s\S]*?)```/)
+  const delegateYaml = o2.match(/```yaml\ntarget: clause-extractor\n([\s\S]*?)```/)
   const corpus = [persona, principles, skill].join('\n')
 
   assert.ok(delegateYaml, 'O2 must contain Delegate parameters')
-  assert.deepEqual(yamlFields(delegateYaml[1]), {
+  assert.deepEqual(yamlFields(`target: clause-extractor\n${delegateYaml[1]}`), {
     target: 'clause-extractor',
     mode: 'sync',
     contextMode: 'isolated',
@@ -196,7 +196,7 @@ test('O2 preserves a single bound extraction and target-owned artifact', async (
   assert.match(o2, /O2_BINDING_UNAVAILABLE/)
   assert.match(o2, /不得对同一 `case_id:extract` 另发 `isolated`/)
   assert.match(o2, /child run \/ Work Context 为 `active` 或状态未知/)
-  assert.match(o2, /最终回执.*RC-1\.\.RC-6/)
+  assert.match(o2, /v2 Compose\/contract 结果不合格/)
   assert.match(o2, /`artifact_path`/)
   assert.match(o2, /不得.*指定 `clauses\.yaml`/)
   assert.match(corpus, /成员在各自确认的 workspace 创建唯一产物/)
@@ -225,8 +225,20 @@ test('rework uses only the current Delegate trusted continuation binding and rea
   assert.doesNotMatch(corpus, /最终回执中的.*work_context_id/)
   assert.match(o2, /不得删除 UUID 或 `agents` 路径段、不得猜测或重拼路径/)
   assert.match(o2, /对该精确路径执行真实 `Read`/)
-  assert.match(o2, /读取失败时，RC-1\.\.RC-6 不得判为通过/)
+  assert.match(o2, /该 Read 仅用于归属\/路径准入与人工调查/)
+  assert.match(o2, /RC-1\.\.RC-6 不得形成替代自动放行路径/)
   assert.match(corpus, /不得凭最终文本或摘要完成 RC 检查/)
   assert.match(o1, /不删除 UUID 或 `agents` 路径段、不猜测或重拼/)
   assert.match(o1, /任一读取失败时不得凭最终文本、工具摘要或中间文件完成 RC-1\.\.RC-6/)
+})
+
+test('Clause v2 admission requires one Compose observation and never lets RC or Read release O3', async () => {
+  const skill = await source('skills/review-orchestration/SKILL.md')
+  const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
+  assert.match(o2, /O2_CLAUSE_V2_COMPOSE_UNAVAILABLE/)
+  assert.match(o2, /保持 HOLD/)
+  assert.match(o2, /artifact、baseline、pinned_schema 与每个 delivered `part_<index>`/)
+  assert.match(o2, /RC-1\.\.RC-6 不得形成替代自动放行路径/)
+  assert.doesNotMatch(o2, /RC-1\.\.RC-6 通过后，Lead 才可.*进入 O3/)
+  assert.match(o2, /required_names: \[artifact, baseline, pinned_schema, part_0\]/)
 })
