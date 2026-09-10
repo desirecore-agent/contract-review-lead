@@ -144,7 +144,7 @@ metadata:
 ### O0 登记与受理
 
 1. `GenerateUUID` 生成 `case_id`（形如 `case-2026-0831-001`，本地可读格式亦可，但一个案件内唯一且永不复用）。
-2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。逐份登记为 `contract_document`：
+2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。仅一份文件时，`paths` 必须是该文件的完整绝对裸路径字符串，不得传数组 JSON 文本；多份文件时，`paths` 必须是完整集合的原生字符串数组。逐份登记为 `contract_document`：
    - `object_id`（`doc-main-001` / `doc-att-003` 形式）
    - `version_label`（取自文档自身声明；取不到写 `unknown` + `version_label_unknown_reason`）
    - `content_digest`（采用 `FileDigest.files[].digest` 返回的 64 位小写 SHA-256；不得用 shell 或自行计算替代）
@@ -152,7 +152,7 @@ metadata:
    - 规范化绝对路径
    - `digest_binding`：同一账本行中的 `case_id`、`object_id`、`version_label`、规范化绝对路径与 `content_digest`
 3. 校验 `contract.yaml#INV-001`：有且仅有一份 `main_contract`。不满足直接 `H`，不派发。
-4. 只有 `FileDigest` 对本次完整文件集**全部成功**时，才将其 `aggregate.digest` 记为 `attachment_manifest_digest`（亦即交接中的 `manifest_digest`）。任何单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时，逐个失败文件写 `content_digest: unknown` + 工具返回的精确原因；清单摘要写 `unknown`、`manifest_digest_unavailable: true` 和同一可核验原因。不得为残缺集合记录 aggregate，也不得用 `Bash` / `PowerShell` 代算。
+4. 若 `FileDigest` 明确提示把数组 JSON 文本误传为字符串，这只是参数格式错误：只可在同一已登记文件范围内纠正一次为上述形状，再读取真实返回；不得沿用旧任务的失败诊断将其记为工具不可用，也不得把提示当成无限重试授权。只有 `FileDigest` 对本次完整文件集**全部成功**时，才将其 `aggregate.digest` 记为 `attachment_manifest_digest`（亦即交接中的 `manifest_digest`）。任何真实单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时，逐个失败文件写 `content_digest: unknown` + 工具返回的精确原因；清单摘要写 `unknown`、`manifest_digest_unavailable: true` 和同一可核验原因。不得为残缺集合记录 aggregate、以单文件 aggregate 冒充完整清单，也不得用 `Bash` / `PowerShell` 代算。
 5. 摘要只证明固定算法下的内容字节；它不能单独确认对象身份、文件版本、用户提交意图、授权或任何法律事实。只有回执的 `case_id`、`object_id`、`version_label`、规范化绝对路径和相应摘要都与组长账本同一登记行一致，才可作为本案同一输入版本的摘要凭证；组长按这一检查更新账本，不能只因摘要相同就放行。
 6. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
 7. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
