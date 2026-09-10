@@ -1,0 +1,65 @@
+{
+  "format_version": 1,
+  "description": "Lead-owned source-only pins and fixed-index C01 mapping for generic StructuredFileValidateCompose. These pins are caller policy, never platform authorization.",
+  "captures": {
+    "schema_source": "pinned_schema",
+    "schema_target": "artifact",
+    "rules_source": "rules",
+    "baseline": "baseline",
+    "delivered_sources": [
+      {
+        "name": "part_0",
+        "object_index": 0,
+        "part_id": "body"
+      }
+    ]
+  },
+  "schema": {
+    "source_name": "pinned_schema",
+    "relative_source": "clause-extractor/schemas/clause-extraction-artifact-v21.schema.json",
+    "sha256": "a5ffb1525f027f878ab9c89adaf6a4fc8d3255d5bd47f0d25b807df83c46c671"
+  },
+  "method_catalog": {
+    "relative_source": "clause-extractor/resources/absence-method-catalog/catalog.json",
+    "version": "v1",
+    "id": "controlled-field-taxonomy-v1",
+    "sha256": "858036a26dfce0f08048884f8580e0dd74b8ae180aff42371ccbc6d470b10b78",
+    "note": "Lead checks this published-data pin separately; it is not a sixth Compose capture in C01."
+  },
+  "baseline": {
+    "file": "baseline",
+    "root_pointer": "/orchestration_ledger",
+    "object_index": 0,
+    "pointers": {
+      "object_id": "/orchestration_ledger/objects/0/object_id",
+      "kind": "/orchestration_ledger/objects/0/kind",
+      "canonical_path": "/orchestration_ledger/objects/0/canonical_path",
+      "content_digest": "/orchestration_ledger/objects/0/content_digest",
+      "size_bytes": "/orchestration_ledger/objects/0/size_bytes",
+      "digest_binding": "/orchestration_ledger/objects/0/digest_binding",
+      "manifest_digest": "/orchestration_ledger/manifest_digest"
+    }
+  },
+  "c01_limits": {
+    "max_captured_files": 32,
+    "max_total_bytes": 67108864,
+    "max_assertions": 128,
+    "max_selectors": 8,
+    "call_deadline_ms": 15000
+  },
+  "non_goals": [
+    "dynamic multi-part joins",
+    "object identity from digest alone",
+    "semantic absence proof",
+    "Delegate work-context validation",
+    "Human Gate or legal conclusions"
+  ],
+  "rules": {
+    "source_name": "rules",
+    "relative_source": "review-orchestration/compose-contracts/clause-v21-single-main-contract.rules.json",
+    "sha256": "c515bd9b4f6873a1e7acb071e1e991f29f12a076253c85bf7e8581c6d6590ef7",
+    "format": "json",
+    "line_endings": "LF",
+    "note": "The caller compares this release-owned pin with receipt.binding.rules_source.sha256 before relying on receipt.ok."
+  }
+}
