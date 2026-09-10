@@ -95,7 +95,8 @@
       "AskUserQuestion",
       "Delegate",
       "SendMessage",
-      "FileDigest"
+      "FileDigest",
+      "StructuredFileValidateCompose"
     ],
     "denied": [
       "Bash",

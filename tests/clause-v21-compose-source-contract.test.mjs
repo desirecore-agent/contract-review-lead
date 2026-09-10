@@ -70,3 +70,35 @@ test('policy declares multi-part and semantic relations outside current generic 
   const pins = await json('compose-contracts/clause-v21-single-main-contract.pins.json')
   assert.deepEqual(pins.non_goals, ['dynamic multi-part joins', 'object identity from digest alone', 'semantic absence proof', 'Delegate work-context validation', 'Human Gate or legal conclusions'])
 })
+
+
+test('O2 consumes only the public Compose envelope for the fixed single-main-contract policy', async () => {
+  const [skill, agent] = await Promise.all([
+    readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8'),
+    json('agent.json'),
+  ])
+  assert.match(skill, /version: 1\.0\.10/)
+  assert.match(skill, /metadata:\s+author: DesireCore\s+version: 1\.0\.10\s+updated_at: '2026-09-11'/s)
+  assert.ok(agent.tool_permissions.allowed.includes('StructuredFileValidateCompose'))
+  assert.equal(agent.tool_permissions.denied.includes('StructuredFileValidateCompose'), false)
+  assert.deepEqual(agent.default_enabled.tools, [])
+  assert.match(skill, /ToolExecutionResult\.success: true/)
+  assert.match(skill, /唯一 text `content` 能严格 JSON parse 为 receipt/)
+  assert.match(skill, /不得读取或引用 worker 内部 `source-bound-receipt`/)
+  assert.match(skill, /name: artifact, path: <final-receipt\.artifact_path>, format: yaml/)
+  assert.match(skill, /name: baseline, path: <current Lead O0 ledger absolute path>, format: yaml/)
+  assert.match(skill, /name: pinned_schema, path: <published AgentFS clause-extractor schema path>, format: json/)
+  assert.match(skill, /name: rules, path: <published AgentFS review-orchestration rules path>, format: json/)
+  assert.match(skill, /name: part_0, path: <O0 objects\[0\]\.canonical_path>, format: text/)
+  assert.match(skill, /schema_source: pinned_schema/)
+  assert.match(skill, /schema_target: artifact/)
+  assert.match(skill, /rules_source: rules/)
+  assert.match(skill, new RegExp(schemaSha))
+  assert.match(skill, new RegExp(rulesSha))
+  assert.match(skill, /assertion_count `38`/)
+  assert.match(skill, /payloadEvidence.*coverageEvidence.*ambiguityEv/s)
+  assert.match(skill, /O2_CLAUSE_V21_SINGLE_PART_BASELINE_UNAVAILABLE/)
+  assert.match(skill, /O2_CLAUSE_V2_COMPOSE_UNAVAILABLE/)
+  assert.match(skill, /不得因此提前更新 coverage、替代 RC-1\.\.RC-6、弱化 Human Gate/)
+  assert.match(skill, /不得.*多 part\/C13/)
+})

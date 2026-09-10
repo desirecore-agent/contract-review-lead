@@ -10,7 +10,7 @@ description: >-
   7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
   synchronous isolated context, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.9
+version: 1.0.10
 type: procedural
 risk_level: medium
 status: enabled
@@ -36,8 +36,8 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.9
-  updated_at: '2026-09-10'
+  version: 1.0.10
+  updated_at: '2026-09-11'
 ---
 
 # 合同审查编排主控
@@ -239,34 +239,40 @@ intake_gate_coverage:
 
 ### O2 条款抽取（第 3 步）
 
-#### Clause v2 自动消费前置（接口冻结前保持 HOLD）
+#### Clause v2.1 单主合同自动消费（候选未部署时保持 HOLD）
 
-Clause v2 的 `ready_for_handoff`、子 Agent 声明的 schema/digest、路径、统计、quote 或工具摘要都不是 Lead 的自动验收证据。只有平台已注册并实际可调用一次性 `StructuredFileValidateCompose` 时，才可自动消费 v2：同一次调用必须捕获 artifact、已信任的 Intake frozen baseline 与每个 delivered part，返回全部命名 SHA/size，并由 release-owned 数据提供 pinned schema、通用 assertion 与 artifact-derived literal selector。Lead 不得重抄 quote、用后续 Read/FileDigest/Grep 拼接该证据，也不得把同 hash 当对象身份或法律确认。
+Clause 的 `ready_for_handoff`、成员自报 schema/digest、路径、统计、quote、工具摘要，以及 worker 内部消息类型都不是 Lead 自动验收证据。只有已注册、实际可调用的 `StructuredFileValidateCompose` 返回公共成功 envelope，Lead 才能自动消费这个**单主合同、单 part** v2.1 策略；当前候选未部署、native 读取不支持或安全错误均不是通过。
 
-未注册、不可调用、授权/路径/解析/Schema/Compose 回执失败，或回执缺少任一命名观察时，记录 `O2_CLAUSE_V2_COMPOSE_UNAVAILABLE` 并保持 `HOLD`；不得进入 O3、更新 coverage 或将其改写为用户材料 deferred。现有 RC-1..RC-6 只能支持人工调查，不能替代该 v2 自动接受门槛。
+先保留 O1 的有效 `passed`/`conditional` verdict、O2 本次平台 Delegate 可信 child/work-context binding、以及终态与最终回执的 exact absolute-path `Read`。`active`/unknown 保持 `O2_WAITING_OR_UNKNOWN`；缺可信 binding 是 `O2_BINDING_UNAVAILABLE`/H。最终回执的 `artifact_path` 必须原样复制，不得删 UUID/`agents` 路径段、猜测或重拼。Read 失败、摘要、中间文件或空骨架不得形成工具输入。
 
-release-owned Compose 数据必须自描述地列出：命名 artifact/baseline/delivered-part 集合、pinned schema text/digest、parts 与 baseline 的 unique/required/reference/equality/count 关系、coverage catalog exactly-once/counter 关系，以及从 v2 parsed artifact 字段派生的 literal selector。generic 算子目前不能表达的跨记录/生命周期/业务语义必须保留为明确 `HOLD` 或后续受限 assertion 数据，不得以自然语言宣称机器已校验。
+**单 part 基线前置。**只接受当前 Lead O0 ledger 的 `inv_001.main_contract_count: 1`、`objects[0].kind: main_contract`，且该对象的 `object_id`、`version_label`、`canonical_path`、`content_digest`、`size_bytes` 与 `digest_binding` 五元组都可用且自洽。O0 ledger 是 baseline；Intake handoff 不得取代或重建它。任一字段缺失、unknown、第二 part/main-contract 或 index 0 不是主合同，写 `O2_CLAUSE_V21_SINGLE_PART_BASELINE_UNAVAILABLE` 并 HOLD。
 
-已冻结的 release 数据至少按下列形状生成；`artifact`、`baseline` 与 `part_<index>` 是本次 Compose 的命名 source，不是模型提供的路径或角色权限。固定 index 来自已经 trusted 的 Intake baseline，不能由 Clause artifact 选择：
+在同一次 `StructuredFileValidateCompose` 调用中，仅使用下列五个原生 `inputs`，不传 inline schema/rules 或模型给出的替代 digest/path：
 
 ```yaml
-compose_release_contract:
-  schema_target: artifact
-  required_names: [artifact, baseline, pinned_schema, part_0]
-  assertions:
-    - {type: unique_keys, file: artifact, arrayPointer: /clause_extraction/parts, keys: [id]}
-    - {type: required_set, file: artifact, arrayPointer: /clause_extraction/coverage, member: field_group, values: <frozen-19-field-groups>, exact: true}
-    - {type: array_length_equals, file: artifact, arrayPointer: /clause_extraction/parts, expected: {kind: value, file: artifact, pointer: /clause_extraction/part_count}}
-    - {type: count_where_equals, file: artifact, arrayPointer: /clause_extraction/coverage, member: status, value: covered, expected: <release-computed-covered-count-operand>}
-    - {type: equals, left: {kind: value, file: artifact, pointer: /clause_extraction/contract_schema/sha256}, right: {kind: snapshot, file: pinned_schema, field: sha256}}
-    - {type: equals, left: {kind: value, file: artifact, pointer: /clause_extraction/parts/0/sha256}, right: {kind: snapshot, file: part_0, field: sha256}}
-    - {type: references, file: artifact, arrayPointer: /clause_extraction/parts, member: id, target: {kind: value, file: baseline, pointer: /frozen_baseline/parts/ids}}
-  literal_selectors: <generated only from parsed artifact evidence arrays; quote/source/SHA/position members and every required delivered part are fixed release data>
+inputs:
+  - {name: artifact, path: <final-receipt.artifact_path>, format: yaml}
+  - {name: baseline, path: <current Lead O0 ledger absolute path>, format: yaml}
+  - {name: pinned_schema, path: <published AgentFS clause-extractor schema path>, format: json}
+  - {name: rules, path: <published AgentFS review-orchestration rules path>, format: json}
+  - {name: part_0, path: <O0 objects[0].canonical_path>, format: text}
+schema_source: pinned_schema
+schema_target: artifact
+rules_source: rules
 ```
 
-`unique_keys + required_set` 可确定 frozen coverage catalog 的 exactly-once；固定 index 的 `equals` 可逐 delivered part 对比 captured SHA/size，`array_length_equals`/`count_where_equals` 可校验已预先投影为标量的 part/coverage counters。v2 schema 的 `oneOf` 可确定 ready/handoff 形状及 delivered=false 的 null size/SHA/typed debt 形状，但不把 schema success 当业务验收。
+AgentFS path 只能从 release-owned pin 的相对 source 解析：schema SHA-256 必须为 `a5ffb1525f027f878ab9c89adaf6a4fc8d3255d5bd47f0d25b807df83c46c671`，LF rules SHA-256 必须为 `c515bd9b4f6873a1e7acb071e1e991f29f12a076253c85bf7e8581c6d6590ef7`。五路径仍由平台既有 read scope 授权；任一拒绝、消失、解析/Schema/Compose/native/unsupported 错误均记录实际 code，写 `O2_CLAUSE_V2_COMPOSE_UNAVAILABLE` 并 HOLD，绝不以另一次 Read/FileDigest/Grep 补证。
 
-当前 generic operand 不能做数组 join 或动态 member selector，故 release 生成器必须为每个已信任 baseline index 展开固定 assertion。最小不可表达反例：artifact `parts` 可把 `id: A` 与 baseline `A` 对齐，却把 `source/pages` 取自 baseline `B`；`references` 只能证明 `A` 存在，不能比较同 id 两行的 tuple。coverage/payload 的 `field_group`/record 交叉计数、每个 `not_present` 的动态 required part 集合及 lifecycle 与 trusted Delegate binding 也不能由现有单数组算子证明；这些仍是后续受限 join/assertion 或平台 binding 输入的实现目标，当前必须 HOLD。
+**只消费公共 envelope。**要求 `ToolExecutionResult.success: true`，且唯一 text `content` 能严格 JSON parse 为 receipt；`success:false`、空/多内容、非 JSON 或缺字段一律 HOLD。不得读取或引用 worker 内部 `source-bound-receipt`。解析 receipt 必须 `ok: true`，其 schema/assertions/literal observations 均通过，并同时满足：
+
+1. `snapshots` 名称集合恰为 `artifact`、`baseline`、`pinned_schema`、`rules`、`part_0`；每项均有 name/format/sha256/size_bytes，无额外或同名项。
+2. `binding.schema_source`、`binding.rules_source`、`binding.schema_target` 分别与 snapshots 中 `pinned_schema`、`rules`、`artifact` 的四字段逐项相等；前两项 format 为 json、name 正确且 SHA 分别等于上述 schema/rules pin；artifact format 为 yaml。
+3. `part_0` snapshot 的 SHA/size 等于 O0 `objects[0].content_digest`/`size_bytes`。baseline snapshot 是账本文件字节，不得冒充合同 digest；它只与本次调用的 exact baseline input 和 release rules 内的 O0 tuple relation 关联。
+4. `binding.rule_manifest` 精确为 assertion_count `38`，selectors 依序为 `payloadEvidence`、`coverageEvidence`、`ambiguityEv`，每项 `required_source_names: []`、`exhaustive_negative: false`。
+
+只有上述全部成立才写 O2 step completed，登记 artifact path、同次 Compose receipt 的五个命名 SHA/size 及双 pin，随后进入 O3。不得因此提前更新 coverage、替代 RC-1..RC-6、弱化 Human Gate，或声明多 part/C13、动态 join、语义 absence、Delegate binding 已支持。
+
+`receipt.ok:false` 或 schema/assertion/literal observation 不合格，只能在同一 child 已终态且已有可信 continue binding 时按既有最多两次 rework 打回；否则 H。缺 envelope/binding/命名观察、工具不可用或 native failure 是 HOLD，不归责为成员返工且不得进入 O3。
 
 `Delegate`，`mode: sync`，目标 `clause-extractor`，为条款抽取创建独立 Work Context：
 
@@ -287,7 +293,7 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 - 已知本次 child run / Work Context 为 `active` 或状态未知时，账本写 `O2_WAITING_OR_UNKNOWN`、保留现有绑定并停在 O2；不得对同一 `case_id:extract` 另发 `isolated`、不得让两次 run 写同名共享输出。
 - 无可信 child run 与 Work Context 绑定时，写 `O2_BINDING_UNAVAILABLE` 并转 `HALTED_FOR_HUMAN`；不得猜测 ID、从路径反推绑定或创建替代 `isolated`。
 - 只有本次绑定任务已终态，且 v2 Compose/contract 结果不合格时，才可用「可信续接绑定」中同一目标/child run 的已登记 ID 以 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数或把 `continue` 当作 action resume。RC-1..RC-6 不能单独触发或替代 v2 自动验收。
-- 只有收到并 `Read` 回读 `clause-extractor` 的最终回执后，Lead 才可处理其 `artifact_path`：原样复制完整绝对路径，不得删除 UUID 或 `agents` 路径段、不得猜测或重拼路径；再对该精确路径执行真实 `Read`。该 Read 仅用于归属/路径准入与人工调查，不是 v2 语义或证据验收。任一读取失败不得凭最终文本、工具摘要或中间文件声称已检查。v2 只有同一次有效 `StructuredFileValidateCompose` 对 artifact、baseline、pinned_schema 与每个 delivered `part_<index>` 的命名观察全部成功，并且 release-owned contract 全通过后，才可登记该返回路径、将 O2 完成并进入 O3；Compose 未注册、失败或缺任一命名观察一律保持 HOLD。RC-1..RC-6 不得形成替代自动放行路径。
+- 最终回执路径与 O2 Compose 的精确 public-envelope/receipt 检查遵循本节的单 part v2.1 契约。只有同次五 capture、双 release pin、全量 binding/snapshot/rule_manifest 与 `receipt.ok:true` 全部成立，才可登记 artifact path、完成 O2 并进入 O3；Compose 未注册、失败、native/unsupported 或缺任一命名观察一律 HOLD。RC-1..RC-6 不得形成替代自动放行路径。
 
 ### O3 法域注入 + 风险判读（第 4-5 步）
 
