@@ -97,3 +97,23 @@ test('O1 receipt transitions distinguish passed, conditional, blocked, and inval
   assert.match(invalidRule, /contextMode: continue/)
   assert.match(invalidRule, /HALTED_FOR_HUMAN/)
 })
+
+test('digest rules prefer FileDigest and bind a receipt to its registered input version', async () => {
+  const [agentText, persona, principles, skill] = await Promise.all([
+    source('agent.json'),
+    source('persona.md'),
+    source('principles.md'),
+    source('skills/review-orchestration/SKILL.md'),
+  ])
+  const agent = JSON.parse(agentText)
+  const corpus = [persona, principles, skill].join('\n')
+
+  assert.ok(agent.tool_permissions.allowed.includes('FileDigest'))
+  assert.ok(agent.tool_permissions.denied.includes('Bash'))
+  assert.match(skill, /优先调用一次 `FileDigest`/)
+  assert.match(skill, /aggregate\.digest/)
+  assert.match(skill, /同一登记行/)
+  assert.match(skill, /相同摘要不能替代其余字段/)
+  assert.match(corpus, /不得用 `Bash`|不使用 `Bash`/)
+  assert.doesNotMatch(corpus, /当前平台无可用哈希工具|平台也没有内置哈希工具/)
+})

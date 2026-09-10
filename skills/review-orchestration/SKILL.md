@@ -142,17 +142,19 @@ metadata:
 ### O0 登记与受理
 
 1. `GenerateUUID` 生成 `case_id`（形如 `case-2026-0831-001`，本地可读格式亦可，但一个案件内唯一且永不复用）。
-2. 用 `Ls` / `Glob` 清点用户提交的全部文件，逐份登记为 `contract_document`：
+2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。逐份登记为 `contract_document`：
    - `object_id`（`doc-main-001` / `doc-att-003` 形式）
    - `version_label`（取自文档自身声明；取不到写 `unknown` + `version_label_unknown_reason`）
-   - `content_digest`（**当前平台无可用哈希工具，一律写 `unknown` + reason，见「摘要缺失」一节**）
+   - `content_digest`（采用 `FileDigest.files[].digest` 返回的 64 位小写 SHA-256；不得用 shell 或自行计算替代）
    - `kind`（`main_contract` / `exhibit` / `amendment` / `side_letter`）
-   - 绝对路径
+   - 规范化绝对路径
+   - `digest_binding`：同一账本行中的 `case_id`、`object_id`、`version_label`、规范化绝对路径与 `content_digest`
 3. 校验 `contract.yaml#INV-001`：有且仅有一份 `main_contract`。不满足直接 `H`，不派发。
-4. 生成 `manifest_digest`：摘要不可得时写 `unknown` 并标 `manifest_digest_unavailable: true`。
-5. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
-6. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
-7. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。每次 lead handoff 必须显式携带绝对 `canonical_artifact_root` 与 `lead_workspace`；所有 artifacts 路径都从该根派生并再次做路径段边界校验。
+4. 只有 `FileDigest` 对本次完整文件集**全部成功**时，才将其 `aggregate.digest` 记为 `attachment_manifest_digest`（亦即交接中的 `manifest_digest`）。任何单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时，逐个失败文件写 `content_digest: unknown` + 工具返回的精确原因；清单摘要写 `unknown`、`manifest_digest_unavailable: true` 和同一可核验原因。不得为残缺集合记录 aggregate，也不得用 `Bash` / `PowerShell` 代算。
+5. 摘要只证明固定算法下的内容字节；它不能单独确认对象身份、文件版本、用户提交意图、授权或任何法律事实。只有回执的 `case_id`、`object_id`、`version_label`、规范化绝对路径和相应摘要都与组长账本同一登记行一致，才可作为本案同一输入版本的摘要凭证；组长按这一检查更新账本，不能只因摘要相同就放行。
+6. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
+7. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
+8. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。每次 lead handoff 必须显式携带绝对 `canonical_artifact_root` 与 `lead_workspace`；所有 artifacts 路径都从该根派生并再次做路径段边界校验。
 
 ### 编排账本状态写入硬闸
 
@@ -361,7 +363,7 @@ handoff:
         kind: main_contract
         version_label: YCIT-SAAS-2025-0206
         content_digest: unknown
-        content_digest_unknown_reason: 运行环境无可用哈希工具，摘要凭证缺失
+        content_digest_unknown_reason: FileDigest 返回：读取被拒绝（此处必须逐字记录本次工具返回的失败原因）
         path: /abs/path/C06a-saas-v1.md
 
   confirmed:                            # 已确认事项（下游可直接当事实用）
@@ -409,7 +411,7 @@ workContextId: "<receipt.work_context_id>"  # 原样复制，不得猜测或改�
 
 | # | 检查项 | 判据（不合格的具体形态） |
 |---|---|---|
-| **RC-1** | **对象身份一致** | 回执的 `object_ref` 三元组与登记时不一致，或 `manifest_digest` 对不上 → 立即停，不猜。摘要为 `unknown` 时降级为 `object_id + version_label` 匹配，并在矩阵标 `identity_weakly_matched: true` |
+| **RC-1** | **对象与输入版本一致** | 回执的 `case_id`、`object_id`、`version_label`、规范化绝对输入路径及对应 `content_digest` 必须逐项匹配组长账本中的同一登记行；完整文件集的 `manifest_digest` 也必须匹配。任一不一致立即停，不猜。相同摘要不能替代其余字段，亦不构成对象身份或法律确认。摘要为 `unknown` 时只降级为 `object_id + version_label` 的弱匹配，并在矩阵标 `identity_weakly_matched: true`。 |
 | **RC-2** | **结论四元组齐备** | 任一条结论缺 条款编号 / 证据位置（页码） / 结论等级 / 对应动作 中的任一项。`conclusion_level` 非 `blank` 却缺 `clause_no`、`page` 或 `quote` 时同样不合格（`INV-011`） |
 | **RC-3** | **证据可追溯** | `quote` 无法在其声明的文件中原文命中。用 `Grep` 固定字符串抽检：全部 `block` 级结论 100% 抽检；其余条目总数 ≤20 时全量，>20 时随机 30% 且不少于 6 条。命中失败任一条 → 整份打回 |
 | **RC-4** | **pending 有落点** | 上游交接块中的每个 `pending.id` 在本回执里都必须被显式承接（消化 / 升级 / 留白三选一）。静默消失 → 打回 |
@@ -445,9 +447,11 @@ rework_request:
 
 ---
 
-## 摘要缺失的如实表达
+## 摘要不可得时的如实表达
 
-当前运行环境**无法计算 `content_digest` 与 `attachment_manifest_digest`**：成员禁用了 `Bash`，平台也没有内置哈希工具。
+对当前提交的可读文件，先使用已获授权的 `FileDigest`，不使用 `Bash` 或其他 shell。它会为成功文件返回 SHA-256；只有完整文件集全部成功，才返回可记账的 aggregate `attachment_manifest_digest`。文件超出读取范围、消失、不是常规文件、超限、读取被拒绝或工具中止时，才进入本节的降级路径。
+
+逐文件保留 `content_digest: unknown` 和 `FileDigest` 返回的精确失败原因；只要任一文件失败，`attachment_manifest_digest` / `manifest_digest` 均为 `unknown`，并标明 `manifest_digest_unavailable: true`。组长把这些事实和相应登记行绑定后写入账本；不编造摘要、不用 shell 补算，也不把相同摘要当作身份或法律确认。
 
 **正确处理**（如实降级，不假装完整）：
 
@@ -459,7 +463,7 @@ freeze:
   execution_status: {frozen: true, evidence_level: field_matched}
   all_frozen: true
   freeze_evidence_level: frozen_without_digest    # 冻结成立，但无摘要凭证
-  digest_unavailable_reason: 运行环境无可用哈希工具（成员禁用 Bash，平台无内置哈希工具）
+  digest_unavailable_reason: FileDigest 返回：读取被拒绝（逐字记录本次失败原因）
   consistency_conclusion_allowed: false           # 因摘要缺失强制为 false
 ```
 
@@ -469,7 +473,7 @@ freeze:
 2. **禁止输出任何一致性结论**（「一致」「无差异」「差异为 0」）。
 3. 版本对比的 `risk_direction` 只能是 `undetermined`，或有实证支撑的「上升 / 下调」；**永远不能是「持平」**——「持平」是一个一致性结论，需要摘要作证。
 
-**错误处理**（禁止）：把 `content_digest` 填成文件路径、文件大小、修改时间或任意占位值；或省略该字段让下游以为已核验；或因为「四项字段都对上了」就把 `freeze_evidence_level` 写成完整。
+**错误处理**（禁止）：跳过 `FileDigest`、以 `Bash` / `PowerShell` 代算、把 `content_digest` 填成文件路径、文件大小、修改时间或任意占位值；或省略该字段让下游以为已核验；或因为「四项字段都对上了」就把 `freeze_evidence_level` 写成完整。也不得把相同摘要当作同一登记行、对象身份、文件版本或法律确认。
 
 ---
 
@@ -524,6 +528,8 @@ freeze:
 **摘要与冻结**
 
 - [ ] `content_digest` 不可得时写的是 `unknown` + reason，不是路径、大小或占位值
+- [ ] 已优先对本次提交的精确文件调用 `FileDigest`；每个成功摘要和完整集合 aggregate 都与账本中的同一登记行绑定
+- [ ] 任一 `FileDigest` 失败都逐字记录工具原因，且没有用 shell 替代；没有把相同摘要当作对象身份、版本或法律确认
 - [ ] `freeze_evidence_level` 如实写了 `frozen_without_digest`
 - [ ] 全文没有出现「一致」「无差异」「差异为 0」「持平」
 
