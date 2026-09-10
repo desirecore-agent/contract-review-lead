@@ -10,7 +10,7 @@ description: >-
   7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
   synchronous isolated context, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.10
+version: 1.0.11
 type: procedural
 risk_level: medium
 status: enabled
@@ -36,7 +36,7 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.10
+  version: 1.0.11
   updated_at: '2026-09-11'
 ---
 
@@ -274,6 +274,32 @@ AgentFS path 只能从 release-owned pin 的相对 source 解析：schema SHA-25
 
 `receipt.ok:false` 或 schema/assertion/literal observation 不合格，只能在同一 child 已终态且已有可信 continue binding 时按既有最多两次 rework 打回；否则 H。缺 envelope/binding/命名观察、工具不可用或 native failure 是 HOLD，不归责为成员返工且不得进入 O3。
 
+
+#### Clause v2.2 单主合同 DOCX 自动消费（候选未部署时保持 HOLD）
+
+v2.2 是 v2.1 的并存 sibling，不替换 v2.1。它只接纳一个已交付的主合同 DOCX；text 继续只按 v2.1 text 策略处理，不能因缺少派生来源而把 text 冒充 v2.2 成功。O0 现有账本不声明可信 format：这里的 `docx` 仅为本次 release-owned v2.2 capture policy，必须由同次 snapshot format、成功的 worker derivation 与 artifact 声明共同证明，不能从扩展名、成员自报或 O0 路径推断。
+
+先执行上节同一 O0 单 part 五元组、Delegate 可信 binding 与 exact final artifact-path 前置。仅当成员最终 artifact 的 `contract_schema.version: 22`，才可选择本节；不满足或任何 v2.2 source representation 不完整时 HOLD，不能回落为 v2.1、重新拼装 artifact 或以 Read/Grep/FileDigest 代替。
+
+在同一次 `StructuredFileValidateCompose` 中，仍仅捕获五个原生输入；无 inline schema/rules、无成员给出的替代 path/digest，也不传递 `derived_text_ref`：
+
+```yaml
+inputs:
+  - {name: artifact, path: <final-receipt.artifact_path>, format: yaml}
+  - {name: baseline, path: <current Lead O0 ledger absolute path>, format: yaml}
+  - {name: pinned_schema, path: <published AgentFS clause-extractor v2.2 schema path>, format: json}
+  - {name: rules, path: <published AgentFS review-orchestration v2.2 rules path>, format: json}
+  - {name: part_0, path: <O0 objects[0].canonical_path>, format: docx}
+schema_source: pinned_schema
+schema_target: artifact
+rules_source: rules
+```
+
+仅从 release-owned pin 的相对 source 解析路径：schema 为 `clause-extractor/schemas/clause-extraction-artifact-v22.schema.json`，rules 为 `review-orchestration/compose-contracts/clause-v22-single-main-contract.rules.json`。schema SHA-256 必须为 `0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f`，LF rules SHA-256 必须为 `4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8`。同次 capture 的 `part_0` snapshot format 必须为 `docx`；worker 必须成功派生 canonical text。任何 native、derivation、scope、schema、rules、deadline 或 public-envelope 错误均写 `O2_CLAUSE_V22_DOCX_COMPOSE_UNAVAILABLE` 并 HOLD，不归责为成员返工，也不能让成员自报派生 SHA/codec/长度替代平台结果。
+
+仍只消费公共 `ToolExecutionResult.success: true` 的唯一 text JSON receipt。除上节公共 envelope 规则外，receipt 必须 `ok: true`，快照名称集合仍恰为五项，schema/rules/artifact binding 与双 release pin 必须逐项匹配；`binding.rule_manifest` 必须精确为 assertion_count `58`，selectors 依序为 `payloadEvidence`、`coverageEvidence`、`ambiguityEv`。其 `derived_sources` 必须恰有一项 `part_0`，且含原件 SHA/size、derived text SHA、`text_offset_codec: utf16_code_unit` 与 UTF-16 code-unit 长度，不含正文、路径或 lease ref。release-owned v2.2 rules 使用同次 worker 内的封闭 `derived_source` operand，把 artifact `source_representations[0]` 的原件 SHA/size、`format: docx`、`canonical_text`、派生 SHA、codec 和长度逐项绑定；Lead 不手工比较这些字符串。
+
+只有上述 v2.2 contract 全部成立，才登记 artifact 与同次 receipt 并进入 O3。任何 `ok:false`、缺失/多余 derived source、source representation 与 snapshot/provenance 不一致、或 native 不可用均 HOLD；不得宣称 C13 已通过，且不得削弱 RC-1..RC-6、Human Gate、多 part/dynamic join 或语义 absence 的既有边界。
 `Delegate`，`mode: sync`，目标 `clause-extractor`，为条款抽取创建独立 Work Context：
 
 ```yaml
@@ -293,7 +319,7 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 - 已知本次 child run / Work Context 为 `active` 或状态未知时，账本写 `O2_WAITING_OR_UNKNOWN`、保留现有绑定并停在 O2；不得对同一 `case_id:extract` 另发 `isolated`、不得让两次 run 写同名共享输出。
 - 无可信 child run 与 Work Context 绑定时，写 `O2_BINDING_UNAVAILABLE` 并转 `HALTED_FOR_HUMAN`；不得猜测 ID、从路径反推绑定或创建替代 `isolated`。
 - 只有本次绑定任务已终态，且 v2 Compose/contract 结果不合格时，才可用「可信续接绑定」中同一目标/child run 的已登记 ID 以 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数或把 `continue` 当作 action resume。RC-1..RC-6 不能单独触发或替代 v2 自动验收。
-- 最终回执路径与 O2 Compose 的精确 public-envelope/receipt 检查遵循本节的单 part v2.1 契约。只有同次五 capture、双 release pin、全量 binding/snapshot/rule_manifest 与 `receipt.ok:true` 全部成立，才可登记 artifact path、完成 O2 并进入 O3；Compose 未注册、失败、native/unsupported 或缺任一命名观察一律 HOLD。RC-1..RC-6 不得形成替代自动放行路径。
+- 最终回执路径与 O2 Compose 的精确 public-envelope/receipt 检查遵循所选的单 part v2.1 text 或 v2.2 DOCX 契约。只有同次五 capture、双 release pin、全量 binding/snapshot/rule_manifest、以及所需 v2.2 derived_sources 与 `receipt.ok:true` 全部成立，才可登记 artifact path、完成 O2 并进入 O3；Compose 未注册、失败、native/unsupported 或缺任一命名观察一律 HOLD。RC-1..RC-6 不得形成替代自动放行路径。
 
 ### O3 法域注入 + 风险判读（第 4-5 步）
 

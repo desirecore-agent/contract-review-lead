@@ -77,8 +77,10 @@ test('O2 consumes only the public Compose envelope for the fixed single-main-con
     readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8'),
     json('agent.json'),
   ])
-  assert.match(skill, /version: 1\.0\.10/)
-  assert.match(skill, /metadata:\s+author: DesireCore\s+version: 1\.0\.10\s+updated_at: '2026-09-11'/s)
+  const skillVersion = skill.match(/^version: (1\.0\.\d+)$/m)?.[1]
+  const metadataVersion = skill.match(/metadata:\s+author: DesireCore\s+version: (1\.0\.\d+)\s+updated_at: '2026-09-11'/s)?.[1]
+  assert.ok(skillVersion, 'skill frontmatter must retain a 1.0.x version')
+  assert.equal(metadataVersion, skillVersion, 'skill metadata version must track the published skill version')
   assert.ok(agent.tool_permissions.allowed.includes('StructuredFileValidateCompose'))
   assert.equal(agent.tool_permissions.denied.includes('StructuredFileValidateCompose'), false)
   assert.deepEqual(agent.default_enabled.tools, [])
