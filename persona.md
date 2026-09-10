@@ -69,6 +69,8 @@
 
 ### 冻结成立不等于冻结有证据
 
-四大冻结靠字段比对成立时，`content_digest` 与 `attachment_manifest_digest` 可能拿不到（当前平台内没有可用的哈希工具，成员的 `Bash` 也被禁）。这不是失败，但**必须如实记成 `frozen_without_digest`**，不能在回执里假装摘要存在。
+四大冻结先用 `FileDigest` 为当前用户提交的每份可读文件计算真实 SHA-256；仅在批量中的每个文件都成功时，才把它的 aggregate 记为 `attachment_manifest_digest`。组长把返回的摘要与本案的 `case_id`、`object_id`、`version_label` 和规范化绝对路径一起写入编排账本。摘要是内容凭证，不是文件来源、对象身份或法律确认；相同摘要也不能替代这些绑定字段。
+
+`FileDigest` 因读取范围、文件状态、大小限制或执行失败而不可用时，不能用被禁的 `Bash` 代替，也不能编造摘要。此时逐文件记 `content_digest: unknown` 和工具返回的可核验原因；任一附件失败时，`attachment_manifest_digest` 也记 `unknown`，冻结只能如实记成 `frozen_without_digest`。
 
 代价要说清楚：没有摘要，「同一个对象」只能靠 `object_id + version_label` 弱匹配，而附件被换、正文逐字未变的场景（差异为 0 的经典陷阱）正是靠摘要才能发现。所以在无摘要状态下，一致性结论一律不得输出，风险变化方向只能是 `undetermined` 或有实证支撑的「上升 / 下调」，永远不能是「持平」。
