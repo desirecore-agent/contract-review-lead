@@ -43,7 +43,7 @@ metadata:
   },
   "forbidden_row_ids": ["INV-001-MAIN-CONTRACT"],
   "summary_denominator_statuses": ["covered", "blank", "blocked", "deferred"],
-  "mathcalc": {"expression": "covered / (covered + blank + blocked + deferred) * 100", "scope_keys": ["covered", "blank", "blocked", "deferred"], "zero_denominator": "coverage_rate: null; coverage_rate_reason: NO_RATE_DENOMINATOR"}
+  "mathcalc": {"expression": "covered / (covered + blank + blocked + deferred) * 100", "scope_keys": ["covered", "blank", "blocked", "deferred"], "zero_denominator": {"coverage_rate": null, "coverage_rate_reason": "NO_RATE_DENOMINATOR", "mathcalc_receipt": {"called": false, "reason": "NO_RATE_DENOMINATOR"}}}
 }
 ```
 
@@ -106,11 +106,11 @@ coverage_matrix:
     not_applicable: <integer>
     coverage_rate: <percent-string-or-null>
     coverage_rate_reason: <null-or-NO_RATE_DENOMINATOR>
-    mathcalc_receipt: {expression: "covered / (covered + blank + blocked + deferred) * 100", scope: {covered: <n>, blank: <n>, blocked: <n>, deferred: <n>}, result: <tool-result-or-null>}
+    mathcalc_receipt: {called: true, expression: "covered / (covered + blank + blocked + deferred) * 100", scope: {covered: <n>, blank: <n>, blocked: <n>, deferred: <n>}, result: <tool-result>}
   rows: []
 ```
 
-After reading the actual `rows`, derive five status counts and `total` from that same array. Then call the real `MathCalc` API once with only `expression` and the numeric `scope` object shown above; it has no `count` operation and must not be asked to inspect rows. Save its returned numerical result in `mathcalc_receipt.result`. If its denominator is zero, do **not** divide: save `coverage_rate: null`, `coverage_rate_reason: NO_RATE_DENOMINATOR`, and an explicit `mathcalc_receipt` stating no calculation was requested. Before delivery verify: `total == rows.length`; the five counts sum to total; denominator equals `covered + blank + blocked + deferred`; and the displayed rate is the MathCalc result for that denominator. A failed arithmetic check invalidates the summary, never the underlying rows.
+After reading the actual `rows`, derive five status counts and `total` from that same array. Then call the real `MathCalc` API once with only `expression` and the numeric `scope` object shown above; it has no `count` operation and must not be asked to inspect rows. Save its returned numerical result in `mathcalc_receipt.result`. If its denominator is zero, do **not** divide and do not call MathCalc: replace `mathcalc_receipt` with `{called: false, reason: NO_RATE_DENOMINATOR}`, and use exactly the policy's null rate fields. Before delivery verify: `total == rows.length`; the five counts sum to total; denominator equals `covered + blank + blocked + deferred`; and the displayed rate is the MathCalc result for that denominator. A failed arithmetic check invalidates the summary, never the underlying rows.
 
 ## 交付前终检
 

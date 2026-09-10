@@ -25,18 +25,33 @@ function expectedStatus(facts) {
   return 'covered'
 }
 
-test('coverage policy publishes one catalog, correct precedence, and no INV-001 row', async () => {
+test('coverage policy publishes every fixed catalog ID with its authoritative source, correct precedence, and no INV-001 row', async () => {
   const policy = policyFrom(await source(policyFile))
-  const catalogIds = Object.values(policy.catalog).flatMap(({ ids }) => Array.isArray(ids) ? ids : [])
+  const fixedCatalog = Object.fromEntries(Object.entries(policy.catalog)
+    .filter(([, entry]) => Array.isArray(entry.ids))
+    .map(([name, entry]) => [name, { source: entry.source, ids: entry.ids }]))
   assert.deepEqual(policy.allowed_statuses, ['covered', 'blank', 'blocked', 'deferred', 'not_applicable'])
   assert.deepEqual(policy.status_precedence, ['not_applicable', 'deferred', 'blocked', 'blank', 'covered'])
   assert.deepEqual(policy.row_identity, ['check_id', 'check_source'])
-  assert.equal(new Set(catalogIds).size, catalogIds.length, 'catalog IDs must be unique')
-  assert.equal(catalogIds.length, 26, 'fixed catalog portions must retain every intake/base/benchmark/closure item')
+  assert.deepEqual(fixedCatalog, {
+    intake: { source: 'review-orchestration#O1 intake_gate_coverage', ids: ['CHK-INTAKE-S1-SCOPE', 'CHK-INTAKE-S2-MASTER-VERSION', 'CHK-INTAKE-S3-PAGE-RANGE', 'CHK-INTAKE-S4-ATTACHMENT-MANIFEST', 'CHK-INTAKE-S5-EXECUTION-STATUS', 'CHK-INTAKE-S6-PLACEHOLDER', 'CHK-INTAKE-S7-PARTY-AND-AMOUNT', 'CHK-INTAKE-S8-VERSION-MATRIX'] },
+    missing_clauses: { source: 'base/missing-clauses.yaml', ids: ['liability-cap', 'breach-remedy', 'grace-period', 'termination-convenience', 'subcontracting', 'audit-right', 'dispute-resolution', 'force-majeure', 'data-export'] },
+    market_benchmarks: { source: 'base/market-benchmarks.yaml', ids: ['liability-cap-months', 'renewal-notice-days', 'non-compete-years', 'data-export-window-days'] },
+    closure: { source: 'blueprint#section-15', ids: ['CLOSURE-COMPLETENESS', 'CLOSURE-CONSISTENCY', 'CLOSURE-BLOCKING-RISK', 'CLOSURE-SUBSTANTIVE-TERMS', 'CLOSURE-DOCUMENT'] },
+  })
+  const fixedIds = Object.values(fixedCatalog).flatMap(({ ids }) => ids)
+  assert.equal(new Set(fixedIds).size, 26, 'all 26 fixed IDs must be unique')
+  assert.deepEqual(policy.catalog.jurisdiction, { source: '<resolved-jurisdiction>/rules.yaml', ids: 'each applicable rule id after successful preflight' })
+  assert.deepEqual(policy.catalog.custom, { source: 'custom/rules.yaml', ids: 'each loaded rule id; optional-absent emits only CUSTOM-LAYER-ABSENT' })
   assert.deepEqual(policy.forbidden_row_ids, ['INV-001-MAIN-CONTRACT'])
   assert.match(policy.deferred_requires, /contract-intake receipt SCOPE-\*/) 
   assert.ok(policy.pre_dispatch_failures.includes('RULE_SOURCE_UNAVAILABLE'))
   assert.ok(policy.pre_dispatch_failures.includes('CUSTOM_RULE_SOURCE_REQUIRED'))
+  assert.deepEqual(policy.mathcalc, {
+    expression: 'covered / (covered + blank + blocked + deferred) * 100',
+    scope_keys: ['covered', 'blank', 'blocked', 'deferred'],
+    zero_denominator: { coverage_rate: null, coverage_rate_reason: 'NO_RATE_DENOMINATOR', mathcalc_receipt: { called: false, reason: 'NO_RATE_DENOMINATOR' } },
+  })
 })
 
 test('authoritative status fixtures protect precedence over a missing receipt', async () => {
@@ -57,6 +72,10 @@ test('authoritative summary fixtures preserve rows, all five counts, denominator
     assert.equal(item.summary.total, item.rows.length, `${name}: total is rows.length`)
     assert.deepEqual(item.summary, { total: item.rows.length, ...counts }, `${name}: all status counts are retained`)
     assert.equal(item.denominator, counts.covered + counts.blank + counts.blocked + counts.deferred, `${name}: denominator excludes only not_applicable`)
-    if (item.denominator === 0) assert.equal(item.expected_rate_reason, 'NO_RATE_DENOMINATOR')
+    if (item.denominator === 0) assert.deepEqual(item.expected_zero_denominator, {
+      coverage_rate: null,
+      coverage_rate_reason: 'NO_RATE_DENOMINATOR',
+      mathcalc_receipt: { called: false, reason: 'NO_RATE_DENOMINATOR' },
+    }, `${name}: zero denominator records a no-call receipt`)
   }
 })
