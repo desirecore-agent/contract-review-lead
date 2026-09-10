@@ -64,7 +64,7 @@ metadata:
 
 当前 Delegate schema 不会为持久 Agent 委派推断或补默认 Work Context。`sync`、`async` 和 `fan-out` 必须显式选择 Work Context；普通新环节使用 `contextMode: isolated`，同时提供稳定的 `intentId` 与说明性的 `contextReason`。`worker` 不传任何 Work Context 字段。
 
-**可信续接绑定是唯一 ID 来源。**仅本次平台 `Delegate` 返回的受信续接指引可提供 `work_context_id`；Lead 必须把其原样登记为 `work_context_id`，并同时登记该次 `target` 与 `child_run_id`。业务回执、`artifact_path` 所指文件、成员最终文本、工具摘要或其自报 ID 都不是可信来源，不能补全或证明这个绑定。`contextMode: continue` 只用于同一目标、同一 child run 的 Work Context 续接，不是 action resume：只有该 child 已终态、最终回执可读且被判为不合格时才可使用已登记 ID；缺 ID、目标/child run 不符、或状态非终态一律 `HALTED_FOR_HUMAN`，不得猜测、拼接、发明 ID 或改发 `isolated`。
+**可信续接绑定是唯一 ID 来源。**仅本次平台 `Delegate` 返回的受信续接指引可提供 `work_context_id`；Lead 必须把其原样登记为 `work_context_id`，并同时登记该次 `target` 与 `child_run_id`。业务回执、`artifact_path` 所指文件、成员最终文本、工具摘要或其自报 ID 都不是可信来源，不能补全或证明这个绑定。`contextMode: continue` 只用于同一目标、同一 child run 的 Work Context 续接，不是 action resume：已可信绑定且 child 为 `active` 或状态未知时，保持当前步骤 `waiting_or_unknown`，不得 `continue` 或另发 `isolated`；缺 ID、目标/child run 不符才 `HALTED_FOR_HUMAN`；只有该 child 已终态、最终回执可读且被判为不合格时才可使用已登记 ID。不得猜测、拼接或发明 ID。
 
 ---
 
@@ -191,9 +191,9 @@ handoff:
 
 收到回执后：
 
-- **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径，确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
+- **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径；若它返回 `artifact_path`，原样复制完整绝对路径（不删除 UUID 或 `agents` 路径段、不猜测或重拼）并对该精确路径再 `Read`。任一读取失败时不得凭最终文本、工具摘要或中间文件完成 RC-1..RC-6。确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
 - **八项 Intake 步骤是有效回执的必要组成。**`checks[]` 必须逐项且恰好一次给出本节映射表中的真实 `S1`–`S8`，并保留其对应的真实检查语义；不得用相近名称猜测、重排或自造同名编号。只有先按 RC-1..RC-6 核验该回执，再按本节映射消费其有效 `checks[]`，Lead 才能更新相应的 `CHK-INTAKE-*` 矩阵行。`pass` 的真实检查及其回执证据才可按既有矩阵协议翻 `covered`；非 `pass` 的项保留原始状态与证据/阻断原因，不能由 Lead 补成 `covered`。
-- **回执缺失或无效时停在 O1。**缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符、或未通过 RC-1..RC-6 时，记录 `O1_INTAKE_GATE_STEPS_INVALID`（及具体缺失/错映原因）和 `O1_INTAKE_RECEIPT_INVALID` 到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。只有「可信续接绑定」所定义的已登记 ID，才可要求 `contract-intake` 以 `contextMode: continue` 补全或重做；达到打回上限或缺少该绑定则转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
+- **回执缺失或无效时停在 O1。**缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符、或未通过 RC-1..RC-6 时，记录 `O1_INTAKE_GATE_STEPS_INVALID`（及具体缺失/错映原因）和 `O1_INTAKE_RECEIPT_INVALID` 到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。已可信绑定且 child 为 `active` 或状态未知时，记录 `O1_WAITING_OR_UNKNOWN` 并停在 O1；缺 ID 或 target/child run 不匹配才转 `HALTED_FOR_HUMAN`。只有终态不合格且「可信续接绑定」所定义的已登记 ID 匹配同一 target/child run，才可要求 `contract-intake` 以 `contextMode: continue` 补全或重做；达到打回上限转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
 - 先跑六项回执检查（见「回执检查」一节）。
 - 读 `verdict` 字段：
   - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
@@ -388,7 +388,7 @@ handoff:
 - ❌ 把第 3 步与第 4-5 步合并成一次 fan-out —— 条款表是后两者的输入，合并等于让它们在输入缺失时启动。
 - ⚠️ `mode: worker` —— 仅可用于与 7 步无关的一次性辅助（例如重新清点一批文件的路径）。**不得用它承担任何一步工具链任务**，因为 worker 无持久身份，产出无法归属到某个成员的回执。
 - ❌ 持久 Agent 委派省略 `contextMode`、`intentId` 或 `contextReason`，或在 `fan-out` 中省略任一目标的 `contextSelections`。
-- ❌ 返工时重新使用 `isolated`、凭记忆填写 `workContextId`，或从业务回执/成员文本/摘要取得 ID。返工只使用本次平台 Delegate 的可信续接绑定中、已与同一目标和 child run 登记的 ID，再用 `contextMode: continue` 续跑同一环节；没有该 ID 就停在 `H`，不得自行生成或当作 action resume。
+- ❌ 返工时重新使用 `isolated`、凭记忆填写 `workContextId`，或从业务回执/成员文本/摘要取得 ID。已可信绑定且 child 为 `active` 或状态未知时只等待，不得 `continue`；缺 ID 或 target/child run 不匹配才停在 `H`。只有终态不合格时，返工才使用本次平台 Delegate 的可信续接绑定中、已与同一目标和 child run 登记的 ID，再用 `contextMode: continue` 续跑同一环节；不得自行生成或当作 action resume。
 - ✅ `mode: worker` 不携带 `contextMode`、`intentId`、`contextReason` 或 `workContextId`；worker 的 schema 明确拒绝这些 Work Context 字段。
 
 **所有 `task` / `context` 中引用的文件必须写绝对路径**——成员的工作目录与你不同，相对路径在对方那里会解析到别处。
@@ -456,7 +456,7 @@ contextMode: continue
 workContextId: "<trusted_delegate_binding.work_context_id>"  # 原样复制，不得猜测或改写
 ```
 
-`continue` 不再传 `intentId` 或 `contextReason`；它只接受可信续接绑定中已登记且属于本次委派的 `work_context_id`，用于 Work Context 续接而非 action resume。如果缺少该绑定、ID 不属于当前目标或 child run，原委派没有成功创建 Work Context，或 child 仍 active/unknown，停止在 `H` 并交人工处理，不要改用新的 `isolated` 委派来掩盖等待或续跑失败。
+`continue` 不再传 `intentId` 或 `contextReason`；它只接受可信续接绑定中已登记且属于本次委派的 `work_context_id`，用于 Work Context 续接而非 action resume。child 仍 active/unknown 时保持当前步骤 `waiting_or_unknown`，不 `continue` 也不另发 `isolated`；缺少该绑定、ID 不属于当前目标或 child run，或原委派没有成功创建 Work Context 时，停止在 `H` 并交人工处理。
 
 ---
 

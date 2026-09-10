@@ -107,6 +107,7 @@ test('O1 receipt transitions distinguish passed, conditional, blocked, and inval
   assert.match(invalidRule, /可信续接绑定/)
   assert.match(invalidRule, /contextMode: continue/)
   assert.match(invalidRule, /HALTED_FOR_HUMAN/)
+  assert.match(invalidRule, /O1_WAITING_OR_UNKNOWN/)
 })
 
 test('O1 consumes all eight real Intake checks through distinct Lead coverage IDs', async () => {
@@ -203,6 +204,7 @@ test('rework uses only the current Delegate trusted continuation binding and rea
     source('skills/review-orchestration/SKILL.md'),
   ])
   const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
+  const o1 = section(skill, '### O1 输入治理（第 1-2 步）', '### O2 条款抽取（第 3 步）')
   const corpus = [persona, principles, skill].join('\n')
 
   assert.match(skill, /可信续接绑定是唯一 ID 来源/)
@@ -210,10 +212,14 @@ test('rework uses only the current Delegate trusted continuation binding and rea
   assert.match(skill, /`target` 与 `child_run_id`/)
   assert.match(skill, /业务回执、`artifact_path` 所指文件、成员最终文本、工具摘要或其自报 ID 都不是可信来源/)
   assert.match(skill, /不是 action resume/)
+  assert.match(skill, /已可信绑定且 child 为 `active` 或状态未知时，保持当前步骤 `waiting_or_unknown`/)
+  assert.doesNotMatch(skill, /状态非终态一律 `HALTED_FOR_HUMAN`/)
   assert.doesNotMatch(skill, /receipt\.work_context_id/)
   assert.doesNotMatch(corpus, /最终回执中的.*work_context_id/)
   assert.match(o2, /不得删除 UUID 或 `agents` 路径段、不得猜测或重拼路径/)
   assert.match(o2, /对该精确路径执行真实 `Read`/)
   assert.match(o2, /读取失败时，RC-1\.\.RC-6 不得判为通过/)
   assert.match(corpus, /不得凭最终文本或摘要完成 RC 检查/)
+  assert.match(o1, /不删除 UUID 或 `agents` 路径段、不猜测或重拼/)
+  assert.match(o1, /任一读取失败时不得凭最终文本、工具摘要或中间文件完成 RC-1\.\.RC-6/)
 })
