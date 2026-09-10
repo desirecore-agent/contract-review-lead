@@ -104,7 +104,7 @@ test('O1 receipt transitions distinguish passed, conditional, blocked, and inval
   assert.ok(invalidRule, 'O1 must name the invalid-receipt state')
   assert.match(invalidRule, /停在 O1/)
   assert.match(invalidRule, /O2/)
-  assert.match(invalidRule, /work_context_id/)
+  assert.match(invalidRule, /可信续接绑定/)
   assert.match(invalidRule, /contextMode: continue/)
   assert.match(invalidRule, /HALTED_FOR_HUMAN/)
 })
@@ -136,7 +136,7 @@ test('O1 consumes all eight real Intake checks through distinct Lead coverage ID
   assert.match(o1, /intake_gate_steps_required: \[S1, S2, S3, S4, S5, S6, S7, S8\]/)
   assert.match(o1, /O1_INTAKE_GATE_STEPS_INVALID/)
   assert.match(o1, /缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符/)
-  assert.match(o1, /只可要求 `contract-intake`.*补全或重做/)
+  assert.match(o1, /可信续接绑定.*`contract-intake`.*补全或重做/)
   assert.match(o1, /不能将 `S6` 解释为唯一主合同/)
   assert.match(o1, /不能漏掉 `S8`/)
 
@@ -194,4 +194,26 @@ test('O2 preserves a single bound extraction and target-owned artifact', async (
   assert.match(corpus, /成员在各自确认的 workspace 创建唯一产物/)
   assert.match(corpus, /不得以 `isolated` 重置计数/)
   assert.match(corpus, /等待超时不等于成员终止/)
+})
+
+test('rework uses only the current Delegate trusted continuation binding and reads the exact artifact path', async () => {
+  const [persona, principles, skill] = await Promise.all([
+    source('persona.md'),
+    source('principles.md'),
+    source('skills/review-orchestration/SKILL.md'),
+  ])
+  const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
+  const corpus = [persona, principles, skill].join('\n')
+
+  assert.match(skill, /可信续接绑定是唯一 ID 来源/)
+  assert.match(skill, /本次平台 `Delegate` 返回的受信续接指引/)
+  assert.match(skill, /`target` 与 `child_run_id`/)
+  assert.match(skill, /业务回执、`artifact_path` 所指文件、成员最终文本、工具摘要或其自报 ID 都不是可信来源/)
+  assert.match(skill, /不是 action resume/)
+  assert.doesNotMatch(skill, /receipt\.work_context_id/)
+  assert.doesNotMatch(corpus, /最终回执中的.*work_context_id/)
+  assert.match(o2, /不得删除 UUID 或 `agents` 路径段、不得猜测或重拼路径/)
+  assert.match(o2, /对该精确路径执行真实 `Read`/)
+  assert.match(o2, /读取失败时，RC-1\.\.RC-6 不得判为通过/)
+  assert.match(corpus, /不得凭最终文本或摘要完成 RC 检查/)
 })

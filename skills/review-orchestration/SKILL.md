@@ -62,9 +62,9 @@ metadata:
 
 ### Delegate Work Context 兼容说明
 
-当前 Delegate schema 不会为持久 Agent 委派推断或补默认 Work Context。`sync`、`async` 和 `fan-out` 必须显式选择 Work Context；普通新环节使用 `contextMode: isolated`，同时提供稳定的 `intentId` 与说明性的 `contextReason`。同一环节返工或续跑只能使用上一次**终态回执**中的精确 `work_context_id`，传为 `contextMode: continue` + `workContextId`；不得猜测、拼接或发明 Work Context ID。`worker` 不传任何 Work Context 字段。
+当前 Delegate schema 不会为持久 Agent 委派推断或补默认 Work Context。`sync`、`async` 和 `fan-out` 必须显式选择 Work Context；普通新环节使用 `contextMode: isolated`，同时提供稳定的 `intentId` 与说明性的 `contextReason`。`worker` 不传任何 Work Context 字段。
 
-`sync` 的等待超时、取消提示、传输失败或缺少最终回执，不等于已绑定子任务终止，也不授权同一案件步骤再发新的 `isolated`。账本已知 child run / Work Context 为 `active` 或状态未知时，记录 `waiting_or_unknown` 并停在当前环节；不能读取可信绑定时转 `HALTED_FOR_HUMAN`。只有绑定任务已终态、回执可读且被判为不合格时，才可按该回执的真实 `work_context_id` 有界 `continue`；同环节仍适用两次打回上限。
+**可信续接绑定是唯一 ID 来源。**仅本次平台 `Delegate` 返回的受信续接指引可提供 `work_context_id`；Lead 必须把其原样登记为 `work_context_id`，并同时登记该次 `target` 与 `child_run_id`。业务回执、`artifact_path` 所指文件、成员最终文本、工具摘要或其自报 ID 都不是可信来源，不能补全或证明这个绑定。`contextMode: continue` 只用于同一目标、同一 child run 的 Work Context 续接，不是 action resume：只有该 child 已终态、最终回执可读且被判为不合格时才可使用已登记 ID；缺 ID、目标/child run 不符、或状态非终态一律 `HALTED_FOR_HUMAN`，不得猜测、拼接、发明 ID 或改发 `isolated`。
 
 ---
 
@@ -193,7 +193,7 @@ handoff:
 
 - **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径，确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
 - **八项 Intake 步骤是有效回执的必要组成。**`checks[]` 必须逐项且恰好一次给出本节映射表中的真实 `S1`–`S8`，并保留其对应的真实检查语义；不得用相近名称猜测、重排或自造同名编号。只有先按 RC-1..RC-6 核验该回执，再按本节映射消费其有效 `checks[]`，Lead 才能更新相应的 `CHK-INTAKE-*` 矩阵行。`pass` 的真实检查及其回执证据才可按既有矩阵协议翻 `covered`；非 `pass` 的项保留原始状态与证据/阻断原因，不能由 Lead 补成 `covered`。
-- **回执缺失或无效时停在 O1。**缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符、或未通过 RC-1..RC-6 时，记录 `O1_INTAKE_GATE_STEPS_INVALID`（及具体缺失/错映原因）和 `O1_INTAKE_RECEIPT_INVALID` 到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。只可要求 `contract-intake` 用本次真实 Delegate 回执中归属正确的 `work_context_id` 以 `contextMode: continue` 补全或重做；达到打回上限或缺少真实上下文则转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
+- **回执缺失或无效时停在 O1。**缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符、或未通过 RC-1..RC-6 时，记录 `O1_INTAKE_GATE_STEPS_INVALID`（及具体缺失/错映原因）和 `O1_INTAKE_RECEIPT_INVALID` 到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。只有「可信续接绑定」所定义的已登记 ID，才可要求 `contract-intake` 以 `contextMode: continue` 补全或重做；达到打回上限或缺少该绑定则转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
 - 先跑六项回执检查（见「回执检查」一节）。
 - 读 `verdict` 字段：
   - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
@@ -257,8 +257,8 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 - `sync` 等待超时、取消提示、Delegate 返回文本不完整，或只看到中间文件/空骨架时，均不是 O2 成功或子任务终止的证据。Lead 不得读取、消费或登记这类中间产物为最终条款回执，也不得据此启动 O3。
 - 已知本次 child run / Work Context 为 `active` 或状态未知时，账本写 `O2_WAITING_OR_UNKNOWN`、保留现有绑定并停在 O2；不得对同一 `case_id:extract` 另发 `isolated`、不得让两次 run 写同名共享输出。
 - 无可信 child run 与 Work Context 绑定时，写 `O2_BINDING_UNAVAILABLE` 并转 `HALTED_FOR_HUMAN`；不得猜测 ID、从路径反推绑定或创建替代 `isolated`。
-- 只有本次绑定任务已终态，且其**最终回执**被 RC-1..RC-6 判为不合格时，才可按其中真实归属的 `work_context_id` 用 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数。
-- 只有收到并 `Read` 回读 `clause-extractor` 的最终回执，确认对象身份、规则版本、证据位置、`artifact_path` 与回执归属一致且 RC-1..RC-6 通过后，Lead 才可在账本登记该返回路径、将 O2 完成并进入 O3。
+- 只有本次绑定任务已终态，且其**最终回执**被 RC-1..RC-6 判为不合格时，才可用「可信续接绑定」中同一目标/child run 的已登记 ID 以 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数或把 `continue` 当作 action resume。
+- 只有收到并 `Read` 回读 `clause-extractor` 的最终回执后，Lead 才可处理其 `artifact_path`：原样复制完整绝对路径，不得删除 UUID 或 `agents` 路径段、不得猜测或重拼路径；再对该精确路径执行真实 `Read`。任一读取失败时，RC-1..RC-6 不得判为通过，且不得凭最终文本、工具摘要或中间文件声称已检查。仅在对象身份、规则版本、证据位置、读回的 `artifact_path` 与回执归属一致且 RC-1..RC-6 通过后，Lead 才可在账本登记该返回路径、将 O2 完成并进入 O3。
 
 ### O3 法域注入 + 风险判读（第 4-5 步）
 
@@ -388,7 +388,7 @@ handoff:
 - ❌ 把第 3 步与第 4-5 步合并成一次 fan-out —— 条款表是后两者的输入，合并等于让它们在输入缺失时启动。
 - ⚠️ `mode: worker` —— 仅可用于与 7 步无关的一次性辅助（例如重新清点一批文件的路径）。**不得用它承担任何一步工具链任务**，因为 worker 无持久身份，产出无法归属到某个成员的回执。
 - ❌ 持久 Agent 委派省略 `contextMode`、`intentId` 或 `contextReason`，或在 `fan-out` 中省略任一目标的 `contextSelections`。
-- ❌ 返工时重新使用 `isolated` 或凭记忆填写 `workContextId`。返工必须读取上一次回执的 `work_context_id`，再用 `contextMode: continue` 续跑同一环节；没有真实 ID 就停在 `H`，不得自行生成。
+- ❌ 返工时重新使用 `isolated`、凭记忆填写 `workContextId`，或从业务回执/成员文本/摘要取得 ID。返工只使用本次平台 Delegate 的可信续接绑定中、已与同一目标和 child run 登记的 ID，再用 `contextMode: continue` 续跑同一环节；没有该 ID 就停在 `H`，不得自行生成或当作 action resume。
 - ✅ `mode: worker` 不携带 `contextMode`、`intentId`、`contextReason` 或 `workContextId`；worker 的 schema 明确拒绝这些 Work Context 字段。
 
 **所有 `task` / `context` 中引用的文件必须写绝对路径**——成员的工作目录与你不同，相对路径在对方那里会解析到别处。
@@ -447,16 +447,16 @@ handoff:
 
 ### 返工与续跑 Delegate 模板
 
-成员已终态且最终回执不合格时，先发送「打回的写法」中的 `rework_request`。等待超时、取消提示、活动/未知 child 或中间文件都不构成打回条件。只有拿到该次最终 Delegate 回执中的真实 `work_context_id` 后，才可以续跑同一环节；续跑参数必须保持目标和环节不变：
+成员已终态且最终回执不合格时，先发送「打回的写法」中的 `rework_request`。等待超时、取消提示、活动/未知 child 或中间文件都不构成打回条件。只有「可信续接绑定」中本次平台 Delegate 提供并已登记为同一目标、同一 child run 的 `work_context_id`，才可以续跑同一环节；续跑参数必须保持目标和环节不变：
 
 ```yaml
 target: clause-extractor             # 与原环节相同
 mode: sync
 contextMode: continue
-workContextId: "<receipt.work_context_id>"  # 原样复制，不得猜测或改写
+workContextId: "<trusted_delegate_binding.work_context_id>"  # 原样复制，不得猜测或改写
 ```
 
-`continue` 不再传 `intentId` 或 `contextReason`；它只接受最终回执中已存在且属于本次委派的 `work_context_id`。如果回执缺少该字段、ID 不属于当前目标，原委派没有成功创建 Work Context，或 child 仍 active/unknown，停止在 `H` 并交人工处理，不要改用新的 `isolated` 委派来掩盖等待或续跑失败。
+`continue` 不再传 `intentId` 或 `contextReason`；它只接受可信续接绑定中已登记且属于本次委派的 `work_context_id`，用于 Work Context 续接而非 action resume。如果缺少该绑定、ID 不属于当前目标或 child run，原委派没有成功创建 Work Context，或 child 仍 active/unknown，停止在 `H` 并交人工处理，不要改用新的 `isolated` 委派来掩盖等待或续跑失败。
 
 ---
 
@@ -552,7 +552,7 @@ freeze:
 - [ ] `contract-intake` / `clause-extractor` / `review-reporter` 用的是 `mode: sync`，并显式提供 `contextMode: isolated`、稳定 `intentId` 和 `contextReason`
 - [ ] `risk-scanner` + `jurisdiction-auditor` 用的是 `mode: fan-out` + `strategy: parallel`，同时提供 `targets` 和每个目标的 `contextSelections`
 - [ ] 每个 `contextSelections` 项都含目标、`contextMode: isolated`、该案件稳定的 `intentId` 和 `contextReason`
-- [ ] 同环节返工/续跑只使用真实回执中的 `work_context_id`，参数为 `contextMode: continue` + `workContextId`，没有自行发明 ID
+- [ ] 同环节返工/续跑只使用本次平台 Delegate 可信续接绑定中、已与同一目标和 child run 登记的 `work_context_id`，参数为 `contextMode: continue` + `workContextId`，没有自行发明 ID 或混作 action resume
 - [ ] `mode: worker` 没有携带任何 Work Context 字段
 - [ ] **没有对 `review-reporter` 使用 `mode: subtask`**
 - [ ] 交接块里没有对话历史、没有前序推理、没有其他成员的结论草稿
@@ -567,7 +567,7 @@ freeze:
 - [ ] 打回内容只写缺什么与规则依据，没有写「应该改成……」
 - [ ] 没有自己补齐任何缺项
 - [ ] 同环节打回次数 ≤2，达到 2 次已转 `H` 而不是第三次派发
-- [ ] 续跑前已从 Delegate 回执记录 `work_context_id`；缺失或归属不明时没有尝试拼接、猜测或新建替代 ID
+- [ ] 续跑前已记录本次平台 Delegate 可信续接绑定的 `work_context_id`、target 与 child_run_id；缺失或归属不明时没有尝试从业务文件、成员文本、摘要拼接、猜测或新建替代 ID
 
 **并行分支**
 
