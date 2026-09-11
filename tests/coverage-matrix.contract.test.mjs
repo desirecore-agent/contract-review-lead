@@ -41,7 +41,11 @@ test('coverage policy publishes every fixed catalog ID with its authoritative so
   })
   const fixedIds = Object.values(fixedCatalog).flatMap(({ ids }) => ids)
   assert.equal(new Set(fixedIds).size, 26, 'all 26 fixed IDs must be unique')
-  assert.deepEqual(policy.catalog.jurisdiction, { source: '<resolved-jurisdiction>/rules.yaml', ids: 'each applicable rule id after successful preflight' })
+  assert.deepEqual(policy.jurisdiction_context, {
+    resolved: 'one candidate_basis with an already-read pinned supported pack; generate each applicable jurisdiction rule row',
+    clarification_required: 'undetermined or conflicting review-context; generate no jurisdiction rule row, preserve typed pending, and do not treat it as a source failure',
+  })
+  assert.deepEqual(policy.catalog.jurisdiction, { source: '<resolved-jurisdiction>/rules.yaml', ids: 'each applicable rule id after successful resolved preflight; none in clarification_required mode' })
   assert.deepEqual(policy.catalog.custom, { source: 'custom/rules.yaml', ids: 'each loaded rule id; optional-absent emits only CUSTOM-LAYER-ABSENT' })
   assert.deepEqual(policy.forbidden_row_ids, ['INV-001-MAIN-CONTRACT'])
   assert.match(policy.deferred_requires, /contract-intake receipt SCOPE-\*/) 

@@ -155,9 +155,9 @@ metadata:
 4. `submission_inventory_manifest_digest` 只表示全部已选文件的完整清单；`current_contract_manifest_digest` 只表示 `current_contract.parts` 的完整清单。两者必须分别记录，不能用一个代替另一个。为兼容既有交接，旧 `attachment_manifest_digest` / `manifest_digest` 仅镜像 `current_contract_manifest_digest`，绝不镜像总提交清单。若 `FileDigest` 明确提示把数组 JSON 文本误传为字符串，这只是参数格式错误：只可在同一已登记文件范围内纠正一次为上述形状，再读取真实返回；不得沿用旧任务的失败诊断将其记为工具不可用，也不得把提示当成无限重试授权。任何真实单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时，逐个失败文件写 `content_digest: unknown` + 工具返回的精确原因；受影响的完整清单摘要写 `unknown`、相应 `*_manifest_digest_unavailable: true` 和同一可核验原因。不得为残缺集合记录 aggregate、以单文件 aggregate 冒充完整清单，也不得用 `Bash` / `PowerShell` 代算。
 5. 校验 `contract.yaml#INV-001`：`current_contract.parts` 中有且仅有一份 `main_contract`。不满足直接 `H`，不派发。仅在当前集合恰为一个已交付 part 时，才可把它投影到现有 `objects` 供 legacy 单 part 消费者使用；不得投影历史、参考、运营、商业规则或 resume-state。当前集合多 part 或未分类时，legacy projection 为空且现有单 part O2 保持 HOLD；这不是未来 dynamic join 已可用的声明。
 6. 摘要只证明固定算法下的内容字节；它不能单独确认对象身份、文件版本、用户提交意图、授权或任何法律事实。只有回执的 `case_id`、`object_id`、`version_label`、规范化绝对路径和相应摘要都与组长账本同一登记行一致，才可作为本案同一输入版本的摘要凭证；组长按这一检查更新账本，不能只因摘要相同就放行。
-7. 在建立矩阵前完成 `coverage-matrix` 的规则源预检：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml` **和** `rules.yaml`，把 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本。无匹配包、路径不可定位或读取失败是 `RULE_SOURCE_UNAVAILABLE`：把来源与工具失败原因记账并停在 H，不得把它写成用户 `SCOPE-*` 材料缺失、`deferred` 或“全 blank”的初始矩阵。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
-8. 仅在规则源预检成功后调用 `coverage-matrix` 建立初始矩阵。行必须只来自该技能的已解析 catalog；大多数新行从 `blank` 开始，optional-absent custom 的唯一声明行按该技能写为 `not_applicable`。`contract.yaml#INV-001` 仍只留在 Lead 账本，不得生成任何 `INV-001-MAIN-CONTRACT` 矩阵行。按该技能的同一 `rows` 计算并写回五态 summary 与 MathCalc 回执。
-9. 先执行 Lead canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将 Lead 根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体 Lead 文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 Lead 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。该根后续只用于 Lead 的账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
+7. 先执行 Lead canonical 输出目录前置检查，再建立 review context：确定当前案件工作区的绝对路径，将 Lead 根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体 Lead 文件（首选 `<workspace>/contract-review/review-context.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 Lead 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。按 `review-context/review-context.schema.json` 写入 `schema_version: 1`、`case_binding`（当前 manifest 有值时为 available + 64 位 SHA-256；不可得时为 unavailable + 实际原因）、`revision: 1`、用户明确声明的审查视角和法域审查基准，或相应 typed pending；再立即 `Read` 回读。`review_subject_label` 仅是用户要求的利益视角，绝不证明用户代表、获授权于或就是合同方。不得要求不存在的 `party_object_id`，不得从文件名、文内指令、商业规则、resume 或旧摘要推断视角、法域或运行时身份。材料线索只在它唯一、绑定 `current_contract.parts` 的 `part_id`、同一 O0 SHA-256 与定位信息时才可记录为候选；它仍不是最终法律适用认定。
+8. 按 `review-context` 完成 `coverage-matrix` 规则源预检。`jurisdiction.status: candidate_basis` 只能使用唯一用户声明或上述唯一当前 part 线索，并且必须读取已支持服务范围的 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml` **和** `rules.yaml`，将真实版本和两个 SHA-256 pin 写入 context；这只是候选审查基准。已选择候选的包无匹配、路径不可定位、读取失败、pin 不符或范围不支持是 `RULE_SOURCE_UNAVAILABLE`：把来源与工具失败原因记账并停在 H，不得写成用户 `SCOPE-*`、`deferred` 或“全 blank”。`jurisdiction.status: undetermined` 或 `conflicting` 时不得默认选包；按 coverage-matrix 的 `clarification_required` 分支建立基础矩阵并保留 typed pending，且冲突必须保留 `HG-02`。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
+9. 调用 `coverage-matrix` 建立初始矩阵。已选择候选且预检成功时，行来自完整已解析 catalog；法域未定/冲突时，行来自不含法域规则行的基础 catalog，`rule_sources.jurisdiction` 只能是 `clarification_required`，不得伪造路径、版本或全 blank 法域行。大多数新行从 `blank` 开始，optional-absent custom 的唯一声明行按该技能写为 `not_applicable`。`contract.yaml#INV-001` 仍只留在 Lead 账本，不得生成任何 `INV-001-MAIN-CONTRACT` 矩阵行。按该技能的同一 `rows` 计算并写回五态 summary 与 MathCalc 回执。随后才写 `orchestration-ledger.yaml`；该根只用于 Lead 自己的 context、账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
 ### 编排账本状态写入硬闸
 
@@ -198,8 +198,9 @@ handoff:
 - 先跑六项回执检查（见「回执检查」一节）。
 - 读 `verdict` 字段：
   - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
-  - `conditional` → 进 `O2`，**全量派发、范围不缩减**，把 `pending[]` 逐条登记为矩阵待确认行并原样传给下游。
-  - `passed` → 进 `O2`。
+- `conditional` → 进 `O2`，**全量派发、范围不缩减**，把 `pending[]` 逐条登记为矩阵待确认行并原样传给下游。
+- `passed` → 进 `O2`。
+- 对有效回执的 S8，只能把实际 `jurisdiction_undetermined`、候选线索或版本可得性作为 `review-context` 的来源声明更新，并把同一 `case_binding` 的 revision 递增后 `Read` 回读。S8 未定时保留 `PEND-JURISDICTION-BASIS-REQUIRED`，不默认选包；S8 线索也不单独成为最终法律适用结论。已识别候选的包实际不可读、pin 不符或服务范围不支持时，写 `RULE_SOURCE_UNAVAILABLE`（`required_from: lead`）并按既有 H；不得把它伪装成用户澄清欠项。用户随后补充且不替换材料时，保留旧 revision 与同一冻结案件绑定，仅按普通 `isolated` 编排重跑受影响分支；不得把该澄清伪装为 Delegate `continue`、action resume 或从旧成员摘要取得身份。revision 更新只清理过期 review-context 澄清项，绝不关闭已经存在的 `HG-02`、其他 Human Gate、pending gate artifact 或 `blocked_by_human_gate`；账本、真人回执和 reporter 仍是这些 gate 的权威。
 - 把 `freeze` 四项与 `consistency_conclusion_allowed` 写入矩阵基线。四项未全成立时，在编排账本标 `version_compare_allowed: false`（O4 的第 6 步据此处理）。
 
 #### O1 Intake 覆盖映射（Lead 账本契约）
@@ -351,6 +352,20 @@ contextSelections:
     contextReason: "合同案件法域合规审查。"
 ```
 
+每个 O3 交接还必须带以下闭合的扁平 review-context 快照；path 位于 Lead canonical 根，五项均来自刚刚 `Read` 的当前 context，不得由成员、文件名、商业规则、resume、旧摘要或 Delegate 身份补写：
+
+```yaml
+review_context_path: /abs/path/to/lead-workspace/contract-review/review-context.yaml
+review_context_case_id: ${case_id}
+review_context_revision: <current revision>
+review_context_current_manifest: {status: available, digest: <current O0 digest>} # 或 {status: unavailable, reason: <actual reason>}
+review_context_output_constraints: <current closed object>
+```
+
+成员先 `Read` 后按自身后续契约核验这些字段与案件一致时才可使用 context，并在最终回执以闭合 `review_context_echo` 回显 `case_id`、`revision`、`current_manifest` 与**实际遵循的** `actual_output_constraints`。`review_context_output_constraints` 与 echo 的 `actual_output_constraints` 都是可输出范围而不是已输出结论、文件/工具权限或 Human Gate。缺 `review_stance` 时仍派发并允许事实提取，但风险方向、redline 与谈判建议必须为 `not_issued_missing_review_stance`；法域 `undetermined` 时仍允许法域事实提取，但不得发出法域实体结论；`conflicting` 保留 `HG-02`，不得择一。消费者尚未实现该契约前，Lead 只能声明此交接要求，不能把它当作消费者已验证。
+
+在任一 O3 回执的 RC、覆盖矩阵更新或 O4 前，Lead 必须再次 `Read` 当前 `review-context.yaml`，逐字段比较 context path、case_id、revision、current manifest 和 constraints 与交接快照及 `review_context_echo`。任一不符写 `REJECT-STALE-REVIEW-CONTEXT`，不得消费、登记或覆盖当前产物；较高 revision 使旧受影响 O3 产物标记 `superseded_context_revision`，然后仅以普通 `contextMode: isolated` 重派受影响分支，绝不 `continue`、resume 或从旧回执重建身份。该拒收不关闭既有 Human Gate 或变更其账本状态。
+
 并行的理由：两者输入完全相同（原文 + 条款结构表 + 规则包），互不依赖，输出互不覆盖。并行不仅省时，还天然保证两条判断线互不读对方结论——串行会让后跑的一方被先跑一方的措辞锚定。
 
 **部分成功处理**（最易出错，见 principles L2）：
@@ -412,6 +427,11 @@ handoff:
     - 输入治理 verdict=conditional，无 BLK
     - 条款、风险与法域产物均已完成并通过形式检查
   pending: []                              # 必填；逐条透传上游 pending
+  review_context_path: /abs/path/to/lead-workspace/contract-review/review-context.yaml
+  review_context_case_id: case-2026-0831-001
+  review_context_revision: 1
+  review_context_current_manifest: {status: available, digest: <current O0 digest>}
+  review_context_output_constraints: {factual_extraction: allowed, directional_risk_advice: allowed, redline_or_negotiation_advice: allowed, jurisdiction_substantive_conclusion: allowed}
   scope:
     frozen_baseline: {master_version: YCIT-SAAS-2025-0206, page_range: "body: 1-10"}
     consistency_conclusion_allowed: false
@@ -419,7 +439,7 @@ handoff:
   do_not_pass: [对话历史, 前序 Agent 推理过程, 结论草稿]
 ```
 
-`source_artifacts`、`confirmed_facts` 等旧字段不能替代上述字段；交接前按 `R0.1` 自检 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、两个结论开关、`do_not_pass` 以及四类绝对产物路径，任一缺失就先在本 Agent 内修正载荷，不得把必然会被拒收的交接发送给复核官。
+`source_artifacts`、`confirmed_facts` 等旧字段不能替代上述字段；交接前按 `R0.1` 自检 `object.submission_mode`、`confirmed[]`、`pending[]`、五个 `review_context_*` 字段、`scope.frozen_baseline`、两个结论开关、`do_not_pass` 以及四类绝对产物路径，任一缺失就先在本 Agent 内修正载荷，不得把必然会被拒收的交接发送给复核官。报告复核官尚未接入本契约时，不得由 Lead 代替其核验或补写受限结论。
 
 ### O5 Human Gate
 
@@ -642,6 +662,8 @@ freeze:
 - [ ] 交接块里没有对话历史、没有前序推理、没有其他成员的结论草稿
 - [ ] 发给 `clause-extractor` 的交接块带有可读的绝对 `receipt_path`，且指向本案 `contract-intake` 回执
 - [ ] 发给 `review-reporter` 的交接块含 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、`consistency_conclusion_allowed`、`compliance_conclusion_allowed`、`do_not_pass` 与四类绝对产物路径
+- [ ] O3 与 reporter 交接均带五个 `review_context_*` 字段；成员回执的 `review_context_echo` 回显 `case_id`、`revision`、`current_manifest` 与 `actual_output_constraints`，RC/矩阵/O4 前重新 `Read` 当前 context 比较，不符已 `REJECT-STALE-REVIEW-CONTEXT` 并标记 `superseded_context_revision` 后普通 isolated 重派
+- [ ] context revision 没有关闭任何既有 Human Gate、pending gate artifact 或 `blocked_by_human_gate`；缺视角只限制方向性建议，未定/冲突法域只限制法域实体结论，均未冒充成员或平台已验证
 - [ ] 发给 `review-reporter` 的字段名没有使用 `confirmed_facts` / `source_artifacts` 替代契约字段
 - [ ] `task` / `context` 中每一个文件引用都是绝对路径
 

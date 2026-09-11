@@ -23,7 +23,9 @@ metadata:
 
 本技能是矩阵行、状态和汇总的唯一来源。`review-orchestration` 只在 O0 按本协议建立矩阵，之后只在成员回执先通过 RC-1..RC-6 后按本协议更新同一份 `rows`；不得另造摘要表、临时行或另一套状态规则。矩阵记录覆盖事实，不判断合同、规则结论或材料的法律效力。
 
-先完成规则源预检，才可以生成矩阵：读取匹配的法域 `pack.yaml` 与 `rules.yaml`，并确定 custom 层是已加载、显式 optional-absent，还是被团队配置声明为 required。找不到、读不到或不能定位本应存在的法域规则包时，**不要生成“全 blank”的矩阵，也不要写 `deferred`**；在编排账本记录 `RULE_SOURCE_UNAVAILABLE`、来源路径和可核验读取失败原因，停止在 H。custom 层是 optional-absent 时可生成一项 `not_applicable` 行；若配置把 custom 声明为 required 而它缺席，同样以 `CUSTOM_RULE_SOURCE_REQUIRED` 停在 H。二者都不是用户未提交 `SCOPE-*` 材料。
+先完成规则源预检，才可以生成矩阵：对 `review-context` 中唯一、合法的 `candidate_basis`，读取其匹配法域 `pack.yaml` 与 `rules.yaml`，并确定 custom 层是已加载、显式 optional-absent，还是被团队配置声明为 required。候选基准必须来自用户明确陈述，或唯一且绑定当前 O0 `part_id`、SHA-256 与定位信息的合同线索；它只是审查基准，不是最终法律适用结论。找不到、读不到或不能定位**已选择候选**所应存在的法域规则包时，**不要生成“全 blank”的矩阵，也不要写 `deferred`**；在编排账本记录 `RULE_SOURCE_UNAVAILABLE`、来源路径和可核验读取失败原因，停止在 H。custom 层是 optional-absent 时可生成一项 `not_applicable` 行；若配置把 custom 声明为 required 而它缺席，同样以 `CUSTOM_RULE_SOURCE_REQUIRED` 停在 H。二者都不是用户未提交 `SCOPE-*` 材料。
+
+`review-context.jurisdiction.status: undetermined` 或 `conflicting` 与规则源失败不同：尚未选择候选包时，仍生成基础、Intake、custom 与 closure 行，`rule_sources.jurisdiction` 写为 `clarification_required`，且**不生成任何法域规则行**、不伪造路径或版本、不写 `RULE_SOURCE_UNAVAILABLE`。对应 typed pending 必须保留；未决时只能进行事实提取，法域实体结论不得写出。`conflicting` 还必须保留 `HG-02`，不得默认择一。只有已选择候选之后的包缺失、读失败、pin 不匹配或服务范围不支持才是预检 H。
 
 ```json
 {
@@ -33,11 +35,15 @@ metadata:
   "status_precedence": ["not_applicable", "deferred", "blocked", "blank", "covered"],
   "deferred_requires": "a trusted contract-intake receipt SCOPE-* fact identifying material absent from this user submission",
   "pre_dispatch_failures": ["RULE_SOURCE_UNAVAILABLE", "CUSTOM_RULE_SOURCE_REQUIRED"],
+  "jurisdiction_context": {
+    "resolved": "one candidate_basis with an already-read pinned supported pack; generate each applicable jurisdiction rule row",
+    "clarification_required": "undetermined or conflicting review-context; generate no jurisdiction rule row, preserve typed pending, and do not treat it as a source failure"
+  },
   "catalog": {
     "intake": {"source": "review-orchestration#O1 intake_gate_coverage", "ids": ["CHK-INTAKE-S1-SCOPE", "CHK-INTAKE-S2-MASTER-VERSION", "CHK-INTAKE-S3-PAGE-RANGE", "CHK-INTAKE-S4-ATTACHMENT-MANIFEST", "CHK-INTAKE-S5-EXECUTION-STATUS", "CHK-INTAKE-S6-PLACEHOLDER", "CHK-INTAKE-S7-PARTY-AND-AMOUNT", "CHK-INTAKE-S8-VERSION-MATRIX"]},
     "missing_clauses": {"source": "base/missing-clauses.yaml", "ids": ["liability-cap", "breach-remedy", "grace-period", "termination-convenience", "subcontracting", "audit-right", "dispute-resolution", "force-majeure", "data-export"]},
     "market_benchmarks": {"source": "base/market-benchmarks.yaml", "ids": ["liability-cap-months", "renewal-notice-days", "non-compete-years", "data-export-window-days"]},
-    "jurisdiction": {"source": "<resolved-jurisdiction>/rules.yaml", "ids": "each applicable rule id after successful preflight"},
+    "jurisdiction": {"source": "<resolved-jurisdiction>/rules.yaml", "ids": "each applicable rule id after successful resolved preflight; none in clarification_required mode"},
     "custom": {"source": "custom/rules.yaml", "ids": "each loaded rule id; optional-absent emits only CUSTOM-LAYER-ABSENT"},
     "closure": {"source": "blueprint#section-15", "ids": ["CLOSURE-COMPLETENESS", "CLOSURE-CONSISTENCY", "CLOSURE-BLOCKING-RISK", "CLOSURE-SUBSTANTIVE-TERMS", "CLOSURE-DOCUMENT"]}
   },
@@ -95,7 +101,7 @@ coverage_matrix:
   generated_before_dispatch: true
   rule_sources:
     base: {path: <absolute-path>, version: <version>}
-    jurisdiction: {path: <absolute-path>, version: <pack-version>}
+    jurisdiction: {mode: resolved, path: <absolute-path>, version: <pack-version>}
     custom: {mode: loaded|optional-absent, path: <absolute-path-or-null>}
   summary:
     total: <rows.length>
@@ -110,11 +116,11 @@ coverage_matrix:
   rows: []
 ```
 
-After reading the actual `rows`, derive five status counts and `total` from that same array. Then call the real `MathCalc` API once with only `expression` and the numeric `scope` object shown above; it has no `count` operation and must not be asked to inspect rows. Save its returned numerical result in `mathcalc_receipt.result`. If its denominator is zero, do **not** divide and do not call MathCalc: replace `mathcalc_receipt` with `{called: false, reason: NO_RATE_DENOMINATOR}`, and use exactly the policy's null rate fields. Before delivery verify: `total == rows.length`; the five counts sum to total; denominator equals `covered + blank + blocked + deferred`; and the displayed rate is the MathCalc result for that denominator. A failed arithmetic check invalidates the summary, never the underlying rows.
+In `clarification_required` mode the `jurisdiction` object is instead `{mode: clarification_required, path: null, version: null, pending_codes: [<typed review-context codes>]}`. It is not a catalog row and does not change the five-status denominator. After reading the actual `rows`, derive five status counts and `total` from that same array. Then call the real `MathCalc` API once with only `expression` and the numeric `scope` object shown above; it has no `count` operation and must not be asked to inspect rows. Save its returned numerical result in `mathcalc_receipt.result`. If its denominator is zero, do **not** divide and do not call MathCalc: replace `mathcalc_receipt` with `{called: false, reason: NO_RATE_DENOMINATOR}`, and use exactly the policy's null rate fields. Before delivery verify: `total == rows.length`; the five counts sum to total; denominator equals `covered + blank + blocked + deferred`; and the displayed rate is the MathCalc result for that denominator. A failed arithmetic check invalidates the summary, never the underlying rows.
 
 ## 交付前终检
 
-- [ ] 所有规则源预检成功；没有把 source/config failure 写成 `deferred`
+- [ ] 已选择候选时所有规则源预检成功；未决/冲突 context 只用 `clarification_required` 模式且没有法域规则行；没有把 source/config failure 写成 `deferred`
 - [ ] `generated_before_dispatch: true`，每一行有唯一 catalog 来源，且无 `INV-001-MAIN-CONTRACT`
 - [ ] 每个状态按本技能类别顺序可解释；欠账未删除
 - [ ] 每个 `covered` 的 owner、receipt 和证据一致；非 covered 有具体理由

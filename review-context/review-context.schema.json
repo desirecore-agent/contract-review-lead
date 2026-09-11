@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lead review context",
+  "description": "Lead-owned, closed review-context record. It records declared review scope and bounded source references; it is not a platform identity, representation authority, approval, legal-applicability finding, Delegate binding, or tool authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "case_binding", "revision", "review_stance", "jurisdiction", "output_constraints", "pending"],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Closed review-context schema revision."
+    },
+    "case_binding": {
+      "description": "Declared binding to the current O0 case and its current-contract manifest state; it is checked by Lead and is not platform authentication.",
+      "$ref": "#/definitions/caseBinding"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotonic Lead-authored context revision for this unchanged frozen case."
+    },
+    "review_stance": {
+      "description": "User-declared review perspective only. It never establishes that the user represents, is authorized by, or is a contractual party.",
+      "$ref": "#/definitions/reviewStance"
+    },
+    "jurisdiction": {
+      "description": "Review basis status and bounded source references. A candidate basis is not a final legal-applicability finding.",
+      "$ref": "#/definitions/jurisdiction"
+    },
+    "output_constraints": {
+      "description": "Permitted output scope, not an assertion that an output was issued, a tool was authorized, or a Human Gate was satisfied.",
+      "$ref": "#/definitions/outputConstraints"
+    },
+    "pending": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {"$ref": "#/definitions/pendingItem"},
+      "description": "Typed unresolved review-context items that downstream agents must preserve rather than infer away."
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"review_stance": {"properties": {"status": {"const": "missing"}}, "required": ["status"]}}, "required": ["review_stance"]},
+      "then": {
+        "properties": {
+          "output_constraints": {"properties": {"directional_risk_advice": {"const": "not_issued_missing_review_stance"}, "redline_or_negotiation_advice": {"const": "not_issued_missing_review_stance"}}},
+          "pending": {"contains": {"type": "object", "required": ["code", "required_from"], "properties": {"code": {"const": "PEND-REVIEW-STANCE-REQUIRED"}, "required_from": {"const": "user"}}}}
+        }
+      },
+      "else": {"properties": {"output_constraints": {"properties": {"directional_risk_advice": {"const": "allowed"}, "redline_or_negotiation_advice": {"const": "allowed"}}}, "pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"const": "PEND-REVIEW-STANCE-REQUIRED"}}}}}}}
+    },
+    {
+      "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "undetermined"}}, "required": ["status"]}}, "required": ["jurisdiction"]},
+      "then": {
+        "properties": {
+          "output_constraints": {"properties": {"jurisdiction_substantive_conclusion": {"const": "not_issued_missing_jurisdiction"}}},
+          "pending": {"contains": {"type": "object", "required": ["code", "required_from"], "properties": {"code": {"const": "PEND-JURISDICTION-BASIS-REQUIRED"}, "required_from": {"const": "user"}}}}
+        }
+      },
+      "else": {"properties": {"pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"const": "PEND-JURISDICTION-BASIS-REQUIRED"}}}}}}}
+    },
+    {
+      "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "conflicting"}}, "required": ["status"]}}, "required": ["jurisdiction"]},
+      "then": {
+        "properties": {
+          "output_constraints": {"properties": {"jurisdiction_substantive_conclusion": {"const": "not_issued_hg_02_conflict"}}},
+          "pending": {"contains": {"type": "object", "required": ["code", "required_from"], "properties": {"code": {"const": "HG-02"}, "required_from": {"const": "user"}}}}
+        }
+      },
+      "else": {"properties": {"pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"const": "HG-02"}}}}}}}
+    },
+    {
+      "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "candidate_basis"}, "candidate_basis": {"properties": {"pack": {"properties": {"status": {"const": "unavailable"}}, "required": ["status"]}}, "required": ["pack"]}}, "required": ["status", "candidate_basis"]}}, "required": ["jurisdiction"]},
+      "then": {
+        "properties": {
+          "output_constraints": {"properties": {"jurisdiction_substantive_conclusion": {"const": "not_issued_rule_source_unavailable"}}},
+          "pending": {"contains": {"type": "object", "required": ["code", "required_from"], "properties": {"code": {"const": "RULE_SOURCE_UNAVAILABLE"}, "required_from": {"const": "lead"}}}}
+        }
+      },
+      "else": {"properties": {"pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"const": "RULE_SOURCE_UNAVAILABLE"}}}}}}}
+    },
+    {
+      "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "candidate_basis"}, "candidate_basis": {"properties": {"pack": {"properties": {"status": {"const": "read_and_pinned"}}, "required": ["status"]}}, "required": ["pack"]}}, "required": ["status", "candidate_basis"]}}, "required": ["jurisdiction"]},
+      "then": {
+        "properties": {
+          "output_constraints": {"properties": {"jurisdiction_substantive_conclusion": {"const": "allowed"}}},
+          "pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"enum": ["PEND-JURISDICTION-BASIS-REQUIRED", "RULE_SOURCE_UNAVAILABLE"]}}}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "candidate_basis"}, "candidate_basis": {"properties": {"source": {"properties": {"kind": {"const": "current_part_clue"}}, "required": ["kind"]}}, "required": ["source"]}}, "required": ["status", "candidate_basis"]}}, "required": ["jurisdiction"]},
+      "then": {"properties": {"case_binding": {"properties": {"current_contract_manifest": {"properties": {"status": {"const": "available"}}, "required": ["status"]}}}}}
+    },
+    {
+      "description": "A current-part clue retained among conflicting candidates still requires an available current manifest; external part membership remains a separate Lead check.",
+      "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "conflicting"}, "candidate_bases": {"contains": {"type": "object", "properties": {"source": {"type": "object", "properties": {"kind": {"const": "current_part_clue"}}, "required": ["kind"]}}, "required": ["source"]}}}, "required": ["status", "candidate_bases"]}}, "required": ["jurisdiction"]},
+      "then": {"properties": {"case_binding": {"properties": {"current_contract_manifest": {"properties": {"status": {"const": "available"}}, "required": ["status"]}}}}}
+    }
+  ],
+  "definitions": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Lowercase SHA-256 copied from an existing trusted read or frozen O0 row."
+    },
+    "nonEmpty": {"type": "string", "minLength": 1},
+    "caseBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "current_contract_manifest"],
+      "properties": {
+        "case_id": {"$ref": "#/definitions/nonEmpty", "description": "Lead case identifier."},
+        "current_contract_manifest": {
+          "description": "Explicitly available or unavailable O0 current manifest state; an unavailable digest is never fabricated.",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "digest"],
+              "properties": {
+                "status": {"const": "available"},
+                "digest": {"$ref": "#/definitions/sha256"}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "reason"],
+              "properties": {
+                "status": {"const": "unavailable"},
+                "reason": {"$ref": "#/definitions/nonEmpty", "description": "Actual FileDigest/read failure reason recorded by O0."}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "userStatement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "statement"],
+      "properties": {
+        "kind": {"const": "user_statement"},
+        "statement": {"$ref": "#/definitions/nonEmpty", "description": "The user's explicit current-request statement, recorded as a claim rather than a verified identity or authority."}
+      }
+    },
+    "currentPartClue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "part_id", "content_digest", "locator", "quoted_basis"],
+      "properties": {
+        "kind": {"const": "current_part_clue"},
+        "part_id": {"$ref": "#/definitions/nonEmpty", "description": "Current O0 contractual-part identifier, never a party identifier."},
+        "content_digest": {"$ref": "#/definitions/sha256", "description": "Declared current-part SHA-256 to be checked against the O0 row."},
+        "locator": {"$ref": "#/definitions/nonEmpty", "description": "Clause, page range, or other bounded locator in that current part."},
+        "quoted_basis": {"$ref": "#/definitions/nonEmpty", "description": "Bounded text supporting a candidate review basis; it is not a legal-applicability determination."}
+      }
+    },
+    "intakeS8Reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receipt_path", "check_id", "observation"],
+      "properties": {
+        "receipt_path": {"$ref": "#/definitions/nonEmpty", "description": "Absolute path declared by the verified contract-intake final receipt; the declaration remains subject to Lead read/RC checks."},
+        "check_id": {"const": "S8"},
+        "observation": {"enum": ["aligned_candidate_observed", "jurisdiction_undetermined", "pack_version_unavailable"], "description": "S8 observation copied without treating it as platform certification of legal applicability."}
+      }
+    },
+    "reviewStance": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "review_subject_label", "source"],
+          "properties": {
+            "status": {"const": "user_stated"},
+            "review_subject_label": {"$ref": "#/definitions/nonEmpty", "description": "Label supplied for directional review, such as a named party or commercial role; it is not proof of representation or authority."},
+            "source": {"$ref": "#/definitions/userStatement"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "clarification_code"],
+          "properties": {
+            "status": {"const": "missing"},
+            "clarification_code": {"const": "PEND-REVIEW-STANCE-REQUIRED"}
+          }
+        }
+      ]
+    },
+    "packPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "jurisdiction_code", "pack_version", "pack_path", "rules_path", "pack_sha256", "rules_sha256", "service_scope"],
+      "properties": {
+        "status": {"const": "read_and_pinned"},
+        "jurisdiction_code": {"$ref": "#/definitions/nonEmpty"},
+        "pack_version": {"$ref": "#/definitions/nonEmpty"},
+        "pack_path": {"$ref": "#/definitions/nonEmpty", "description": "Already-read shared pack.yaml path, retained for Lead and later consumer pin checks."},
+        "rules_path": {"$ref": "#/definitions/nonEmpty", "description": "Already-read shared rules.yaml path, retained for Lead and later consumer pin checks."},
+        "pack_sha256": {"$ref": "#/definitions/sha256"},
+        "rules_sha256": {"$ref": "#/definitions/sha256"},
+        "service_scope": {"const": "supported", "description": "The already-read pack declares service support for the candidate review basis."}
+      }
+    },
+    "packUnavailable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason"],
+      "properties": {
+        "status": {"const": "unavailable"},
+        "reason": {"$ref": "#/definitions/nonEmpty", "description": "Actual preflight failure for an already identified candidate; Lead records RULE_SOURCE_UNAVAILABLE and stops rather than selecting a default."}
+      }
+    },
+    "candidateBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jurisdiction_code", "source", "pack"],
+      "properties": {
+        "jurisdiction_code": {"$ref": "#/definitions/nonEmpty", "description": "Candidate review-basis label, not a final governing-law or forum conclusion."},
+        "source": {"oneOf": [{"$ref": "#/definitions/userStatement"}, {"$ref": "#/definitions/currentPartClue"}]},
+        "pack": {"oneOf": [{"$ref": "#/definitions/packPin"}, {"$ref": "#/definitions/packUnavailable"}]}
+      }
+    },
+    "jurisdiction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "candidate_basis"],
+          "properties": {
+            "status": {"const": "candidate_basis"},
+            "candidate_basis": {"$ref": "#/definitions/candidateBasis"},
+            "intake_s8": {"$ref": "#/definitions/intakeS8Reference"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "clarification_code"],
+          "properties": {
+            "status": {"const": "undetermined"},
+            "clarification_code": {"const": "PEND-JURISDICTION-BASIS-REQUIRED"},
+            "intake_s8": {"$ref": "#/definitions/intakeS8Reference"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "candidate_bases", "human_gate"],
+          "properties": {
+            "status": {"const": "conflicting"},
+            "candidate_bases": {"type": "array", "minItems": 2, "maxItems": 8, "items": {"$ref": "#/definitions/candidateBasis"}, "description": "Competing candidates retained without choosing one by default."},
+            "human_gate": {"const": "HG-02"},
+            "intake_s8": {"$ref": "#/definitions/intakeS8Reference"}
+          }
+        }
+      ]
+    },
+    "outputConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factual_extraction", "directional_risk_advice", "redline_or_negotiation_advice", "jurisdiction_substantive_conclusion"],
+      "properties": {
+        "factual_extraction": {"const": "allowed", "description": "Clause and source fact extraction remains in scope; this is not tool authorization."},
+        "directional_risk_advice": {"enum": ["allowed", "not_issued_missing_review_stance"], "description": "Controls only directional analysis for the requested review subject."},
+        "redline_or_negotiation_advice": {"enum": ["allowed", "not_issued_missing_review_stance"], "description": "Controls only advice that depends on a stated review perspective."},
+        "jurisdiction_substantive_conclusion": {"enum": ["allowed", "not_issued_missing_jurisdiction", "not_issued_hg_02_conflict", "not_issued_rule_source_unavailable"], "description": "Controls jurisdiction-specific substantive conclusions, not factual clause extraction. The rule-source value records an operational preflight failure, not missing user clarification."}
+      }
+    },
+    "pendingItem": {
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "required_from"],
+          "properties": {
+            "code": {"enum": ["PEND-REVIEW-STANCE-REQUIRED", "PEND-JURISDICTION-BASIS-REQUIRED", "HG-02"]},
+            "required_from": {"const": "user", "description": "Only a user clarification can resolve this review-context item; no member or file name may do so."}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "required_from"],
+          "properties": {
+            "code": {"const": "RULE_SOURCE_UNAVAILABLE"},
+            "required_from": {"const": "lead", "description": "Lead must stop on the actual selected-pack preflight failure; it is not a user-material or user-clarification debt."}
+          }
+        }
+      ]
+    }
+  }
+}
