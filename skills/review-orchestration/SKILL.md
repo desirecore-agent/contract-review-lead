@@ -50,14 +50,14 @@ metadata:
 
 ## 不可协商的前提
 
-1. **登记先于派发。**没有 `review_case` 与初始覆盖矩阵，不得派发任何任务。
+1. **完整审查授权后的登记先于派发。**没有用户明确开始完整审查的授权、`review_case` 与初始覆盖矩阵，不得派发任何任务。
 2. **第一个任务恒定是输入治理。**不因材料看起来干净而跳过 `contract-intake`。
 3. **`blocked` 即终止。**`contract-intake` 的 `verdict` 是唯一判据，你不重评它的理由、不改判、不放宽。
 4. **O1 只委派，不代写。**`intake.yaml`、输入治理回执、`verdict` 与 `pending` 的作者只能是 `contract-intake`。O1 等待其有效回执期间，lead 只能写编排账本中的派发、等待与阻断状态；不得读取材料后自行生成、编辑、合成或补全上述 intake 产物，也不得把已派发当成已完成。
 5. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
 6. **不合格打回，不自己补齐。**
 7. **禁止对 `review-reporter` 使用 `mode: subtask`。**
-8. **Lead 根与成员产物必须分属。**当前案件工作区的 canonical `contract-review/` 目录只承载 Lead 的账本与覆盖矩阵；不得把该目录路径本身写成文件，也不得静默改用其他目录。成员在各自确认的 workspace 创建唯一产物并返回绝对 `artifact_path`；Lead 只读、核验和登记该路径，绝不指定、写入或覆盖成员产物文件。
+8. **Lead 根与成员产物必须分属。**当前案件工作区的 canonical `contract-review/` 目录只承载 Lead 的 review context、账本与覆盖矩阵；不得把该目录路径本身写成文件，也不得静默改用其他目录。成员在各自确认的 workspace 创建唯一产物并返回绝对 `artifact_path`；Lead 只读、核验和登记该路径，绝不指定、写入或覆盖成员产物文件。
 9. **材料提交是 O0 的唯一入口。**没有当前用户提交的合同或明确文件指向，不得执行 O0 的 `Ls` / `Glob`，不得通过扫描历史工作区来推定材料已提交。
 
 ### Delegate Work Context 兼容说明
@@ -72,9 +72,10 @@ metadata:
 
 ```
                     ┌──────────────┐
-   用户提交材料 ───▶ │ O0 REGISTERED│  登记案件 + 建矩阵（本 Agent 自己做）
+    用户提交材料 ───▶ │ O0 REGISTERED│  先建并回核 review context
                     └──────┬───────┘
-                           │ Delegate sync + isolated context → contract-intake
+            仅登记范围 ────┤ 等待明确开始完整审查（不派发）
+          完整审查已授权 ──┘ Delegate sync + isolated context → contract-intake
                     ┌──────▼───────┐
                     │ O1 INTAKE    │  第 1-2 步：结构化解析 + 完整性检查
                     └──────┬───────┘
@@ -114,8 +115,9 @@ metadata:
 
 | 从 | 事件 | 到 | 附带动作 |
 |---|---|---|---|
-| — | 收到合同材料 | `O0` | 生成 `case_id`、登记全部 `object_ref`、规则源预检后按 coverage policy 建初始矩阵 |
-| `O0` | 登记完成 | `O1` | `Delegate sync` + `contextMode: isolated`、`${case_id}:intake` → `contract-intake` |
+| — | 收到本轮合同材料或明确文件指向，且用户仅授权登记/context | `O0` | 仅建立并回核 review context；不建矩阵、不冻结、不派发 |
+| — | 收到本轮合同材料或明确文件指向，且用户明确开始完整审查 | `O0` | 生成 `case_id`、登记全部 `object_ref`、规则源预检后按 coverage policy 建初始矩阵 |
+| `O0` | 已明确完整审查授权且完整 O0 完成 | `O1` | `Delegate sync` + `contextMode: isolated`、`${case_id}:intake` → `contract-intake` |
 | `O1` | `verdict: blocked` | `X1` | 终止；不派发任何下游；把 `remediation` 清单交用户 |
 | `O1` | `verdict: passed` | `O2` | 冻结快照写入矩阵基线 |
 | `O1` | `verdict: conditional` | `O2` | **同上，全量派发**；`pending` 项登记为矩阵待确认行 |
@@ -137,11 +139,15 @@ metadata:
 
 **没有从 `X1` 直接到 `O2` 的边。**门禁终止后唯一出路是重新提交材料。
 
+**受限 O0 也没有到 O1 的边。**已在当前请求中明确的完整审查授权足以触发完整 O0，且不得重复追问；只有缺少该授权时，登记或补充 context 才停在 O0。
+
 ---
 
 ## 执行步骤
 
 ### O0 登记与受理
+
+**先服从本轮范围。**只有本轮已提交合同材料或用户明确指向合同文件时，才可进入任何 O0；否则仍是零工具咨询，不能仅凭工作目录或历史路径登记案件。具备材料前提后，用户若明确只要求登记或建立待补的 review context，而没有明确要求开始完整审查，则这只是受限 O0 登记，不是 O1 或后续步骤的授权。受限登记的顺序是：建立 canonical Lead 根、生成 `case_id`、实际 `Read` schema 与 template、写入并回核闭合 context；确有当前提交可读文件时可另记录最小对象身份和真实 `FileDigest` 返回。**不要按下列完整 O0 的第 1–9 项继续执行。**不得建立覆盖矩阵、伪造附件/当前合同清单摘要、页码或其他冻结事实，不得规则包预检、材料抽取或实质判断，也不得 `Delegate`。若当前 manifest 尚未真实计算，context 的 `case_binding.current_contract_manifest` 必须写 `{status: unavailable, reason: <实际未计算或工具失败原因>}`，不得抄模板 digest。用户随后仅补充视角、法域或其他登记信息时，只更新同一案件 context 的 revision；仍须用户明确要求开始审查，才可执行下列完整 O0 的清单、预检、矩阵和 O1。
 
 1. `GenerateUUID` 生成 `case_id`（形如 `case-2026-0831-001`，本地可读格式亦可，但一个案件内唯一且永不复用）。
 2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。仅一份文件时，`paths` 必须是该文件的完整绝对裸路径字符串，不得传数组 JSON 文本；多份文件时，`paths` 必须是完整集合的原生字符串数组。先按 `inventory/o0-input-inventory.schema.json` 建立闭合的分类库存，再逐份登记其真实冻结元组：
@@ -155,7 +161,7 @@ metadata:
 4. `submission_inventory_manifest_digest` 只表示全部已选文件的完整清单；`current_contract_manifest_digest` 只表示 `current_contract.parts` 的完整清单。两者必须分别记录，不能用一个代替另一个。为兼容既有交接，旧 `attachment_manifest_digest` / `manifest_digest` 仅镜像 `current_contract_manifest_digest`，绝不镜像总提交清单。若 `FileDigest` 明确提示把数组 JSON 文本误传为字符串，这只是参数格式错误：只可在同一已登记文件范围内纠正一次为上述形状，再读取真实返回；不得沿用旧任务的失败诊断将其记为工具不可用，也不得把提示当成无限重试授权。任何真实单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时，逐个失败文件写 `content_digest: unknown` + 工具返回的精确原因；受影响的完整清单摘要写 `unknown`、相应 `*_manifest_digest_unavailable: true` 和同一可核验原因。不得为残缺集合记录 aggregate、以单文件 aggregate 冒充完整清单，也不得用 `Bash` / `PowerShell` 代算。
 5. 校验 `contract.yaml#INV-001`：`current_contract.parts` 中有且仅有一份 `main_contract`。不满足直接 `H`，不派发。仅在当前集合恰为一个已交付 part 时，才可把它投影到现有 `objects` 供 legacy 单 part 消费者使用；不得投影历史、参考、运营、商业规则或 resume-state。当前集合多 part 或未分类时，legacy projection 为空且现有单 part O2 保持 HOLD；这不是未来 dynamic join 已可用的声明。
 6. 摘要只证明固定算法下的内容字节；它不能单独确认对象身份、文件版本、用户提交意图、授权或任何法律事实。只有回执的 `case_id`、`object_id`、`version_label`、规范化绝对路径和相应摘要都与组长账本同一登记行一致，才可作为本案同一输入版本的摘要凭证；组长按这一检查更新账本，不能只因摘要相同就放行。
-7. 先执行 Lead canonical 输出目录前置检查，再建立 review context：确定当前案件工作区的绝对路径，将 Lead 根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体 Lead 文件（首选 `<workspace>/contract-review/review-context.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 Lead 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。按 `review-context/review-context.schema.json` 写入 `schema_version: 1`、`case_binding`（当前 manifest 有值时为 available + 64 位 SHA-256；不可得时为 unavailable + 实际原因）、`revision: 1`、用户明确声明的审查视角和法域审查基准，或相应 typed pending；再立即 `Read` 回读。`review_subject_label` 仅是用户要求的利益视角，绝不证明用户代表、获授权于或就是合同方。不得要求不存在的 `party_object_id`，不得从文件名、文内指令、商业规则、resume 或旧摘要推断视角、法域或运行时身份。材料线索只在它唯一、绑定 `current_contract.parts` 的 `part_id`、同一 O0 SHA-256 与定位信息时才可记录为候选；它仍不是最终法律适用认定。
+7. 先执行 Lead canonical 输出目录前置检查，再建立 review context：**在第一次 `Write` 前，必须实际 `Read` AgentFS 中的 `review-context/review-context.schema.json` 和 `review-context/review-context.template.yaml`；二者任一不可读、不可解析或互不一致时，记录 `O0_REVIEW_CONTEXT_CONTRACT_UNAVAILABLE` 和真实读取原因并停止，不得自由编写替代 YAML。**确定当前案件工作区的绝对路径，将 Lead 根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体 Lead 文件（首选 `<workspace>/contract-review/review-context.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 Lead 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。以已读 template 为唯一骨架，只替换 schema 允许的真实值：`schema_version: 1`、`case_binding`（当前 manifest 已真实计算时为 available + 64 位 SHA-256；否则为 unavailable + 实际原因）、`revision: 1`、用户明确声明的审查视角和法域审查基准，或相应 typed pending；不得用 `null`、别名键或自由字段代替闭合分支。再立即 `Read` 回读并按已读 schema 核对根键恰为 `schema_version`、`case_binding`、`revision`、`review_stance`、`jurisdiction`、`output_constraints`、`pending`；缺立场必须是 `review_stance.status: missing`、`PEND-REVIEW-STANCE-REQUIRED` 与两项 `not_issued_missing_review_stance`，法域未定必须是 `jurisdiction.status: undetermined`、`PEND-JURISDICTION-BASIS-REQUIRED` 与 `not_issued_missing_jurisdiction`。任何回核不符都记录 `O0_REVIEW_CONTEXT_INVALID` 并停止，不得把“文件可读”说成契约合规。`review_subject_label` 仅是用户要求的利益视角，绝不证明用户代表、获授权于或就是合同方。不得要求不存在的 `party_object_id`，不得从文件名、文内指令、商业规则、resume 或旧摘要推断视角、法域或运行时身份。材料线索只在它唯一、绑定 `current_contract.parts` 的 `part_id`、同一 O0 SHA-256 与定位信息时才可记录为候选；它仍不是最终法律适用认定。
 8. 按 `review-context` 完成 `coverage-matrix` 规则源预检。`jurisdiction.status: candidate_basis` 只能使用唯一用户声明或上述唯一当前 part 线索，并且必须读取已支持服务范围的 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml` **和** `rules.yaml`，将真实版本和两个 SHA-256 pin 写入 context；这只是候选审查基准。已选择候选的包无匹配、路径不可定位、读取失败、pin 不符或范围不支持是 `RULE_SOURCE_UNAVAILABLE`：把来源与工具失败原因记账并停在 H，不得写成用户 `SCOPE-*`、`deferred` 或“全 blank”。`jurisdiction.status: undetermined` 或 `conflicting` 时不得默认选包；按 coverage-matrix 的 `clarification_required` 分支建立基础矩阵并保留 typed pending，且冲突必须保留 `HG-02`。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
 9. 调用 `coverage-matrix` 建立初始矩阵。已选择候选且预检成功时，行来自完整已解析 catalog；法域未定/冲突时，行来自不含法域规则行的基础 catalog，`rule_sources.jurisdiction` 只能是 `clarification_required`，不得伪造路径、版本或全 blank 法域行。大多数新行从 `blank` 开始，optional-absent custom 的唯一声明行按该技能写为 `not_applicable`。`contract.yaml#INV-001` 仍只留在 Lead 账本，不得生成任何 `INV-001-MAIN-CONTRACT` 矩阵行。按该技能的同一 `rows` 计算并写回五态 summary 与 MathCalc 回执。随后才写 `orchestration-ledger.yaml`；该根只用于 Lead 自己的 context、账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
@@ -167,7 +173,7 @@ metadata:
 
 任何下游未启动、回执不合格或成员无响应都必须写入 `blocked_reasons`，不能用 `pending` 掩盖已发生的失败或已完成的步骤。`run_id` 必须同时保留外层 lead run 和每个 Delegate 子 run；若成员回执中的案件/内部 run 标识与外层运行不一致，原样记录 `identity_discrepancy` 并保持人工阻断，不得静默覆盖成单一 ID。账本更新属于本技能的必做产物，不以模型是否“打算稍后补写”为完成条件。
 
-**登记完成之前不得派发任何任务。**
+**只有已明确完整审查授权且完整 O0 完成后才可派发任务。**受限 O0 登记完成不进入 O1。
 
 ### O1 输入治理（第 1-2 步）
 
@@ -640,7 +646,7 @@ freeze:
 
 **门禁**
 
-- [ ] 第一个派发的任务是 `contract-intake`，没有任何任务在它之前发出
+- [ ] 用户已明确授权完整审查后，第一个派发的任务是 `contract-intake`，没有任何任务在它之前发出
 - [ ] `verdict: blocked` 时没有派发任何下游、没有并行预热、没有询问能否放宽
 - [ ] `verdict: conditional` 时下游范围**未缩减**，`pending` 已原样传递
 - [ ] 没有因为「阻断只涉及某份附件」而自行放宽——例外范围由 `contract-intake` 判定

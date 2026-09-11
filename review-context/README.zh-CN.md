@@ -2,6 +2,8 @@
 
 `review-context.yaml` 是单一冻结 O0 案件的闭合、Lead 自有声明记录。它把用户明确要求的审查视角和候选法域审查基准，与文件身份、Delegate 身份、Human Gate 批准和法律结论分开。
 
+首次写入前，Lead 必须实际读取本记录的 schema 与 template，以 template 为骨架写入，并对照闭合分支回读结果；YAML 文件可读不等于符合 schema。用户把本轮限定为登记或补齐 context 时，Lead 只创建该闭合记录，不推断材料事实、不预检规则包、不冻结清单、不建立矩阵、不委派或启动审查；后续仅补充澄清本身也不扩大该用户授予的范围。
+
 记录只能引用本轮用户明确陈述、一个带 O0 SHA-256 与有限定位信息的当前合同 part，或已核验的 Intake S8 回执引用。这些都是 Lead 需要对照案件产物核验的来源声明；它们不认证合同方代表权、授权、法律适用、平台身份。特别地，`review_subject_label` 只说明方向性审查应考虑谁的商业视角，绝不表示用户代表或有权代表该合同方。
 
 只有唯一的用户陈述或当前 part 线索候选，且已有已读、已 pin、服务范围支持的规则包时，才使用 `jurisdiction.status: candidate_basis`。该候选仍只是审查基准，不是最终准据法或管辖结论。已识别候选但规则包实际不可得时，记录 `RULE_SOURCE_UNAVAILABLE` 和 `required_from: lead`，按既有规则源失败停止；它不是缺少用户澄清。`undetermined` 要求澄清且只允许事实提取；`conflicting` 保留全部候选、不默认择一，并路由 `HG-02`。
