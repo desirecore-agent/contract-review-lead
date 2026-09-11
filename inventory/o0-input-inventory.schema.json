@@ -1,0 +1,1012 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "O0 classified input inventory",
+  "description": "Additive Lead-owned inventory for separating current-contract sources from historical, reference, operator, commercial-rule, and resume-state inputs. It is Agent data, not an approval, legal conclusion, or runtime identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "inventory_version",
+    "case_id",
+    "submission_inventory",
+    "current_contract",
+    "historical_contract_sets",
+    "reference_materials",
+    "operator_inputs",
+    "commercial_rule_sets",
+    "resume_state_references",
+    "unclassified_materials",
+    "legacy_current_objects_projection"
+  ],
+  "properties": {
+    "inventory_version": {
+      "const": 2,
+      "description": "Version of this additive classified-inventory contract."
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Lead-generated case identifier already used by the orchestration ledger."
+    },
+    "submission_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest_digest",
+        "manifest_digest_unavailable"
+      ],
+      "description": "The total submitted-file aggregate is either a nonempty digest with unavailable false, or null with unavailable true.",
+      "properties": {
+        "manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Complete selected-file aggregate, or null only when unavailable."
+        },
+        "manifest_digest_unavailable": {
+          "type": "boolean",
+          "description": "False only with a nonempty complete aggregate; true only with null."
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "manifest_digest": {
+              "type": "string",
+              "minLength": 1
+            },
+            "manifest_digest_unavailable": {
+              "const": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "manifest_digest": {
+              "type": "null"
+            },
+            "manifest_digest_unavailable": {
+              "const": true
+            }
+          }
+        }
+      ]
+    },
+    "current_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_id",
+        "parts",
+        "main_contract_count",
+        "manifest_digest",
+        "manifest_digest_unavailable"
+      ],
+      "description": "Current-contract aggregate state is explicit and never borrows the total submission aggregate.",
+      "properties": {
+        "source_set_id": {
+          "const": "current-contract",
+          "description": "Stable name for the current contract source set."
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/definitions/contractPart"
+          },
+          "description": "Current body and contractual attachments only; not historical or reference materials."
+        },
+        "main_contract_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32,
+          "description": "Declared count of current parts classified as main_contract; Lead separately verifies exactly one."
+        },
+        "manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FileDigest aggregate for current_contract.parts only, or null when unavailable or when no current contract has been classified."
+        },
+        "manifest_digest_unavailable": {
+          "type": "boolean",
+          "description": "False only with a nonempty current-contract aggregate; true only with null."
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "manifest_digest": {
+              "type": "string",
+              "minLength": 1
+            },
+            "manifest_digest_unavailable": {
+              "const": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "manifest_digest": {
+              "type": "null"
+            },
+            "manifest_digest_unavailable": {
+              "const": true
+            }
+          }
+        }
+      ]
+    },
+    "historical_contract_sets": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/definitions/historicalSet"
+      },
+      "description": "Prior or comparison contract sets, kept outside the current execution set."
+    },
+    "reference_materials": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/definitions/referenceMaterial"
+      },
+      "description": "Reference-only material such as prior reviews; it cannot approve or replace current-contract evidence."
+    },
+    "operator_inputs": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/definitions/operatorInput"
+      },
+      "description": "User operating instructions, never files, Human Gate decisions, or runtime identities."
+    },
+    "commercial_rule_sets": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/definitions/commercialRuleSet"
+      },
+      "description": "Versioned business-policy material, separate from jurisdiction packs and contract parts."
+    },
+    "resume_state_references": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/definitions/resumeReference"
+      },
+      "description": "Reference-only state material. It cannot supply Delegate continue or action-resume identity."
+    },
+    "legacy_current_objects_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "objects"
+      ],
+      "description": "Compatibility projection for legacy single-main consumers. It never projects historical, reference, operator, commercial, or resume inputs.",
+      "oneOf": [
+        {
+          "properties": {
+            "status": {
+              "const": "available_single_part"
+            },
+            "objects": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "$ref": "#/definitions/contractPart"
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "unavailable_multi_part_or_unclassified"
+            },
+            "objects": {
+              "type": "array",
+              "maxItems": 0
+            }
+          }
+        }
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "objects": {
+          "type": "array"
+        }
+      }
+    },
+    "unclassified_materials": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/definitions/unclassifiedMaterial"
+      },
+      "description": "Materials intentionally held outside all source sets pending user clarification."
+    }
+  },
+  "definitions": {
+    "classificationBasis": {
+      "type": "string",
+      "enum": [
+        "user_submission_context",
+        "user_clarification",
+        "previously_frozen_case_metadata"
+      ],
+      "description": "Permitted basis for a role classification. Filename inference and document-embedded instructions are intentionally excluded."
+    },
+    "frozenFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "version_label",
+        "canonical_path",
+        "content_digest",
+        "size_bytes",
+        "digest_binding",
+        "classification_basis"
+      ],
+      "description": "File-backed frozen identity tuple. A digest alone does not establish object identity, source role, approval, or legal fact.",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lead-assigned object identifier."
+        },
+        "version_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Declared version label or explicit unknown marker with a separate reason in the ledger."
+        },
+        "canonical_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Normalized absolute path used only as a file identity component."
+        },
+        "content_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FileDigest SHA-256 or null when FileDigest could not provide one."
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Observed byte size when available; null when unavailable with the same frozen-input failure recorded in the ledger."
+        },
+        "digest_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "case_id",
+            "object_id",
+            "version_label",
+            "canonical_path",
+            "content_digest"
+          ],
+          "description": "Identity binding retained with the frozen file row.",
+          "properties": {
+            "case_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Owning case identifier."
+            },
+            "object_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound object identifier."
+            },
+            "version_label": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound version label."
+            },
+            "canonical_path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound normalized absolute path."
+            },
+            "content_digest": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Bound FileDigest value or null if unavailable."
+            }
+          }
+        },
+        "classification_basis": {
+          "$ref": "#/definitions/classificationBasis"
+        }
+      }
+    },
+    "contractPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "version_label",
+        "canonical_path",
+        "content_digest",
+        "size_bytes",
+        "digest_binding",
+        "classification_basis",
+        "part_id",
+        "kind"
+      ],
+      "description": "Closed current or historical contractual-part identity tuple.",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lead-assigned object identifier."
+        },
+        "version_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Declared version label or explicit unknown marker with a separate reason in the ledger."
+        },
+        "canonical_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Normalized absolute path used only as a file identity component."
+        },
+        "content_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FileDigest SHA-256 or null when FileDigest could not provide one."
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Observed byte size when available; null when unavailable with the same frozen-input failure recorded in the ledger."
+        },
+        "digest_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "case_id",
+            "object_id",
+            "version_label",
+            "canonical_path",
+            "content_digest"
+          ],
+          "description": "Identity binding retained with the frozen file row.",
+          "properties": {
+            "case_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Owning case identifier."
+            },
+            "object_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound object identifier."
+            },
+            "version_label": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound version label."
+            },
+            "canonical_path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound normalized absolute path."
+            },
+            "content_digest": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Bound FileDigest value or null if unavailable."
+            }
+          }
+        },
+        "classification_basis": {
+          "$ref": "#/definitions/classificationBasis"
+        },
+        "part_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable current-contract part identifier."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "main_contract",
+            "exhibit",
+            "amendment",
+            "side_letter"
+          ],
+          "description": "Contractual role within the current or historical set."
+        }
+      }
+    },
+    "historicalSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_id",
+        "relation",
+        "parts",
+        "manifest_digest",
+        "manifest_digest_unavailable",
+        "comparison_scope",
+        "completeness",
+        "comparison_conclusion_allowed",
+        "missing_part_reasons"
+      ],
+      "description": "Historical aggregate state is explicit and does not enter the current-contract manifest.",
+      "properties": {
+        "source_set_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable historical source-set identifier."
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "prior_version",
+            "comparison_baseline",
+            "negotiation_draft"
+          ],
+          "description": "Declared comparison relationship, not a conclusion that the versions are equivalent."
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/definitions/contractPart"
+          },
+          "description": "Historical contract parts only."
+        },
+        "manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Complete aggregate for this historical set, or null if unavailable."
+        },
+        "manifest_digest_unavailable": {
+          "type": "boolean",
+          "description": "Whether this complete historical-set aggregate is unavailable."
+        },
+        "comparison_scope": {
+          "type": "string",
+          "enum": [
+            "declared_parts_only",
+            "unavailable"
+          ],
+          "description": "Bounded material scope for a later comparison. It never asserts whole-package coverage."
+        },
+        "completeness": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "incomplete",
+            "unknown"
+          ],
+          "description": "Observed availability of the declared historical set, not a conclusion of package equivalence."
+        },
+        "comparison_conclusion_allowed": {
+          "const": false,
+          "description": "Classification alone never permits a version-consistency conclusion."
+        },
+        "missing_part_reasons": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Typed reason a historical attachment is missing or unavailable."
+          },
+          "description": "Empty only when the declared historical set is complete."
+        }
+      },
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "manifest_digest": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "manifest_digest_unavailable": {
+                  "const": false
+                }
+              }
+            },
+            {
+              "properties": {
+                "manifest_digest": {
+                  "type": "null"
+                },
+                "manifest_digest_unavailable": {
+                  "const": true
+                }
+              }
+            }
+          ],
+          "description": "Historical aggregate state is explicit and does not enter the current-contract manifest."
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "completeness": {
+                  "const": "complete"
+                },
+                "comparison_scope": {
+                  "const": "declared_parts_only"
+                },
+                "missing_part_reasons": {
+                  "maxItems": 0
+                }
+              }
+            },
+            {
+              "properties": {
+                "completeness": {
+                  "enum": [
+                    "incomplete",
+                    "unknown"
+                  ]
+                },
+                "comparison_scope": {
+                  "enum": [
+                    "declared_parts_only",
+                    "unavailable"
+                  ]
+                },
+                "missing_part_reasons": {
+                  "minItems": 1
+                }
+              }
+            }
+          ],
+          "description": "Historical completeness bounds a future comparison to declared parts and never grants a whole-package conclusion."
+        }
+      ]
+    },
+    "referenceMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "version_label",
+        "canonical_path",
+        "content_digest",
+        "size_bytes",
+        "digest_binding",
+        "classification_basis",
+        "reference_id",
+        "reference_kind",
+        "use"
+      ],
+      "description": "Closed frozen reference-material record.",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lead-assigned object identifier."
+        },
+        "version_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Declared version label or explicit unknown marker with a separate reason in the ledger."
+        },
+        "canonical_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Normalized absolute path used only as a file identity component."
+        },
+        "content_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FileDigest SHA-256 or null when FileDigest could not provide one."
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Observed byte size when available; null when unavailable with the same frozen-input failure recorded in the ledger."
+        },
+        "digest_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "case_id",
+            "object_id",
+            "version_label",
+            "canonical_path",
+            "content_digest"
+          ],
+          "description": "Identity binding retained with the frozen file row.",
+          "properties": {
+            "case_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Owning case identifier."
+            },
+            "object_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound object identifier."
+            },
+            "version_label": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound version label."
+            },
+            "canonical_path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound normalized absolute path."
+            },
+            "content_digest": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Bound FileDigest value or null if unavailable."
+            }
+          }
+        },
+        "classification_basis": {
+          "$ref": "#/definitions/classificationBasis"
+        },
+        "reference_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reference-only identifier."
+        },
+        "reference_kind": {
+          "type": "string",
+          "enum": [
+            "prior_review",
+            "procurement_material",
+            "clarification",
+            "supporting_reference"
+          ],
+          "description": "Non-contract reference role."
+        },
+        "use": {
+          "const": "reference_only",
+          "description": "Prevents this material from becoming a current contract part, approval, or conclusive evidence."
+        }
+      }
+    },
+    "operatorInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_id",
+        "kind",
+        "use"
+      ],
+      "description": "A bounded user operating request. It intentionally carries no approval, run, session, child, or work-context identity.",
+      "properties": {
+        "input_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lead-assigned instruction record identifier."
+        },
+        "kind": {
+          "const": "operator_request",
+          "description": "Classifies this record as an instruction rather than a contract source."
+        },
+        "use": {
+          "const": "instruction_only",
+          "description": "It may constrain requested review scope but cannot authorize a Human Gate or tool execution."
+        }
+      }
+    },
+    "commercialRuleSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "version_label",
+        "canonical_path",
+        "content_digest",
+        "size_bytes",
+        "digest_binding",
+        "classification_basis",
+        "rule_set_id",
+        "rule_set_version",
+        "use"
+      ],
+      "description": "Closed frozen commercial-rule-set record.",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lead-assigned object identifier."
+        },
+        "version_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Declared version label or explicit unknown marker with a separate reason in the ledger."
+        },
+        "canonical_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Normalized absolute path used only as a file identity component."
+        },
+        "content_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FileDigest SHA-256 or null when FileDigest could not provide one."
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Observed byte size when available; null when unavailable with the same frozen-input failure recorded in the ledger."
+        },
+        "digest_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "case_id",
+            "object_id",
+            "version_label",
+            "canonical_path",
+            "content_digest"
+          ],
+          "description": "Identity binding retained with the frozen file row.",
+          "properties": {
+            "case_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Owning case identifier."
+            },
+            "object_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound object identifier."
+            },
+            "version_label": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound version label."
+            },
+            "canonical_path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound normalized absolute path."
+            },
+            "content_digest": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Bound FileDigest value or null if unavailable."
+            }
+          }
+        },
+        "classification_basis": {
+          "$ref": "#/definitions/classificationBasis"
+        },
+        "rule_set_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Business rule-set identifier."
+        },
+        "rule_set_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Business rule-set version, independent of jurisdiction-pack version."
+        },
+        "use": {
+          "const": "commercial_policy_only",
+          "description": "Prevents a commercial rule set from selecting a legal jurisdiction pack or granting approval."
+        }
+      }
+    },
+    "resumeReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_id",
+        "version_label",
+        "canonical_path",
+        "content_digest",
+        "size_bytes",
+        "digest_binding",
+        "classification_basis",
+        "reference_id",
+        "use"
+      ],
+      "description": "Closed frozen resume-state reference record.",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lead-assigned object identifier."
+        },
+        "version_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Declared version label or explicit unknown marker with a separate reason in the ledger."
+        },
+        "canonical_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Normalized absolute path used only as a file identity component."
+        },
+        "content_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FileDigest SHA-256 or null when FileDigest could not provide one."
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Observed byte size when available; null when unavailable with the same frozen-input failure recorded in the ledger."
+        },
+        "digest_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "case_id",
+            "object_id",
+            "version_label",
+            "canonical_path",
+            "content_digest"
+          ],
+          "description": "Identity binding retained with the frozen file row.",
+          "properties": {
+            "case_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Owning case identifier."
+            },
+            "object_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound object identifier."
+            },
+            "version_label": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound version label."
+            },
+            "canonical_path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Bound normalized absolute path."
+            },
+            "content_digest": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Bound FileDigest value or null if unavailable."
+            }
+          }
+        },
+        "classification_basis": {
+          "$ref": "#/definitions/classificationBasis"
+        },
+        "reference_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reference-only resume-state identifier."
+        },
+        "use": {
+          "const": "reference_only_not_execution_identity",
+          "description": "Requires continue and action resume identities to come from platform-controlled Delegate or runtime records, never this material."
+        }
+      }
+    },
+    "unclassifiedMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "material_id",
+        "canonical_path",
+        "content_digest",
+        "size_bytes",
+        "reason",
+        "use"
+      ],
+      "description": "File-backed material whose role cannot be safely classified. It remains outside every consumable source set.",
+      "properties": {
+        "material_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Lead-assigned unclassified-material identifier."
+        },
+        "canonical_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Normalized absolute path retained for clarification and audit."
+        },
+        "content_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "FileDigest SHA-256 or null when unavailable."
+        },
+        "size_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Observed size or null when unavailable."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why classification requires user clarification; not a legal or identity conclusion."
+        },
+        "use": {
+          "const": "unclassified_not_usable",
+          "description": "Prevents promotion into current, historical, reference, operator, commercial, or resume classes before clarification."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "unclassified_materials": {
+            "minItems": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "legacy_current_objects_projection": {
+            "properties": {
+              "status": {
+                "const": "unavailable_multi_part_or_unclassified"
+              },
+              "objects": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      },
+      "description": "Any unclassified material blocks the legacy single-part projection even when one current main contract is also present."
+    }
+  ]
+}

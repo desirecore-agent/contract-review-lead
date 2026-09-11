@@ -1,0 +1,54 @@
+# Synthetic, schema-valid single-current-part example for authoring. It is not a completed production ledger.
+# The record classifies materials; it does not authorize approval, Human Gate completion, Delegate continuation, or action resume.
+inventory_version: 2
+case_id: case-template-001
+submission_inventory:
+  manifest_digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  manifest_digest_unavailable: false
+current_contract:
+  source_set_id: current-contract
+  parts:
+    - object_id: doc-main-001
+      version_label: template-v1
+      canonical_path: /synthetic/current-contract.md
+      content_digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      size_bytes: 42
+      digest_binding:
+        case_id: case-template-001
+        object_id: doc-main-001
+        version_label: template-v1
+        canonical_path: /synthetic/current-contract.md
+        content_digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      classification_basis: user_submission_context
+      part_id: body
+      kind: main_contract
+  main_contract_count: 1
+  manifest_digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  manifest_digest_unavailable: false
+historical_contract_sets: []
+reference_materials: []
+operator_inputs: []
+commercial_rule_sets: []
+resume_state_references: []
+unclassified_materials: []
+legacy_current_objects_projection:
+  status: available_single_part
+  objects:
+    - object_id: doc-main-001
+      version_label: template-v1
+      canonical_path: /synthetic/current-contract.md
+      content_digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      size_bytes: 42
+      digest_binding:
+        case_id: case-template-001
+        object_id: doc-main-001
+        version_label: template-v1
+        canonical_path: /synthetic/current-contract.md
+        content_digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      classification_basis: user_submission_context
+      part_id: body
+      kind: main_contract
+
+# If every submitted file is unclassified, use current_contract.parts: [], main_contract_count: 0,
+# both current manifest fields null/true, legacy status unavailable_multi_part_or_unclassified with objects: [],
+# and record each file under unclassified_materials. This is a HOLD shape, not a fabricated main contract.
