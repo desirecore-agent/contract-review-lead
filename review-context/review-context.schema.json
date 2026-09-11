@@ -82,11 +82,21 @@
       "else": {"properties": {"pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"const": "RULE_SOURCE_UNAVAILABLE"}}}}}}}
     },
     {
+      "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "candidate_basis"}, "candidate_basis": {"properties": {"pack": {"properties": {"status": {"const": "not_prechecked"}}, "required": ["status"]}}, "required": ["pack"]}}, "required": ["status", "candidate_basis"]}}, "required": ["jurisdiction"]},
+      "then": {
+        "properties": {
+          "output_constraints": {"properties": {"jurisdiction_substantive_conclusion": {"const": "not_issued_pack_preflight_pending"}}},
+          "pending": {"contains": {"type": "object", "required": ["code", "required_from"], "properties": {"code": {"const": "PEND-JURISDICTION-PACK-PREFLIGHT"}, "required_from": {"const": "lead"}}}}
+        }
+      },
+      "else": {"properties": {"pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"const": "PEND-JURISDICTION-PACK-PREFLIGHT"}}}}}}}
+    },
+    {
       "if": {"properties": {"jurisdiction": {"properties": {"status": {"const": "candidate_basis"}, "candidate_basis": {"properties": {"pack": {"properties": {"status": {"const": "read_and_pinned"}}, "required": ["status"]}}, "required": ["pack"]}}, "required": ["status", "candidate_basis"]}}, "required": ["jurisdiction"]},
       "then": {
         "properties": {
           "output_constraints": {"properties": {"jurisdiction_substantive_conclusion": {"const": "allowed"}}},
-          "pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"enum": ["PEND-JURISDICTION-BASIS-REQUIRED", "RULE_SOURCE_UNAVAILABLE"]}}}}}
+          "pending": {"not": {"contains": {"type": "object", "required": ["code"], "properties": {"code": {"enum": ["PEND-JURISDICTION-BASIS-REQUIRED", "PEND-JURISDICTION-PACK-PREFLIGHT", "RULE_SOURCE_UNAVAILABLE"]}}}}}
         }
       }
     },
@@ -131,7 +141,7 @@
               "required": ["status", "reason"],
               "properties": {
                 "status": {"const": "unavailable"},
-                "reason": {"$ref": "#/definitions/nonEmpty", "description": "Actual FileDigest/read failure reason recorded by O0."}
+                "reason": {"$ref": "#/definitions/nonEmpty", "description": "Actual reason the complete current-contract manifest is unavailable: a FileDigest/read failure or the complete current set has not been established within this registration scope. Do not misreport a scope limit as a tool failure or fabricate a digest."}
               }
             }
           ]
@@ -216,6 +226,14 @@
         "reason": {"$ref": "#/definitions/nonEmpty", "description": "Actual preflight failure for an already identified candidate; Lead records RULE_SOURCE_UNAVAILABLE and stops rather than selecting a default."}
       }
     },
+    "packNotPrechecked": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"const": "not_prechecked", "description": "A limited O0 retained one declared candidate without authorizing any pack preflight. This is neither a read failure nor a pin, permission, approval, or Human Gate."}
+      }
+    },
     "candidateBasis": {
       "type": "object",
       "additionalProperties": false,
@@ -223,7 +241,7 @@
       "properties": {
         "jurisdiction_code": {"$ref": "#/definitions/nonEmpty", "description": "Candidate review-basis label, not a final governing-law or forum conclusion."},
         "source": {"oneOf": [{"$ref": "#/definitions/userStatement"}, {"$ref": "#/definitions/currentPartClue"}]},
-        "pack": {"oneOf": [{"$ref": "#/definitions/packPin"}, {"$ref": "#/definitions/packUnavailable"}]}
+        "pack": {"oneOf": [{"$ref": "#/definitions/packPin"}, {"$ref": "#/definitions/packUnavailable"}, {"$ref": "#/definitions/packNotPrechecked"}]}
       }
     },
     "jurisdiction": {
@@ -269,7 +287,7 @@
         "factual_extraction": {"const": "allowed", "description": "Clause and source fact extraction remains in scope; this is not tool authorization."},
         "directional_risk_advice": {"enum": ["allowed", "not_issued_missing_review_stance"], "description": "Controls only directional analysis for the requested review subject."},
         "redline_or_negotiation_advice": {"enum": ["allowed", "not_issued_missing_review_stance"], "description": "Controls only advice that depends on a stated review perspective."},
-        "jurisdiction_substantive_conclusion": {"enum": ["allowed", "not_issued_missing_jurisdiction", "not_issued_hg_02_conflict", "not_issued_rule_source_unavailable"], "description": "Controls jurisdiction-specific substantive conclusions, not factual clause extraction. The rule-source value records an operational preflight failure, not missing user clarification."}
+        "jurisdiction_substantive_conclusion": {"enum": ["allowed", "not_issued_missing_jurisdiction", "not_issued_hg_02_conflict", "not_issued_pack_preflight_pending", "not_issued_rule_source_unavailable"], "description": "Controls jurisdiction-specific substantive conclusions, not factual clause extraction. The preflight-pending value records a limited-O0 authorization boundary, while the rule-source value records an actual operational preflight failure."}
       }
     },
     "pendingItem": {
@@ -291,6 +309,15 @@
           "properties": {
             "code": {"const": "RULE_SOURCE_UNAVAILABLE"},
             "required_from": {"const": "lead", "description": "Lead must stop on the actual selected-pack preflight failure; it is not a user-material or user-clarification debt."}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "required_from"],
+          "properties": {
+            "code": {"const": "PEND-JURISDICTION-PACK-PREFLIGHT"},
+            "required_from": {"const": "lead", "description": "Lead may resolve this only after the user authorizes a complete review and then performs the actual selected-pack preflight; this item grants neither authorization nor tool access."}
           }
         }
       ]

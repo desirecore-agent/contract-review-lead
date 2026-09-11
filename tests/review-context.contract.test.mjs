@@ -50,9 +50,22 @@ test('synthetic contexts and template validate through real Draft-07 Ajv; one-fi
   const conflict = clone(fixture.valid_instances.find(({ id }) => id === 'conflicting-candidates-preserve-hg-02').context)
   conflict.output_constraints.jurisdiction_substantive_conclusion = 'allowed'
   assert.equal(validate(conflict), false, 'conflicting candidates cannot allow a jurisdiction conclusion')
+  const conflictWithPreflightPending = clone(fixture.valid_instances.find(({ id }) => id === 'conflicting-candidates-preserve-hg-02').context)
+  assert.equal(conflictWithPreflightPending.jurisdiction.candidate_bases[1].pack.status, 'not_prechecked', 'a conflict may retain an unprechecked declared candidate')
+  conflictWithPreflightPending.pending.push({ code: 'PEND-JURISDICTION-PACK-PREFLIGHT', required_from: 'lead' })
+  assert.equal(validate(conflictWithPreflightPending), false, 'an unprechecked conflict candidate cannot displace the HG-02 resolution path')
   const unavailable = clone(fixture.valid_instances.find(({ id }) => id === 'identified-candidate-with-missing-pack-records-failure-without-default').context)
   unavailable.output_constraints.jurisdiction_substantive_conclusion = 'allowed'
   assert.equal(validate(unavailable), false, 'unavailable selected pack cannot allow a jurisdiction conclusion')
+  const notPrechecked = clone(fixture.valid_instances.find(({ id }) => id === 'limited-o0-declared-candidate-is-not-prechecked').context)
+  notPrechecked.output_constraints.jurisdiction_substantive_conclusion = 'allowed'
+  assert.equal(validate(notPrechecked), false, 'an unprechecked candidate cannot allow a jurisdiction conclusion')
+  const missingPreflightPending = clone(notPrechecked)
+  missingPreflightPending.pending = []
+  assert.equal(validate(missingPreflightPending), false, 'an unprechecked candidate requires the typed Lead preflight pending item')
+  const pinnedWithPreflightPending = clone(fixture.valid_instances.find(({ id }) => id === 'user-stated-stance-and-review-basis').context)
+  pinnedWithPreflightPending.pending.push({ code: 'PEND-JURISDICTION-PACK-PREFLIGHT', required_from: 'lead' })
+  assert.equal(validate(pinnedWithPreflightPending), false, 'a pinned candidate cannot retain the limited-O0 preflight pending item')
   const pinned = clone(fixture.valid_instances.find(({ id }) => id === 'user-stated-stance-and-review-basis').context)
   pinned.output_constraints.jurisdiction_substantive_conclusion = 'not_issued_missing_jurisdiction'
   assert.equal(validate(pinned), false, 'read-and-pinned candidate allows candidate-basis analysis')
@@ -76,6 +89,10 @@ test('source fixtures distinguish claims without asserting cross-document enforc
   assert.equal(noPack.jurisdiction.candidate_basis.pack.status, 'unavailable')
   assert.equal(noPack.jurisdiction.candidate_basis.pack.reason, 'RULE_SOURCE_UNAVAILABLE')
   assert.equal(noPack.output_constraints.jurisdiction_substantive_conclusion, 'not_issued_rule_source_unavailable')
+  const notPrechecked = fixture.valid_instances.find(({ id }) => id === 'limited-o0-declared-candidate-is-not-prechecked').context
+  assert.deepEqual(notPrechecked.jurisdiction.candidate_basis.pack, { status: 'not_prechecked' })
+  assert.equal(notPrechecked.output_constraints.jurisdiction_substantive_conclusion, 'not_issued_pack_preflight_pending')
+  assert.deepEqual(notPrechecked.pending, [{ code: 'PEND-JURISDICTION-PACK-PREFLIGHT', required_from: 'lead' }])
 })
 
 test('Lead and coverage-matrix source contracts retain no-default unresolved mode and O3 context handoff requirements', async () => {
@@ -93,12 +110,16 @@ test('Lead and coverage-matrix source contracts retain no-default unresolved mod
   assert.match(lead, /不默认选包/)
   assert.match(lead, /not_issued_missing_review_stance/)
   assert.match(lead, /不得发出法域实体结论/)
+  assert.match(lead, /pack: \{status: not_prechecked\}/)
+  assert.match(lead, /PEND-JURISDICTION-PACK-PREFLIGHT/)
+  assert.match(lead, /成功时才以真实版本和两个 SHA-256 pin 将它改为 `read_and_pinned`/)
   assert.match(lead, /第一次 `Write` 前，必须实际 `Read` AgentFS 中的 `review-context\/review-context\.schema\.json` 和 `review-context\/review-context\.template\.yaml`/)
   assert.match(lead, /O0_REVIEW_CONTEXT_INVALID/)
   assert.match(lead, /只有本轮已提交合同材料或用户明确指向合同文件时，才可进入任何 O0/)
   assert.match(lead, /用户若明确只要求登记或建立待补的 review context/)
-  assert.match(lead, /不要按下列完整 O0 的第 1–9 项继续执行/)
-  assert.match(lead, /不得建立覆盖矩阵、伪造附件\/当前合同清单摘要、页码或其他冻结事实/)
+  assert.match(lead, /\*\*受限 O0 不预检或推进。\*\*/)
+  assert.match(lead, /不得建立覆盖矩阵、规则包预检、材料抽取、实质判断或 `Delegate`/)
+  assert.match(lead, /不能说“未提交”“缺失”、冻结它们，或伪造页码、清单摘要和其他冻结事实/)
   assert.match(lead, /用户明确要求开始审查，才可执行下列完整 O0/)
   assert.match(lead, /已明确完整审查授权且完整 O0 完成后才可派发任务/)
   assert.match(lead, /受限 O0 也没有到 O1 的边/)
@@ -112,6 +133,7 @@ test('Lead and coverage-matrix source contracts retain no-default unresolved mod
   assert.match(coverage, /clarification_required/)
   assert.match(coverage, /不生成任何法域规则行/)
   assert.match(coverage, /RULE_SOURCE_UNAVAILABLE/)
+  assert.match(coverage, /`pack.status: not_prechecked`/)
 })
 
 test('late O3 context echo is a source-contract rejection, not a simulated Agent run', async () => {
@@ -129,7 +151,7 @@ test('real Ajv rejects scope drift and stale or missing pending codes for every 
   const schema = await json('review-context/review-context.schema.json')
   const fixture = await json('tests/fixtures/review-context/cases.json')
   const validate = new Ajv({ allErrors: true, strict: false }).compile(schema)
-  const codes = ['PEND-REVIEW-STANCE-REQUIRED', 'PEND-JURISDICTION-BASIS-REQUIRED', 'HG-02', 'RULE_SOURCE_UNAVAILABLE']
+  const codes = ['PEND-REVIEW-STANCE-REQUIRED', 'PEND-JURISDICTION-BASIS-REQUIRED', 'HG-02', 'RULE_SOURCE_UNAVAILABLE', 'PEND-JURISDICTION-PACK-PREFLIGHT']
   for (const { id, context } of fixture.valid_instances) {
     assert.equal(validate(context), true, `${id}: baseline ${JSON.stringify(validate.errors)}`)
     for (const [field, shape] of Object.entries(schema.definitions.outputConstraints.properties)) {
@@ -147,7 +169,7 @@ test('real Ajv rejects scope drift and stale or missing pending codes for every 
     }
     for (const code of codes.filter(code => !context.pending.some(item => item.code === code))) {
       const mutated = structuredClone(context)
-      mutated.pending.push({ code, required_from: code === 'RULE_SOURCE_UNAVAILABLE' ? 'lead' : 'user' })
+      mutated.pending.push({ code, required_from: ['RULE_SOURCE_UNAVAILABLE', 'PEND-JURISDICTION-PACK-PREFLIGHT'].includes(code) ? 'lead' : 'user' })
       assert.equal(validate(mutated), false, `${id}: extraneous ${code}`)
     }
   }

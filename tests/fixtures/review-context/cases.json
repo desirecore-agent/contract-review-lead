@@ -26,6 +26,53 @@
       }
     },
     {
+      "id": "limited-o0-declared-candidate-is-not-prechecked",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {
+          "case_id": "case-limited-candidate",
+          "current_contract_manifest": {
+            "status": "unavailable",
+            "reason": "LIMITED_O0_NO_COMPLETE_CURRENT_SET"
+          }
+        },
+        "revision": 1,
+        "review_stance": {
+          "status": "user_stated",
+          "review_subject_label": "Customer",
+          "source": {
+            "kind": "user_statement",
+            "statement": "Review from the customer's commercial perspective."
+          }
+        },
+        "jurisdiction": {
+          "status": "candidate_basis",
+          "candidate_basis": {
+            "jurisdiction_code": "cn",
+            "source": {
+              "kind": "user_statement",
+              "statement": "Use the mainland China review basis."
+            },
+            "pack": {
+              "status": "not_prechecked"
+            }
+          }
+        },
+        "output_constraints": {
+          "factual_extraction": "allowed",
+          "directional_risk_advice": "allowed",
+          "redline_or_negotiation_advice": "allowed",
+          "jurisdiction_substantive_conclusion": "not_issued_pack_preflight_pending"
+        },
+        "pending": [
+          {
+            "code": "PEND-JURISDICTION-PACK-PREFLIGHT",
+            "required_from": "lead"
+          }
+        ]
+      }
+    },
+    {
       "id": "unique-current-part-clue-is-candidate-not-final-law",
       "declared_current_parts": [{"part_id": "body", "content_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}],
       "context": {
@@ -47,7 +94,7 @@
         "review_stance": {"status": "user_stated", "review_subject_label": "Customer", "source": {"kind": "user_statement", "statement": "Review from the customer's commercial perspective."}},
         "jurisdiction": {"status": "conflicting", "candidate_bases": [
           {"jurisdiction_code": "cn", "source": {"kind": "user_statement", "statement": "Use China law."}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "cn", "pack_version": "cn-v3", "pack_path": "/shared/jurisdiction-packs/cn/pack.yaml", "rules_path": "/shared/jurisdiction-packs/cn/rules.yaml", "pack_sha256": "3333333333333333333333333333333333333333333333333333333333333333", "rules_sha256": "4444444444444444444444444444444444444444444444444444444444444444", "service_scope": "supported"}},
-          {"jurisdiction_code": "us", "source": {"kind": "user_statement", "statement": "Use US law."}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "us", "pack_version": "us-v2", "pack_path": "/shared/jurisdiction-packs/us/pack.yaml", "rules_path": "/shared/jurisdiction-packs/us/rules.yaml", "pack_sha256": "5555555555555555555555555555555555555555555555555555555555555555", "rules_sha256": "6666666666666666666666666666666666666666666666666666666666666666", "service_scope": "supported"}}
+          {"jurisdiction_code": "us", "source": {"kind": "user_statement", "statement": "Use US law."}, "pack": {"status": "not_prechecked"}}
         ], "human_gate": "HG-02"},
         "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "not_issued_hg_02_conflict"},
         "pending": [{"code": "HG-02", "required_from": "user"}]

@@ -13,6 +13,10 @@ review_stance:
 jurisdiction:
   status: undetermined
   clarification_code: PEND-JURISDICTION-BASIS-REQUIRED
+# For one declared candidate during limited O0, retain the source as candidate_basis with
+# pack: {status: not_prechecked}, jurisdiction_substantive_conclusion:
+# not_issued_pack_preflight_pending, and PEND-JURISDICTION-PACK-PREFLIGHT from lead.
+# That records the scope boundary only: it is neither a pin nor a failed preflight.
 output_constraints:
   factual_extraction: allowed
   directional_risk_advice: not_issued_missing_review_stance
