@@ -10,7 +10,7 @@ description: >-
   7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
   synchronous isolated context, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.11
+version: 1.0.12
 type: procedural
 risk_level: medium
 status: enabled
@@ -36,7 +36,7 @@ requires:
     - AskUserQuestion
 metadata:
   author: DesireCore
-  version: 1.0.11
+  version: 1.0.12
   updated_at: '2026-09-11'
 ---
 
@@ -44,9 +44,9 @@ metadata:
 
 ## 何时使用
 
-收到用户已经提交合同材料、或当前消息明确指向由用户提交的合同文件时**第一个**执行本技能。它是本团队唯一的流程入口——五个成员都不自行启动，全部由本技能派发。
+本技能只编排**完整**合同审查。收到用户已经提交合同材料、或当前消息明确指向由用户提交的合同文件，且已明确要求审查时执行；五个成员都不自行启动，全部由本技能派发。
 
-先按用户自然语言确定本轮范围。明确“仅登记/建立待补 context/不要委派、抽取或实质审查”时，直接走受限 O0，**不得**用 `AskUserQuestion` 重复确认“仅登记还是完整审查”；明确要求审查合同的普通表达已是完整审查授权，不要求固定口令。只有材料已提交但范围确实含混时，才可一次询问范围。这个限制不妨碍 Human Gate 或当前步骤需要的真实事实澄清。
+用户已明确“仅登记/建立或补充待补 context/不要委派、抽取或实质审查”时，必须直接调用 `Skill review-registration`，不要先加载、摘录或执行本技能的完整 O0。若本技能被误选，停止在此处并转向该短技能，不使用本技能的工具链。明确要求审查合同的普通表达已是完整审查授权，不要求固定口令；只有材料已提交但范围确实含混时，才可一次询问范围。这个限制不妨碍 Human Gate 或当前步骤需要的真实事实澄清。
 
 用户只是在询问“审查需要什么材料”或表达审查意愿、当前消息没有合同/附件或明确文件指向时，不进入本技能和 O0。先用自然语言索要合同正文、全部附件、我方身份、适用法域/争议解决地和审查目标；可选索要历史版本与交易背景。此咨询节点为**零工具**：不得扫描工作区或历史会话，不得登记案件、生成 ID、写账本或派发成员。工作区残留文件不构成本轮用户提交。
 
@@ -76,7 +76,7 @@ metadata:
                     ┌──────────────┐
     用户提交材料 ───▶ │ O0 REGISTERED│  先建并回核 review context
                     └──────┬───────┘
-            仅登记范围 ────┤ 等待明确开始完整审查（不派发）
+            仅登记范围 ────┤ 转 `review-registration`（本技能不执行）
           完整审查已授权 ──┘ Delegate sync + isolated context → contract-intake
                     ┌──────▼───────┐
                     │ O1 INTAKE    │  第 1-2 步：结构化解析 + 完整性检查
@@ -117,7 +117,7 @@ metadata:
 
 | 从 | 事件 | 到 | 附带动作 |
 |---|---|---|---|
-| — | 收到本轮合同材料或明确文件指向，且用户仅授权登记/context | `O0` | 仅建立并回核 review context；不建矩阵、不冻结、不派发 |
+| — | 收到本轮合同材料或明确文件指向，且用户仅授权登记/context | — | 转 `review-registration`；本技能不建矩阵、不冻结、不派发 |
 | — | 收到本轮合同材料或明确文件指向，且用户明确开始完整审查 | `O0` | 生成 `case_id`、登记全部 `object_ref`、规则源预检后按 coverage policy 建初始矩阵 |
 | `O0` | 已明确完整审查授权且完整 O0 完成 | `O1` | `Delegate sync` + `contextMode: isolated`、`${case_id}:intake` → `contract-intake` |
 | `O1` | `verdict: blocked` | `X1` | 终止；不派发任何下游；把 `remediation` 清单交用户 |
@@ -141,7 +141,7 @@ metadata:
 
 **没有从 `X1` 直接到 `O2` 的边。**门禁终止后唯一出路是重新提交材料。
 
-**受限 O0 也没有到 O1 的边。**已在当前请求中明确的完整审查授权（包括普通“请审查这份合同”的自然表达）足以触发完整 O0，且不得重复追问；只有缺少该授权时，登记或补充 context 才停在 O0。缺审查视角或未定/冲突法域只限制相应 output_constraints，不会撤销这一完整审查授权或阻止 O1 事实输入治理。
+已在当前请求中明确的完整审查授权（包括普通“请审查这份合同”的自然表达）足以触发完整 O0，且不得重复追问。缺审查视角或未定/冲突法域只限制相应 output_constraints，不会撤销这一完整审查授权或阻止 O1 事实输入治理；受限登记的停止、更新和回复规则仅由 `review-registration` 定义。
 
 ---
 
@@ -149,15 +149,7 @@ metadata:
 
 ### O0 登记与受理
 
-**先服从本轮范围。**只有本轮已提交合同材料或用户明确指向合同文件时，才可进入任何 O0；否则仍是零工具咨询，不能仅凭工作目录或历史路径登记案件。具备材料前提后，用户若明确只要求登记或建立待补的 review context，而没有明确要求开始完整审查，则这是受限 O0 登记，不是 O1 或后续步骤的授权；已明确的选择不得再以 `AskUserQuestion` 重问。
-
-**受限 O0 只登记并结束。**顺序是建立 canonical Lead 根、生成 `case_id`、实际 `Read` schema 与 template、写入并回核闭合 context；确有当前提交且可读的指定文件时，可登记其最小对象身份和真实 `FileDigest` 返回。首次受限登记若没有同一案件已核验的完整 current 库存，即使单文件 digest 成功，也不得把它推定为完整 current manifest：`case_binding.current_contract_manifest` 必须写 `{status: unavailable, reason: <真实“完整 current 集合尚未建立”范围原因>}`。已有同案、同材料状态且已核验的完整 current 库存才可保留其现有 manifest；不得为范围变化伪造工具失败或重置该事实。单文件 digest 只证明该文件，不证明当前合同、附件或历史集合完整；用户没有提交或明确指向的附件、历史材料和完整集合必须保持未知，不能说“未提交”“缺失”、冻结它们，或伪造页码、清单摘要和其他冻结事实。
-
-**受限 O0 不预检或推进。**不得建立覆盖矩阵、规则包预检、材料抽取、实质判断或 `Delegate`，也不得按下列完整 O0 的第 1–9 项继续执行。唯一已声明的用户或当前 part 法域候选可写为 `jurisdiction.status: candidate_basis` 与 `pack: {status: not_prechecked}`，并配套 `not_issued_pack_preflight_pending` 和 `PEND-JURISDICTION-PACK-PREFLIGHT`；这只如实记录未获预检授权，不是 pin、失败、工具权限或 Human Gate，也不默认选择冲突候选。
-
-**补充登记不自动转完整审查。**用户随后仅补充视角、法域或其他登记信息时，先 `Read` 当前 context；同一 case、同一材料状态且闭合字段确有变化时写入已读 `revision + 1`，没有实际变化则不写新 revision。仍须用户明确要求开始审查，才可执行下列完整 O0 的清单、实际预检、矩阵和 O1。
-
-**受限 O0 的结束回复。**明确本轮仅完成登记并已停止；可列出当前 typed pending 对应的**输出限制**和用户可选择补充的信息，但不得把它们称为完整审查、O1 或事实提取的启动前提，也不得承诺补齐后自动开始。只有用户之后明确要求完整审查，才按完整 O0 继续。
+**完整审查前提。**只有本轮已提交合同材料或用户明确指向合同文件，且用户明确要求完整审查时，才可进入下列完整 O0；否则仍是零工具咨询，不能仅凭工作目录或历史路径登记案件。用户明确仅登记时，本技能不得执行任何后续编号步骤，直接转 `review-registration`。
 
 1. `GenerateUUID` 生成 `case_id`（形如 `case-2026-0831-001`，本地可读格式亦可，但一个案件内唯一且永不复用）。
 2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。仅一份文件时，`paths` 必须是该文件的完整绝对裸路径字符串，不得传数组 JSON 文本；多份文件时，`paths` 必须是完整集合的原生字符串数组。先按 `inventory/o0-input-inventory.schema.json` 建立闭合的分类库存，再逐份登记其真实冻结元组：
@@ -183,7 +175,7 @@ metadata:
 
 任何下游未启动、回执不合格或成员无响应都必须写入 `blocked_reasons`，不能用 `pending` 掩盖已发生的失败或已完成的步骤。`run_id` 必须同时保留外层 lead run 和每个 Delegate 子 run；若成员回执中的案件/内部 run 标识与外层运行不一致，原样记录 `identity_discrepancy` 并保持人工阻断，不得静默覆盖成单一 ID。账本更新属于本技能的必做产物，不以模型是否“打算稍后补写”为完成条件。
 
-**只有已明确完整审查授权且完整 O0 完成后才可派发任务。**受限 O0 登记完成不进入 O1。
+**只有已明确完整审查授权且完整 O0 完成后才可派发任务。**
 
 ### O1 输入治理（第 1-2 步）
 
