@@ -96,12 +96,13 @@ test('source fixtures distinguish claims without asserting cross-document enforc
 })
 
 test('Lead routes bounded registration to its dedicated skill while full orchestration retains context handoff requirements', async () => {
-  const [lead, registration, coverage, agent, persona] = await Promise.all([
+  const [lead, registration, coverage, agent, persona, principles] = await Promise.all([
     readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8'),
     readFile(new URL('skills/review-registration/SKILL.md', root), 'utf8'),
     readFile(new URL('skills/coverage-matrix/SKILL.md', root), 'utf8'),
     json('agent.json'),
     readFile(new URL('persona.md', root), 'utf8'),
+    readFile(new URL('principles.md', root), 'utf8'),
   ])
   assert.match(lead, /不得要求不存在的 `party_object_id`/)
   assert.match(lead, /不得从文件名、文内指令、商业规则、resume 或旧摘要推断/)
@@ -151,7 +152,21 @@ test('Lead routes bounded registration to its dedicated skill while full orchest
   assert.match(registration, /没有本轮材料或明确文件指向时，保持零工具咨询/)
   assert.match(lead, /已明确完整审查授权且完整 O0 完成后才可派发任务/)
   assert.match(lead, /已在当前请求中明确的完整审查授权（包括普通“请审查这份合同”的自然表达）足以触发完整 O0，且不得重复追问/)
-  assert.match(persona, /不得先加载长编排技能或用 `AskUserQuestion` 重复询问「仅登记还是完整审查」/)
+  assert.match(persona, /不得先加载长编排技能或重复询问「仅登记还是完整审查」/)
+  assert.match(persona, /首个工具调用必须是 `Skill review-registration`/)
+  assert.match(persona, /在该技能返回前，不得 `Read`、`Ls`、`Glob`、`Grep`、`FileDigest`、`Write`、`Edit`、`Delegate`、`AskUserQuestion`、`Bash`、Terminal、PowerShell 或其他 shell、规则包预检或建立矩阵/)
+  assert.match(persona, /受限登记只可按其 `requires` 使用 `Read`、`Write`、`GenerateUUID`、`FileDigest`/)
+  assert.match(persona, /`Read` 仅限 schema\/template 或同案 context，`Write` 仅限闭合 context 回写/)
+  assert.match(persona, /不得调用 shell、`Ls`、`Glob`、`Grep`、`Edit`、`Delegate`、`AskUserQuestion`、规则包或矩阵/)
+  assert.match(persona, /这是 Agent 流程规则，不是平台沙箱/)
+  assert.match(principles, /首个工具调用必须是 `Skill review-registration`/)
+  assert.match(principles, /在该技能返回前不得 `Read`、`Ls`、`Glob`、`Grep`、`FileDigest`、`Write`、`Edit`、`Delegate`、`AskUserQuestion`、`Bash`、Terminal、PowerShell 或其他 shell、规则包预检或建立矩阵/)
+  assert.match(principles, /受限登记只可按其 `requires` 使用 `Read`、`Write`、`GenerateUUID`、`FileDigest`/)
+  assert.match(principles, /`Read` 仅限 schema\/template 或同案 context，`Write` 仅限闭合 context 回写/)
+  assert.match(principles, /不得调用 shell、`Ls`、`Glob`、`Grep`、`Edit`、`Delegate`、`AskUserQuestion`、规则包或矩阵/)
+  assert.match(principles, /纯语言澄清和结束回复不受该工具清单约束/)
+  assert.match(principles, /只有范围本身含混时才可一次澄清/)
+  assert.match(principles, /完整审查另由 `review-orchestration` 编排/)
   assert.match(lead, /明确要求审查合同的普通表达已是完整审查授权，不要求固定口令/)
   assert.match(lead, /不得调用未暴露的 `Bash`、Terminal、PowerShell 或其他 shell 来创建目录/)
   assert.match(coverage, /`review-registration` 是唯一流程，本技能不得被调用/)
