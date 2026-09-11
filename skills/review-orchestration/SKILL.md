@@ -151,11 +151,13 @@ metadata:
 
 **先服从本轮范围。**只有本轮已提交合同材料或用户明确指向合同文件时，才可进入任何 O0；否则仍是零工具咨询，不能仅凭工作目录或历史路径登记案件。具备材料前提后，用户若明确只要求登记或建立待补的 review context，而没有明确要求开始完整审查，则这是受限 O0 登记，不是 O1 或后续步骤的授权；已明确的选择不得再以 `AskUserQuestion` 重问。
 
-**受限 O0 只登记并结束。**顺序是建立 canonical Lead 根、生成 `case_id`、实际 `Read` schema 与 template、写入并回核闭合 context；确有当前提交且可读的指定文件时，可登记其最小对象身份和真实 `FileDigest` 返回。单文件 digest 只证明该文件，不证明当前合同、附件或历史集合完整；用户没有提交或明确指向的附件、历史材料和完整集合必须保持未知，不能说“未提交”“缺失”、冻结它们，或伪造页码、清单摘要和其他冻结事实。没有完整 current set 时，`case_binding.current_contract_manifest` 必须写 `{status: unavailable, reason: <真实范围未计算原因>}`；这不是工具失败，也不得抄模板 digest。
+**受限 O0 只登记并结束。**顺序是建立 canonical Lead 根、生成 `case_id`、实际 `Read` schema 与 template、写入并回核闭合 context；确有当前提交且可读的指定文件时，可登记其最小对象身份和真实 `FileDigest` 返回。首次受限登记若没有同一案件已核验的完整 current 库存，即使单文件 digest 成功，也不得把它推定为完整 current manifest：`case_binding.current_contract_manifest` 必须写 `{status: unavailable, reason: <真实“完整 current 集合尚未建立”范围原因>}`。已有同案、同材料状态且已核验的完整 current 库存才可保留其现有 manifest；不得为范围变化伪造工具失败或重置该事实。单文件 digest 只证明该文件，不证明当前合同、附件或历史集合完整；用户没有提交或明确指向的附件、历史材料和完整集合必须保持未知，不能说“未提交”“缺失”、冻结它们，或伪造页码、清单摘要和其他冻结事实。
 
 **受限 O0 不预检或推进。**不得建立覆盖矩阵、规则包预检、材料抽取、实质判断或 `Delegate`，也不得按下列完整 O0 的第 1–9 项继续执行。唯一已声明的用户或当前 part 法域候选可写为 `jurisdiction.status: candidate_basis` 与 `pack: {status: not_prechecked}`，并配套 `not_issued_pack_preflight_pending` 和 `PEND-JURISDICTION-PACK-PREFLIGHT`；这只如实记录未获预检授权，不是 pin、失败、工具权限或 Human Gate，也不默认选择冲突候选。
 
 **补充登记不自动转完整审查。**用户随后仅补充视角、法域或其他登记信息时，先 `Read` 当前 context；同一 case、同一材料状态且闭合字段确有变化时写入已读 `revision + 1`，没有实际变化则不写新 revision。仍须用户明确要求开始审查，才可执行下列完整 O0 的清单、实际预检、矩阵和 O1。
+
+**受限 O0 的结束回复。**明确本轮仅完成登记并已停止；可列出当前 typed pending 对应的**输出限制**和用户可选择补充的信息，但不得把它们称为完整审查、O1 或事实提取的启动前提，也不得承诺补齐后自动开始。只有用户之后明确要求完整审查，才按完整 O0 继续。
 
 1. `GenerateUUID` 生成 `case_id`（形如 `case-2026-0831-001`，本地可读格式亦可，但一个案件内唯一且永不复用）。
 2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。仅一份文件时，`paths` 必须是该文件的完整绝对裸路径字符串，不得传数组 JSON 文本；多份文件时，`paths` 必须是完整集合的原生字符串数组。先按 `inventory/o0-input-inventory.schema.json` 建立闭合的分类库存，再逐份登记其真实冻结元组：
