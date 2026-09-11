@@ -1,0 +1,1086 @@
+{
+  "description": "Synthetic public v23 policy fixture. Schema-validity is source-only evidence; it is not a worker, native, legal, or production acceptance result.",
+  "source_texts": {
+    "body": "Body synthetic clause.",
+    "annex": "Annex synthetic clause."
+  },
+  "inventory": {
+    "inventory_version": 2,
+    "case_id": "C01-SYNTHETIC",
+    "submission_inventory": {
+      "manifest_digest": "decdbb24c7b884872dcf2e48b5e48d2725fe7e50edfd159ae9a7688cd83520f5",
+      "manifest_digest_unavailable": false
+    },
+    "current_contract": {
+      "source_set_id": "current-contract",
+      "parts": [
+        {
+          "object_id": "current-body",
+          "version_label": "current-body-v1",
+          "canonical_path": "/synthetic/C01/current-body.txt",
+          "content_digest": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+          "size_bytes": 22,
+          "digest_binding": {
+            "case_id": "C01-SYNTHETIC",
+            "object_id": "current-body",
+            "version_label": "current-body-v1",
+            "canonical_path": "/synthetic/C01/current-body.txt",
+            "content_digest": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52"
+          },
+          "classification_basis": "user_submission_context",
+          "part_id": "body",
+          "kind": "main_contract"
+        },
+        {
+          "object_id": "current-annex",
+          "version_label": "current-annex-v1",
+          "canonical_path": "/synthetic/C01/current-annex.txt",
+          "content_digest": "3f3c4cc5db1a27b5b04c2b6c8204016a2e934c79285a5c5f8de384e36a5ce24f",
+          "size_bytes": 23,
+          "digest_binding": {
+            "case_id": "C01-SYNTHETIC",
+            "object_id": "current-annex",
+            "version_label": "current-annex-v1",
+            "canonical_path": "/synthetic/C01/current-annex.txt",
+            "content_digest": "3f3c4cc5db1a27b5b04c2b6c8204016a2e934c79285a5c5f8de384e36a5ce24f"
+          },
+          "classification_basis": "user_submission_context",
+          "part_id": "annex",
+          "kind": "exhibit"
+        }
+      ],
+      "main_contract_count": 1,
+      "manifest_digest": "32a105e5c85ab447829ba71ad41e626ab4e9aa12c771792fa70f31f9a059b980",
+      "manifest_digest_unavailable": false
+    },
+    "historical_contract_sets": [],
+    "reference_materials": [],
+    "operator_inputs": [],
+    "commercial_rule_sets": [],
+    "resume_state_references": [],
+    "unclassified_materials": [],
+    "legacy_current_objects_projection": {
+      "status": "unavailable_multi_part_or_unclassified",
+      "objects": []
+    }
+  },
+  "artifact": {
+    "clause_extraction": {
+      "extraction_id": "EXTRACT-C01-SYNTHETIC",
+      "extracted_at": "2026-09-11T00:00:00Z",
+      "executed_by": "clause-extractor",
+      "skill": "clause-extraction@1.0.10",
+      "parser_revision": "v2",
+      "ontology_version": "onto-v1",
+      "contract_schema": {
+        "name": "clause-extraction-artifact",
+        "version": 22,
+        "sha256": "0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f"
+      },
+      "lifecycle": {
+        "state": "ready_for_handoff",
+        "started_at": "2026-09-11T00:00:00Z",
+        "deadline_at": "2026-09-11T00:15:00Z",
+        "repair_attempt": 0,
+        "handoff": {
+          "artifact_path": "/synthetic/C01/clause-extraction.json",
+          "to": "contract-review-lead"
+        }
+      },
+      "upstream": {
+        "from": "contract-intake",
+        "intake_id": "INTAKE-C01-SYNTHETIC",
+        "receipt_path": "/synthetic/C01/intake.json",
+        "verdict": "passed",
+        "frozen_baseline": {
+          "master_version": "v1",
+          "attachment_manifest_digest": "32a105e5c85ab447829ba71ad41e626ab4e9aa12c771792fa70f31f9a059b980",
+          "page_range": {
+            "body": "1-1",
+            "annex": "1-1"
+          }
+        },
+        "consistency_conclusion_allowed": false
+      },
+      "object": {
+        "contract_object_id": "current-body",
+        "object_title": "Synthetic current contract",
+        "version_label": "current-body-v1",
+        "submission_mode": "multipart",
+        "content_digest": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52"
+      },
+      "frozen_baseline": {
+        "baseline_version": 1,
+        "part_limit": 64,
+        "parts": [
+          {
+            "id": "body",
+            "source": "/synthetic/C01/current-body.txt",
+            "pages": "1-1",
+            "delivered": true,
+            "size_bytes": 22,
+            "sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+            "part_not_delivered": null,
+            "source_name": "body",
+            "format": "text"
+          },
+          {
+            "id": "annex",
+            "source": "/synthetic/C01/current-annex.txt",
+            "pages": "1-1",
+            "delivered": true,
+            "size_bytes": 23,
+            "sha256": "3f3c4cc5db1a27b5b04c2b6c8204016a2e934c79285a5c5f8de384e36a5ce24f",
+            "part_not_delivered": null,
+            "source_name": "annex",
+            "format": "text"
+          }
+        ]
+      },
+      "parts": [
+        {
+          "id": "body",
+          "source": "/synthetic/C01/current-body.txt",
+          "pages": "1-1",
+          "delivered": true,
+          "size_bytes": 22,
+          "sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+          "part_not_delivered": null,
+          "source_name": "body",
+          "format": "text"
+        },
+        {
+          "id": "annex",
+          "source": "/synthetic/C01/current-annex.txt",
+          "pages": "1-1",
+          "delivered": true,
+          "size_bytes": 23,
+          "sha256": "3f3c4cc5db1a27b5b04c2b6c8204016a2e934c79285a5c5f8de384e36a5ce24f",
+          "part_not_delivered": null,
+          "source_name": "annex",
+          "format": "text"
+        }
+      ],
+      "part_count": 2,
+      "coverage": [
+        {
+          "field_group": "parties",
+          "slug": "parties",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "definitions",
+          "slug": "definitions",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "clause_tree",
+          "slug": "clause_tree",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "monetary_terms",
+          "slug": "monetary_terms",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "payment_terms",
+          "slug": "payment_terms",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "temporal_terms",
+          "slug": "temporal_terms",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "termination_grounds",
+          "slug": "termination_grounds",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "dispute_resolution",
+          "slug": "dispute_resolution",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "governing_law",
+          "slug": "governing_law",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "liability_cap",
+          "slug": "liability_cap",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "indirect_damages_excluded",
+          "slug": "indirect_damages_excluded",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "breach_remedies",
+          "slug": "breach_remedies",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "grace_period",
+          "slug": "grace_period",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "subcontracting",
+          "slug": "subcontracting",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "audit_right",
+          "slug": "audit_right",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "force_majeure",
+          "slug": "force_majeure",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "data_export",
+          "slug": "data_export",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "attachment_manifest",
+          "slug": "attachment_manifest",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        },
+        {
+          "field_group": "attachment_references",
+          "slug": "attachment_references",
+          "status": "covered",
+          "evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "exhaustive": false,
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "debt_codes": [],
+          "exhaustive": false
+        }
+      ],
+      "failure_marks": [],
+      "stats": {
+        "clauses_extracted": 1,
+        "coverage_covered": 19,
+        "coverage_not_present": 0,
+        "coverage_blank": 0,
+        "coverage_blocked": 0
+      },
+      "payloads": [
+        {
+          "group": "parties",
+          "records": [
+            {
+              "id": "parties-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "definitions",
+          "records": [
+            {
+              "id": "definitions-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "clauses",
+          "records": [
+            {
+              "id": "clauses-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "monetary_terms",
+          "records": [
+            {
+              "id": "monetary_terms-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "payment_terms",
+          "records": [
+            {
+              "id": "payment_terms-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "temporal_terms",
+          "records": [
+            {
+              "id": "temporal_terms-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "termination_grounds",
+          "records": [
+            {
+              "id": "termination_grounds-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "dispute_resolution",
+          "records": [
+            {
+              "id": "dispute_resolution-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "governing_law",
+          "records": [
+            {
+              "id": "governing_law-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "liability",
+          "records": [
+            {
+              "id": "liability-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "attachment_manifest",
+          "records": [
+            {
+              "id": "attachment_manifest-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "attachment_references",
+          "records": [
+            {
+              "id": "attachment_references-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "attachment_reconciliation",
+          "records": [
+            {
+              "id": "attachment_reconciliation-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        },
+        {
+          "group": "attachment_cross_version",
+          "records": [
+            {
+              "id": "attachment_cross_version-1",
+              "status": "covered",
+              "value": "Body synthetic clause.",
+              "evidence": [
+                {
+                  "part": "body",
+                  "page": "1",
+                  "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+                  "exact_quote": "Body synthetic clause.",
+                  "grep_state": "matched",
+                  "exhaustive": false,
+                  "utf16_offsets": [
+                    0
+                  ]
+                }
+              ],
+              "debt_codes": []
+            }
+          ]
+        }
+      ],
+      "ambiguities": [
+        {
+          "id": "ambiguity-1",
+          "statement": "Synthetic ambiguity.",
+          "candidate_evidence": [
+            {
+              "part": "body",
+              "page": "1",
+              "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+              "exact_quote": "Body synthetic clause.",
+              "grep_state": "matched",
+              "utf16_offsets": [
+                0
+              ]
+            }
+          ],
+          "adjudicated": false
+        }
+      ],
+      "source_representations": [
+        {
+          "part_id": "body",
+          "source_name": "body",
+          "source_sha256": "4e74255ce6764afd771085a47f774767965fee0e16652ffd4cf911ecf5145d52",
+          "source_size_bytes": 22,
+          "format": "text",
+          "representation": {
+            "kind": "original_text"
+          }
+        },
+        {
+          "part_id": "annex",
+          "source_name": "annex",
+          "source_sha256": "3f3c4cc5db1a27b5b04c2b6c8204016a2e934c79285a5c5f8de384e36a5ce24f",
+          "source_size_bytes": 23,
+          "format": "text",
+          "representation": {
+            "kind": "original_text"
+          }
+        }
+      ]
+    }
+  },
+  "capture_contract": {
+    "control_names": [
+      "pinned_schema",
+      "artifact",
+      "rules",
+      "baseline"
+    ],
+    "delivered_source_names": [
+      "body",
+      "annex"
+    ],
+    "max_captured_files": 32,
+    "max_delivered_sources": 28
+  },
+  "receipt_contract": {
+    "assertion_count": 24,
+    "selectors": [
+      {
+        "id": "payloadEvidence",
+        "required_source_names": [
+          "body",
+          "annex"
+        ],
+        "exhaustive_negative": false,
+        "source_requirement": "captured_representation_part"
+      },
+      {
+        "id": "coverageEvidence",
+        "required_source_names": [
+          "body",
+          "annex"
+        ],
+        "exhaustive_negative": false,
+        "source_requirement": "captured_representation_part"
+      },
+      {
+        "id": "ambiguityEv",
+        "required_source_names": [
+          "body",
+          "annex"
+        ],
+        "exhaustive_negative": false,
+        "source_requirement": "captured_representation_part"
+      }
+    ],
+    "literals": [
+      {
+        "selector_id": "payloadEvidence",
+        "required_source_names": [
+          "body",
+          "annex"
+        ],
+        "completed_source_names": [
+          "body",
+          "annex"
+        ],
+        "failed_source_names": [],
+        "all_required_sources_completed": true
+      },
+      {
+        "selector_id": "coverageEvidence",
+        "required_source_names": [
+          "body",
+          "annex"
+        ],
+        "completed_source_names": [
+          "body",
+          "annex"
+        ],
+        "failed_source_names": [],
+        "all_required_sources_completed": true
+      },
+      {
+        "selector_id": "ambiguityEv",
+        "required_source_names": [
+          "body",
+          "annex"
+        ],
+        "completed_source_names": [
+          "body",
+          "annex"
+        ],
+        "failed_source_names": [],
+        "all_required_sources_completed": true
+      }
+    ],
+    "binding_sources": {
+      "schema_source": "pinned_schema",
+      "schema_target": "artifact",
+      "rules_source": "rules"
+    }
+  },
+  "identity_mutations": [
+    {
+      "id": "digest-binding-object-id",
+      "document": "inventory",
+      "pointer": "/current_contract/parts/1/digest_binding/object_id",
+      "replacement": "drifted-annex-object",
+      "expected_assertion_index": 16
+    },
+    {
+      "id": "digest-binding-version-label",
+      "document": "inventory",
+      "pointer": "/current_contract/parts/1/digest_binding/version_label",
+      "replacement": "drifted-annex-v2",
+      "expected_assertion_index": 16
+    },
+    {
+      "id": "digest-binding-canonical-path",
+      "document": "inventory",
+      "pointer": "/current_contract/parts/1/digest_binding/canonical_path",
+      "replacement": "/synthetic/C01/drifted-annex.txt",
+      "expected_assertion_index": 16
+    },
+    {
+      "id": "digest-binding-content-digest",
+      "document": "inventory",
+      "pointer": "/current_contract/parts/1/digest_binding/content_digest",
+      "replacement": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "expected_assertion_index": 16
+    },
+    {
+      "id": "digest-binding-case-id",
+      "document": "inventory",
+      "pointer": "/current_contract/parts/1/digest_binding/case_id",
+      "replacement": "C01-OTHER",
+      "expected_assertion_index": 17
+    },
+    {
+      "id": "artifact-object-id",
+      "document": "artifact",
+      "pointer": "/clause_extraction/object/contract_object_id",
+      "replacement": "other-main",
+      "expected_assertion_index": 18
+    },
+    {
+      "id": "artifact-object-version",
+      "document": "artifact",
+      "pointer": "/clause_extraction/object/version_label",
+      "replacement": "other-main-v2",
+      "expected_assertion_index": 19
+    },
+    {
+      "id": "artifact-object-digest",
+      "document": "artifact",
+      "pointer": "/clause_extraction/object/content_digest",
+      "replacement": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "expected_assertion_index": 20
+    }
+  ]
+}

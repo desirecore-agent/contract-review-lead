@@ -322,6 +322,16 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 - 只有本次绑定任务已终态，且 v2 Compose/contract 结果不合格时，才可用「可信续接绑定」中同一目标/child run 的已登记 ID 以 `contextMode: continue` 打回。达到同环节两次上限仍不合格时转 `H`；不得以 `isolated` 重置计数或把 `continue` 当作 action resume。RC-1..RC-6 不能单独触发或替代 v2 自动验收。
 - 最终回执路径与 O2 Compose 的精确 public-envelope/receipt 检查遵循所选的单 part v2.1 text 或 v2.2 DOCX 契约。只有同次五 capture、双 release pin、全量 binding/snapshot/rule_manifest、以及所需 v2.2 derived_sources 与 `receipt.ok:true` 全部成立，才可登记 artifact path、完成 O2 并进入 O3；Compose 未注册、失败、native/unsupported 或缺任一命名观察一律 HOLD。RC-1..RC-6 不得形成替代自动放行路径。
 
+#### Clause v2.3 current multipart 候选（未发布，必须显式选择）
+
+v2.3 是 v2.2 schema 的多材料候选，不替代已 pin 的 v2.1/v2.2 分支，也不表示平台或团队版本已发布。仅当 O0 已用完整库存 schema 验证并冻结同次 baseline，且 `current_contract.parts` 中恰有一份 `main_contract`、所有当前已交付 part 不超过 28 份时，才可准备一次 Compose：`pinned_schema`、`artifact`、`rules`、同次完整 O0 `baseline` 四个 control captures，加上每个已交付 current part 的实际 capture。历史合同、reference、operator、commercial、resume 和 unclassified 材料不得进入 Clause parts、frozen baseline、source representations 或 delivered captures；这些桶可合法非空，Compose 链只绑定 O0 已声明的 current 集合，不证明 Agent 分类语义本身。
+
+固定 schema 仍为 `clause-extraction-artifact-v22.schema.json`，SHA-256 为 `0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f`；固定 rules 为 `compose-contracts/clause-v23-current-multipart.rules.json`，LF release pin SHA-256 为 `161a1eeb124db1f69320930d81c3076d2f8a8940bb63627490bacd4da040b82f`。Clause 委派仍必须按 v2.2 schema 输出：每个 delivered part 在 `parts`、`frozen_baseline.parts` 和 `source_representations` 中保持一致；未交付 part 保留 typed `part_not_delivered` debt，且不得有 representation 或 capture。Lead 不从 part index 猜 source name/format，也不把 artifact 自报 metadata 当 capture 事实。
+
+三个正向 evidence selector 使用 release-owned dynamic part-to-capture mapping；receipt 的 `source_requirement: captured_representation_part` 只说明动态来源账务。所有动态 required sources 都必须 complete，且 receipt `ok:true`、binding、snapshot、schema/rules pin、metadata/provenance 与 public envelope 均通过才可进入 O3。无 quote 只可能完成来源可读性，不能证明条款不存在、语义结论或 Human Gate。任一 capture 超限、动态 map/metadata/provenance 不匹配、未交付 part 被引用、native/unsupported/deadline 或 receipt 缺失都 HOLD；不得删件、降级为旧静态规则，或提前发布团队版本。
+
+v2.3 的固定 receipt 消费合同也必须逐项核对：同次 capture 恰有 `pinned_schema`、`artifact`、`rules`、`baseline` 四个 control，外加每个 delivered current part 的命名 capture；每个 capture 的公开 snapshot `name`、format、SHA-256、size 必须与本次请求和 artifact→representation→trusted metadata 链一致。`binding.schema_source`、`binding.schema_target`、`binding.rules_source` 必须分别是前三个 control，且 rules SHA 与上述 pin 相等。`binding.rule_manifest.assertion_count` 必须为 24；selector 按 `payloadEvidence`、`coverageEvidence`、`ambiguityEv` 的固定顺序，各自只能是闭合四字段 `{ id, required_source_names, exhaustive_negative, source_requirement }`，其中 `source_requirement` 必须为 `captured_representation_part`、`exhaustive_negative:false`，而 `required_source_names` 必须恰等于本次 delivered capture 名称集合。对应 public literal receipt 的 required/completed 名称集合也必须恰等于该集合、failed 为空且 `all_required_sources_completed:true`；任一缺失、额外、重复、顺序/哈希/大小/格式不匹配或三字段旧形状均 HOLD。该消费检查只验证固定发布规则和本次可信回执，不从模型文字、artifact 自报 provenance 或 receipt 外字段补全来源。
+
 ### O3 法域注入 + 风险判读（第 4-5 步）
 
 `Delegate`，`mode: fan-out`，`strategy: parallel`，同时提供 `targets` 和每个目标的 `contextSelections`：
