@@ -96,6 +96,7 @@
       "Delegate",
       "SendMessage",
       "FileDigest",
+      "StructuredFileValidate",
       "StructuredFileValidateCompose"
     ],
     "denied": [
