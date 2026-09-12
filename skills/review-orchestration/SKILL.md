@@ -196,7 +196,7 @@ handoff:
   intake_gate_steps_required: [S1, S2, S3, S4, S5, S6, S7, S8]
 ```
 
-**O1 双集合摘要交接。**`case_id` 只能复制本次 `Delegate` 的显式 `handoff.case_id`，不得从 `intentId`、Work Context、旧回执或成员文本推导。`submitted_file_paths` 是完整用户提交集合，供 Intake 的 S1 用一次完整批量 `FileDigest` 复核；`object.documents` 只能列 `current_contract.parts`，其集合必须恰与 `current_contract_manifest_digest`（及兼容 `object.manifest_digest`）相同，绝不得混入 `operator_input`、历史、参考或其他总提交文件。`submission_inventory_manifest_digest` 是完整提交集合摘要；`current_contract_manifest_digest` 是当前合同集摘要；两者均为既有字符串字段，分别可写 `unknown` 加各自真实 `*_unavailable_reason`，不得互相代替。S4 的 `attachment_manifest_digest` 仍只表示四字段对账表摘要，不能写入、比较或镜像任一 FileDigest 集合摘要。任一字段缺失、`object.manifest_digest` 与 current 值不等、集合范围不自洽、或 Intake 复核的完整提交 aggregate 与 submission 值不等，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，不得消费回执或进入 O2。
+**O1 双集合摘要交接。**Lead 写入 `handoff.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`：真实 `GenerateUUID` 值，或 O0 允许的固定 `case-` 加该 UUID（同案更新则使用已核验保留的旧值）；在 `Delegate` 前必须实际 `Read` 回核它同时等于 `review-context.case_binding.case_id` 与 `orchestration-ledger.case_id`，不等则记录 `O1_CASE_ID_BINDING_INVALID` 并 HOLD。不得从 `intentId`、Work Context、旧回执或成员文本推导。`submitted_file_paths` 是完整用户提交集合，供 Intake 的 S1 用一次完整批量 `FileDigest` 复核；`object.documents` 只能列 `current_contract.parts`，其集合必须恰与 `current_contract_manifest_digest`（及兼容 `object.manifest_digest`）相同，绝不得混入 `operator_input`、历史、参考或其他总提交文件。`submission_inventory_manifest_digest` 是完整提交集合摘要；`current_contract_manifest_digest` 是当前合同集摘要；两者均为既有字符串字段，分别可写 `unknown` 加各自真实 `*_unavailable_reason`，不得互相代替。S4 的 `attachment_manifest_digest` 仍只表示四字段对账表摘要，不能写入、比较或镜像任一 FileDigest 集合摘要。任一字段缺失、`object.manifest_digest` 与 current 值不等、集合范围不自洽、或 Intake 复核的完整提交 aggregate 与 submission 值不等，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，不得消费回执或进入 O2。
 
 ```yaml
 handoff:
@@ -436,7 +436,7 @@ contextReason: "合同案件版本对比与独立复核报告。"
 handoff:
   to: review-reporter
   from: contract-review-lead
-  case_id: case-2026-0831-001
+  case_id: ${case_id}                   # 仅使用已回核的 O0 case_id
   step: 6-7
   ledger_path: /abs/path/.../orchestration-ledger.yaml
   lead_workspace: /abs/path/to/lead-workspace
@@ -457,7 +457,7 @@ handoff:
     - 条款、风险与法域产物均已完成并通过形式检查
   pending: []                              # 必填；逐条透传上游 pending
   review_context_path: /abs/path/to/lead-workspace/contract-review/review-context.yaml
-  review_context_case_id: case-2026-0831-001
+  review_context_case_id: ${case_id}    # 与已回核的 O0 case_id 相同
   review_context_revision: 1
   review_context_current_manifest: {status: available, digest: <current O0 digest>}
   review_context_output_constraints: {factual_extraction: allowed, directional_risk_advice: allowed, redline_or_negotiation_advice: allowed, jurisdiction_substantive_conclusion: allowed}
@@ -524,14 +524,14 @@ handoff:
 handoff:
   to: clause-extractor                  # 本次目标成员
   from: contract-review-lead
-  case_id: case-2026-0831-001
+  case_id: ${case_id}                  # 仅使用已回核的 O0 case_id
   step: 3                               # 7 步中的第几步，供成员自检未被调序
   ledger_path: /abs/path/.../orchestration-ledger.yaml
   receipt_path: /abs/path/.../intake/INTAKE-20260331-7f3a2c9b.receipt.yaml
                                         # contract-intake 的最终回执；必须是已读过的绝对路径
 
   object:                               # 交接对象编号（三元组，不能只写编号）
-    case_id: case-2026-0831-001
+    case_id: ${case_id}                # 与交接的已回核 O0 case_id 相同
     manifest_digest: unknown            # 不可得时写 unknown，并置下面的 unavailable 标志
     manifest_digest_unavailable: true
     documents:
@@ -613,7 +613,7 @@ workContextId: "<trusted_delegate_binding.work_context_id>"  # 原样复制，�
 ```yaml
 rework_request:
   to: clause-extractor
-  case_id: case-2026-0831-001
+  case_id: ${case_id}                  # 仅使用已回核的 O0 case_id
   attempt: 1                            # 本环节第几次打回，上限 2
   failures:
     - receipt_item_id: CL-014

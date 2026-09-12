@@ -134,7 +134,10 @@ test('O0 classification text separates total/current manifests and keeps multi-p
 
 test('O1 handoff keeps the submitted and current manifests distinct before Intake runs', async () => {
   const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
-  assert.match(skill, /case_id.*只能复制本次 `Delegate` 的显式 `handoff\.case_id`/s)
+  assert.match(skill, /Lead 写入 `handoff\.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`/s)
+  assert.match(skill, /真实 `GenerateUUID` 值，或 O0 允许的固定 `case-` 加该 UUID/s)
+  assert.match(skill, /review-context\.case_binding\.case_id.*orchestration-ledger\.case_id.*O1_CASE_ID_BINDING_INVALID.*HOLD/s)
+  assert.doesNotMatch(skill, /case-\d{4}-\d{4}-\d+/)
   assert.match(skill, /submitted_file_paths.*完整用户提交集合/s)
   assert.match(skill, /object\.documents.*只能列 `current_contract\.parts`/s)
   assert.match(skill, /object\.manifest_digest.*current_contract_manifest_digest.*不等.*O1_MANIFEST_CONTRACT_INVALID.*HOLD/s)
