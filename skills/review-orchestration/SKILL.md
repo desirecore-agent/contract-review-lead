@@ -196,7 +196,7 @@ handoff:
   intake_gate_steps_required: [S1, S2, S3, S4, S5, S6, S7, S8]
 ```
 
-**O1 双集合摘要交接。**Lead 写入 `handoff.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`：真实 `GenerateUUID` 值，或 O0 允许的固定 `case-` 加该 UUID（同案更新则使用已核验保留的旧值）；在 `Delegate` 前必须实际 `Read` 回核它同时等于 `review-context.case_binding.case_id` 与 `orchestration-ledger.case_id`，不等则记录 `O1_CASE_ID_BINDING_INVALID` 并 HOLD。不得从 `intentId`、Work Context、旧回执或成员文本推导。`submitted_file_paths` 是完整用户提交集合，供 Intake 的 S1 用一次完整批量 `FileDigest` 复核；`object.documents` 只能列 `current_contract.parts`，其集合必须恰与 `current_contract_manifest_digest`（及兼容 `object.manifest_digest`）相同，绝不得混入 `operator_input`、历史、参考或其他总提交文件。`submission_inventory_manifest_digest` 是完整提交集合摘要；`current_contract_manifest_digest` 是当前合同集摘要；两者均为既有字符串字段，分别可写 `unknown` 加各自真实 `*_unavailable_reason`，不得互相代替。S4 的 `attachment_manifest_digest` 仍只表示四字段对账表摘要，不能写入、比较或镜像任一 FileDigest 集合摘要。任一字段缺失、`object.manifest_digest` 与 current 值不等、集合范围不自洽、或 Intake 复核的完整提交 aggregate 与 submission 值不等，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，不得消费回执或进入 O2。
+**O1 派发前闭合核验（双集合摘要交接）。**Lead 写入 `handoff.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`：真实 `GenerateUUID` 值，或 O0 允许的固定 `case-` 加该 UUID（同案更新则使用已核验保留的旧值）；在 `Delegate` 前必须实际 `Read` 回核它同时等于 `review-context.case_binding.case_id` 与 `orchestration-ledger.case_id`，不等则记录 `O1_CASE_ID_BINDING_INVALID` 并 HOLD。不得从 `intentId`、Work Context、旧回执或成员文本推导。随后对**恰为** `current_contract.parts` 的规范路径调用一次真实 `FileDigest` 并取得其完整 aggregate：不得用完整提交集合的 `submission_inventory`、任何单文件或旧任务 aggregate 替代。实际 `Read` 回读 `review-context` 与 `orchestration-ledger` 后，构造本次 handoff；同一个 current aggregate 必须逐字同时写入并比较四处：`review-context.case_binding.current_contract_manifest.digest`、`orchestration-ledger.manifest.current_contract_manifest_digest`、`handoff.object.manifest_digest`、`handoff.input_inventory.current_contract_manifest_digest`。`object.documents` 必须恰为同一 `current_contract.parts`，绝不得混入 `operator_input`、历史、参考或其他总提交文件；`submitted_file_paths` 与 `submission_inventory_manifest_digest` 仍是完整用户提交集合，二者不得互代。任一 aggregate 缺失/unknown、四处任一不等、集合范围不自洽，或 Intake 复核的完整提交 aggregate 与 submission 值不等时，先只用 `Edit` 修正 Lead 自有的 context/ledger 并再次 `Read` 闭合核验；仍不能得到真实 current aggregate 或仍不等，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，**不得 Delegate**、不得消费回执或进入 O2。仅当 `FileDigest` 明确报批量参数形态错误时可按 O0 在同一完整集合内纠正一次；纠正后 aggregate 成功就是可用摘要，不能把先前形态错误留作 `*_manifest_digest_unavailable`、`unknown` 或 `frozen_without_digest` 的理由。S4 的 `attachment_manifest_digest` 仍只表示四字段对账表摘要，不能写入、比较或镜像任一 FileDigest 集合摘要。
 
 ```yaml
 handoff:
@@ -639,7 +639,7 @@ rework_request:
 
 对当前提交的可读文件，先使用已获授权的 `FileDigest`，不使用 `Bash` 或其他 shell。它会为成功文件返回 SHA-256；只有完整文件集全部成功，才返回可记账的 aggregate `attachment_manifest_digest`。文件超出读取范围、消失、不是常规文件、超限、读取被拒绝或工具中止时，才进入本节的降级路径。
 
-逐文件保留 `content_digest: unknown` 和 `FileDigest` 返回的精确失败原因；只要任一文件失败，`attachment_manifest_digest` / `manifest_digest` 均为 `unknown`，并标明 `manifest_digest_unavailable: true`。组长把这些事实和相应登记行绑定后写入账本；不编造摘要、不用 shell 补算，也不把相同摘要当作身份或法律确认。
+逐文件保留 `content_digest: unknown` 和 `FileDigest` 返回的精确失败原因；只有任一文件在允许的一次参数形态纠正后仍真实失败时，`attachment_manifest_digest` / `manifest_digest` 才均为 `unknown`，并标明 `manifest_digest_unavailable: true`。组长把这些事实和相应登记行绑定后写入账本；不编造摘要、不用 shell 补算，也不把相同摘要当作身份或法律确认。
 
 **正确处理**（如实降级，不假装完整）：
 
@@ -719,9 +719,9 @@ freeze:
 
 - [ ] `content_digest` 不可得时写的是 `unknown` + reason，不是路径、大小或占位值
 - [ ] 已优先对本次提交的精确文件调用 `FileDigest`；每个成功摘要和完整集合 aggregate 都与账本中的同一登记行绑定
-- [ ] 任一 `FileDigest` 失败都逐字记录工具原因，且没有用 shell 替代；没有把相同摘要当作对象身份、版本或法律确认
-- [ ] `freeze_evidence_level` 如实写了 `frozen_without_digest`
-- [ ] 全文没有出现「一致」「无差异」「差异为 0」「持平」
+- [ ] 任一未被允许的参数形态纠正解决的真实 `FileDigest` 失败都逐字记录工具原因，且没有用 shell 替代；没有把相同摘要当作对象身份、版本或法律确认
+- [ ] **仅当完整集合摘要最终不可得时**，`freeze_evidence_level` 如实写为 `frozen_without_digest`；摘要成功后不得保留 `unknown`、unavailable 或该降级等级
+- [ ] 摘要成功本身不允许推导「一致」「无差异」「差异为 0」或「持平」；任何一致性结论仍须满足既有 `consistency_conclusion_allowed`、四大冻结均成立，以及所有适用 Human Gate 已按既有规则完成
 
 **留痕**
 
