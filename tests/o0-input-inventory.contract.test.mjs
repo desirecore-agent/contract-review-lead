@@ -131,3 +131,27 @@ test('O0 classification text separates total/current manifests and keeps multi-p
   assert.match(skill, /不构成.*Human Gate.*Delegate.*运行时身份/s)
   assert.match(skill, /当前集合多 part.*O2 保持 HOLD/s)
 })
+
+test('O1 handoff keeps the submitted and current manifests distinct before Intake runs', async () => {
+  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  assert.match(skill, /case_id.*只能复制本次 `Delegate` 的显式 `handoff\.case_id`/s)
+  assert.match(skill, /submitted_file_paths.*完整用户提交集合/s)
+  assert.match(skill, /object\.documents.*只能列 `current_contract\.parts`/s)
+  assert.match(skill, /object\.manifest_digest.*current_contract_manifest_digest.*不等.*O1_MANIFEST_CONTRACT_INVALID.*HOLD/s)
+  assert.match(skill, /submission_inventory_manifest_digest.*完整提交集合摘要/s)
+  assert.match(skill, /current_contract_manifest_digest.*当前合同集摘要/s)
+  assert.match(skill, /S4 的 `attachment_manifest_digest`.*四字段对账表摘要.*不能.*FileDigest 集合摘要/s)
+  assert.match(skill, /review_context_path: \/abs\/path\/to\/lead-workspace\/contract-review\/review-context\.yaml/)
+})
+
+test('O1 source contract requires mirrored unsigned-draft evidence and holds YAML not actually verified', async () => {
+  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  assert.match(skill, /freeze\.execution_status\.signature_status.*unsigned_draft/s)
+  assert.match(skill, /回执该处与 handoff 根中的两个镜像/)
+  assert.match(skill, /review_purpose: draft_negotiation_assistance/)
+  assert.match(skill, /request_scope_evidence.*material_evidence.*字段齐全、逐值相同/s)
+  assert.match(skill, /input_path.*page.*locator.*quote/s)
+  assert.match(skill, /O1_UNSIGNED_DRAFT_EVIDENCE_INVALID.*HOLD\/打回/s)
+  assert.match(skill, /O1_INTAKE_YAML_UNVERIFIED.*HOLD/s)
+  assert.match(skill, /不更新 O1 为已验证完成、不进入 O2/)
+})

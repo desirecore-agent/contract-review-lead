@@ -196,6 +196,26 @@ handoff:
   intake_gate_steps_required: [S1, S2, S3, S4, S5, S6, S7, S8]
 ```
 
+**O1 双集合摘要交接。**`case_id` 只能复制本次 `Delegate` 的显式 `handoff.case_id`，不得从 `intentId`、Work Context、旧回执或成员文本推导。`submitted_file_paths` 是完整用户提交集合，供 Intake 的 S1 用一次完整批量 `FileDigest` 复核；`object.documents` 只能列 `current_contract.parts`，其集合必须恰与 `current_contract_manifest_digest`（及兼容 `object.manifest_digest`）相同，绝不得混入 `operator_input`、历史、参考或其他总提交文件。`submission_inventory_manifest_digest` 是完整提交集合摘要；`current_contract_manifest_digest` 是当前合同集摘要；两者均为既有字符串字段，分别可写 `unknown` 加各自真实 `*_unavailable_reason`，不得互相代替。S4 的 `attachment_manifest_digest` 仍只表示四字段对账表摘要，不能写入、比较或镜像任一 FileDigest 集合摘要。任一字段缺失、`object.manifest_digest` 与 current 值不等、集合范围不自洽、或 Intake 复核的完整提交 aggregate 与 submission 值不等，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，不得消费回执或进入 O2。
+
+```yaml
+handoff:
+  case_id: ${case_id}
+  review_context_path: /abs/path/to/lead-workspace/contract-review/review-context.yaml
+  submitted_file_paths:                 # 全部用户提交；S1 必须完整批量复核
+    - /abs/path/contract.md
+    - /abs/path/appendix-a1.md
+    - /abs/path/intake.json
+  object:
+    manifest_digest: <current_contract_manifest_digest> # 兼容镜像，仅 current 合同集
+    documents:                          # 仅 current_contract.parts；不含 intake.json
+      - {object_id: doc-main-001, kind: main_contract, path: /abs/path/contract.md}
+      - {object_id: doc-att-002, kind: exhibit, path: /abs/path/appendix-a1.md}
+  input_inventory:
+    current_contract_manifest_digest: <64-lowercase-sha256-or-unknown>
+    submission_inventory_manifest_digest: <64-lowercase-sha256-or-unknown>
+```
+
 交接块见「派发载荷模板」。
 
 收到回执后：
@@ -203,6 +223,7 @@ handoff:
 - **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径；若它返回 `artifact_path`，原样复制完整绝对路径（不删除 UUID 或 `agents` 路径段、不猜测或重拼）并对该精确路径再 `Read`。任一读取失败时不得凭最终文本、工具摘要或中间文件完成 RC-1..RC-6。确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
 - **八项 Intake 步骤是有效回执的必要组成。**`checks[]` 必须逐项且恰好一次给出本节映射表中的真实 `S1`–`S8`，并保留其对应的真实检查语义；不得用相近名称猜测、重排或自造同名编号。只有先按 RC-1..RC-6 核验该回执，再按本节映射消费其有效 `checks[]`，Lead 才能更新相应的 `CHK-INTAKE-*` 矩阵行。`pass` 的真实检查及其回执证据才可按既有矩阵协议翻 `covered`；非 `pass` 的项保留原始状态与证据/阻断原因，不能由 Lead 补成 `covered`。
 - **回执缺失或无效时停在 O1。**缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符、或未通过 RC-1..RC-6 时，记录 `O1_INTAKE_GATE_STEPS_INVALID`（及具体缺失/错映原因）和 `O1_INTAKE_RECEIPT_INVALID` 到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。已可信绑定且 child 为 `active` 或状态未知时，记录 `O1_WAITING_OR_UNKNOWN` 并停在 O1；缺 ID 或 target/child run 不匹配才转 `HALTED_FOR_HUMAN`。只有终态不合格且「可信续接绑定」所定义的已登记 ID 匹配同一 target/child run，才可要求 `contract-intake` 以 `contextMode: continue` 补全或重做；达到打回上限转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
+- **未签署草稿例外必须是双证据，且 YAML 未验证不能结案。**当回执的 `freeze.execution_status.signature_status` 为 `unsigned_draft`，只接受回执该处与 handoff 根中的两个镜像：两处均须有 `review_purpose: draft_negotiation_assistance`，且 `exception_basis.request_scope_evidence` 与 `exception_basis.material_evidence` 必须字段齐全、逐值相同。前者必须保留本轮用户草稿/谈判辅助审查范围的原文，后者必须有材料绝对 `input_path`、`page`、`locator` 和明确未签草稿原文 `quote`；缺失、只在一侧出现、值不一致，或试图用 Lead 自己补写的一侧，均记录 `O1_UNSIGNED_DRAFT_EVIDENCE_INVALID` 并 HOLD/打回，不能由泛化 RC-6 放行。`yaml_unverified`（无论在回执、handoff 或其声明的 YAML 语法状态）表示本次只完成回读、未获 YAML 解析工具验证：记录 `O1_INTAKE_YAML_UNVERIFIED` 并 HOLD，不更新 O1 为已验证完成、不进入 O2，也不得因 `conditional` 或其他 RC 通过把它当作有效输入治理；只有 `contract-intake` 以后在可用专用 YAML 校验工具的真实成功证据下移除该标记，才可重新按全部 RC 检查接收。以上只约束回执的实际字段和回读，不声明平台已对 YAML 或签署事实作确定性验证。
 - 先跑六项回执检查（见「回执检查」一节）。
 - 读 `verdict` 字段：
   - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
