@@ -149,10 +149,10 @@ metadata:
 
 ### O0 登记与受理
 
-**完整审查前提。**只有本轮已提交合同材料或用户明确指向合同文件，且用户明确要求完整审查时，才可进入下列完整 O0；否则仍是零工具咨询，不能仅凭工作目录或历史路径登记案件。当前输入身份只取用户本轮明确路径和当前 effective 团队 cwd：用户逐字给出的绝对路径直接复用；相对路径只可基于该 cwd 确定性解析。不得猜测、截断、重组/换根路径，也不得以旧 personal workspace 替代；某一明确路径错误只能记录该路径错误，不得推导所有目录未授权。用户明确仅登记时，本技能不得执行任何后续编号步骤，直接转 `review-registration`。
+**完整审查前提。**只有本轮已提交合同材料或用户明确指向合同文件，且用户明确要求完整审查时，才可进入下列完整 O0；否则仍是零工具咨询，不能仅凭工作目录或历史路径登记案件。当前输入身份只取用户本轮明确路径和当前 effective 团队 cwd：用户逐字给出的绝对路径直接复用，不得自动改写；当前团队 cwd 已确认且用户给出不含 `..` 的相对路径（可含子目录）时，直接原样作为 `Read` / `FileDigest` 参数，由工具按 context.cwd 和既有路径安全校验解析，不得先拼接长 cwd。cwd 不可用时记录该路径不能解析并停止该文件；不得猜测、截断、重组/换根路径，也不得以旧 personal workspace 替代；某一明确路径错误只能记录该路径错误，不得推导所有目录未授权。用户明确仅登记时，本技能不得执行任何后续编号步骤，直接转 `review-registration`。
 
 1. 新建案件时，`GenerateUUID` 后直接保留其真实返回值作为本次唯一 `case_id`（可加固定 `case-` 前缀，但不得改写为日期/序号、截短或丢弃 UUID）。在新案件第一次 `Write` 前，实际回核 `case_id` 恰等于该次真实返回值或固定 `case-` 加该返回值；不等则记录 `O0_CASE_ID_GENERATION_MISMATCH` 并停止，不得写日期/序号替代值。一个案件内唯一且永不复用。已按第 7 项核验的同案更新保留其旧 `case_id`，不生成或替换新身份。
-2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。仅一份文件时，`paths` 必须是该文件的完整绝对裸路径字符串；`paths` 中看似 JSON 的字符串仍是字面路径，绝不解析。多份文件时，只有当前工具参数已明示 `paths_json` 兼容入口才可调用它：`paths_json` 必须是完整、当前可读且已授权集合的 JSON 字符串数组（1–100 项、UTF-8 不超过 64 KiB），解码后的路径集合必须逐项等于该集合、不多不少，且不得同时传 `paths`、`file_path` 或 `path`。该 `FileDigest.paths_json` 入口是发布此批量规则的最小客户端能力要求；若当前工具参数未提供它，记录能力不可用并停止摘要步骤，不得改传 JSON 文本给 `paths`、遗漏文件、加入未授权路径或调用 shell。先按 `${SKILL_DIR}/references/inventory/o0-input-inventory.schema.json` 建立闭合的分类库存，再逐份登记其真实冻结元组：
+2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确原始路径参数**优先调用一次 `FileDigest`。仅一份文件时，`paths` 必须是该文件原样的裸字符串；绝对路径原样保留，已确认 cwd 下不含 `..` 的相对路径（可含子目录）也原样传入，`paths` 中看似 JSON 的字符串仍是字面路径，绝不解析。多份文件时，只有当前工具参数已明示 `paths_json` 兼容入口才可调用它：`paths_json` 必须是完整、当前可读且已授权原始路径集合的 JSON 字符串数组（1–100 项、UTF-8 不超过 64 KiB），解码后的路径集合必须逐项等于该集合、不多不少，且不得同时传 `paths`、`file_path` 或 `path`。该 `FileDigest.paths_json` 入口是发布此批量规则的最小客户端能力要求；若当前工具参数未提供它，记录能力不可用并停止摘要步骤，不得改传 JSON 文本给 `paths`、遗漏文件、加入未授权路径或调用 shell。成功时逐项核对 `files[].path` 对应原始提交集合、`files[]` 完整且 `aggregate.file_count` 等于集合数；只用工具返回的 `absolute_path` 和 `digest` 登记规范绝对路径与摘要，不把它声称为自动 realpath 身份。先按 `${SKILL_DIR}/references/inventory/o0-input-inventory.schema.json` 建立闭合的分类库存，再逐份登记其真实冻结元组：
    - `object_id`（`doc-main-001` / `doc-att-003` 形式）
    - `version_label`（取自文档自身声明；取不到写 `unknown` + `version_label_unknown_reason`）
    - `content_digest`（采用 `FileDigest.files[].digest` 返回的 64 位小写 SHA-256；不得用 shell 或自行计算替代）
