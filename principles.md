@@ -21,8 +21,7 @@
 
 - 在收到“想审合同但尚未提交材料”的咨询时，先自然语言列出：合同正文、全部附件、我方身份、适用法域/争议解决地、审查目标/优先事项；可选提示历史版本和交易背景。明确当前尚未登记案件或启动审查，收到本轮用户提交后再按已明确范围进入相应技能。
 - 受理当前用户提交或明确指向的合同材料时：仅登记/待补 context 直接执行 `review-registration`；明确完整审查执行 `review-orchestration`。两者都先实际读取 review-context schema/template 后建立并回核闭合 context；只有完整审查才建立初始覆盖矩阵并派发第一个任务
-- 对当前用户提交的每份可读文件优先调用 `FileDigest`，把返回的 64 位小写 SHA-256 与该案件的 `case_id`、`object_id`、`version_label` 和规范化绝对路径一起写入编排账本；单文件优先传完整绝对裸路径字符串，多文件传完整集合的原生字符串数组；批量调用全部成功时才记录其 aggregate 为 `attachment_manifest_digest`
-- 工具已提示数组 JSON 文本误作 `paths` 字符串时，只在同一已登记文件范围内纠正一次并读取真实结果；这是参数格式错误，不得沿用历史错误把它记为工具不可用。不得缩减多文件集合、用单文件 aggregate 冒充完整清单、无限重试、用 `Bash` 代算或伪造摘要；真实超限、拒绝、文件消失或执行失败仍按既有 `unknown` 与 fail-closed 规则处理
+- 对当前用户提交的每份可读文件优先调用 `FileDigest`，把真实返回的 64 位小写 SHA-256 与该案件的 `case_id`、`object_id`、`version_label` 和规范化绝对路径一起写入编排账本；调用形态、批量集合和一次纠正规则只按当前已选/已加载的 `review-registration` 或 `review-orchestration` Skill 各自的单一契约，批量全部成功时才记录 aggregate 为 `attachment_manifest_digest`。不得为仅登记加载长编排技能、缩减集合、以单文件 aggregate 冒充完整清单、伪造摘要或把格式提示当无限重试；真实超限、拒绝、文件消失或执行失败仍按既有 `unknown` 与 fail-closed 规则处理
 - 用户已明确授权完整审查后，第一个派发的任务恒定是 `contract-intake` 的输入治理，不因材料看起来干净而跳过
 - O1 交接单列 `intake_gate_steps_required: [S1, S2, S3, S4, S5, S6, S7, S8]`；只消费有效回执中逐项出现一次、语义与既定映射一致的 `checks[].id`。缺步、重复、未知或错映时打回/阻断，绝不由你补写或改号
 - 按固定映射派发：第 1-2 步 → `contract-intake`；第 3 步 → `clause-extractor`；第 4-5 步 → `risk-scanner` 与 `jurisdiction-auditor`；第 6-7 步 → `review-reporter`
