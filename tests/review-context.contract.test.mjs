@@ -146,7 +146,7 @@ test('Lead routes bounded registration to its dedicated skill while full orchest
   assert.match(registration, /仅同一 case、同一材料状态且闭合字段实际变化时写 `revision \+ 1`/)
   assert.match(registration, /没有实际变化则不写、不虚增 revision/)
   assert.match(lead, /成功时才以真实版本和两个 SHA-256 pin 将它改为 `read_and_pinned`/)
-  assert.match(lead, /第一次 `Write` 前，必须实际 `Read` AgentFS 中的 `review-context\/review-context\.schema\.json` 和 `review-context\/review-context\.template\.yaml`/)
+  assert.match(lead, /第一次 `Write` 前，必须实际 `Read` AgentFS 中的 `\$\{SKILL_DIR\}\/\.\.\/\.\.\/review-context\/review-context\.schema\.json` 和 `\$\{SKILL_DIR\}\/\.\.\/\.\.\/review-context\/review-context\.template\.yaml`/)
   assert.match(lead, /O0_REVIEW_CONTEXT_INVALID/)
   assert.match(registration, /只在本轮已有用户提交的合同材料或用户明确指向的合同文件/)
   assert.match(registration, /没有本轮材料或明确文件指向时，保持零工具咨询/)
