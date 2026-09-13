@@ -470,11 +470,11 @@ contextReason: "合同案件版本对比与独立复核报告。"
 handoff:
   to: review-reporter
   from: contract-review-lead
-  case_id: ${case_id}                   # 仅使用已回核的 O0 case_id
+  case_id: ${case_id}                   # handoff 身份字段；Reporter 的成员输出路径仍只使用已 Read 比对通过的 review_context_case_id
   step: 6-7
   ledger_path: /abs/path/.../orchestration-ledger.yaml
-  lead_workspace: /abs/path/to/lead-workspace
-  canonical_artifact_root: /abs/path/to/lead-workspace/contract-review
+  lead_workspace: /abs/path/to/lead-workspace                 # Lead-owned read-only input root；不是成员输出授权
+  canonical_artifact_root: /abs/path/to/lead-workspace/contract-review # Lead-owned read-only input root；不是成员输出授权
   object:
     contract_object_id: YCIT-SAAS-2025-0206
     object_title: SaaS服务协议
@@ -503,6 +503,8 @@ handoff:
 ```
 
 `source_artifacts`、`confirmed_facts` 等旧字段不能替代上述字段；交接前按 `R0.1` 自检 `object.submission_mode`、`confirmed[]`、`pending[]`、五个 `review_context_*` 字段、`scope.frozen_baseline`、两个结论开关、`do_not_pass` 以及四类绝对产物路径，任一缺失就先在本 Agent 内修正载荷，不得把必然会被拒收的交接发送给复核官。报告复核官尚未接入本契约时，不得由 Lead 代替其核验或补写受限结论。
+
+团队同步时，`review-reporter` 先以 `Ls` 确认实际 team effective cwd，仅在自己的 `members/review-reporter/<case_id>/<review_id>/artifact/` 唯一子树写入 `sanitized-input.yaml`、`scorecard.yaml`、`report.md` 与（如需）`human-gate-receipt.yaml`；`case_id` 只能来自 Reporter 已 `Read` 并逐项比对通过的 `review_context_case_id = context.case_binding.case_id`，不得从 task、intentId、路径、旧回执或成员文本推导；`review_id` 只能来自该成员本次真实 `GenerateUUID`。Lead 不得指定、创建、写入、改名、复制或猜测这些路径，只在最终同步 return 后对原样绝对路径进行既有 Read/归属核验。任一 scope、路径或回读失败均由 Reporter return 实际 `REJECT-*`，Lead 依既有可信 binding/返工上限处理；Reporter 不得 `Delegate` 或 `SendMessage` 二次调度。
 
 ### O5 Human Gate
 

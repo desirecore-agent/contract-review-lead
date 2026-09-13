@@ -269,3 +269,18 @@ test('real Ajv requires an available manifest for a current-part clue inside con
   context.case_binding.current_contract_manifest = { status: 'unavailable', reason: 'synthetic digest read failure' }
   assert.equal(validate(context), false, 'changing only manifest availability cannot bypass the conflicting-candidate guard')
 })
+test('Lead O4 leaves canonical roots read-only and confines Reporter output to its verified Team subtree', async () => {
+  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const start = skill.indexOf('### O4 版本对比 + 报告输出（第 6-7 步）')
+  const end = skill.indexOf('### O5 Human Gate', start)
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  const o4 = skill.slice(start, end)
+  assert.match(o4, /lead_workspace: .*Lead-owned read-only input root/)
+  assert.match(o4, /canonical_artifact_root: .*Lead-owned read-only input root/)
+  assert.match(o4, /members\/review-reporter\/<case_id>\/<review_id>\/artifact/)
+  assert.match(o4, /review_context_case_id = context\.case_binding\.case_id/)
+  assert.match(o4, /不得从 task、intentId、路径、旧回执或成员文本推导/)
+  assert.match(o4, /最终同步 return 后对原样绝对路径进行既有 Read\/归属核验/)
+  assert.match(o4, /Reporter 不得 `Delegate` 或 `SendMessage` 二次调度/)
+})
