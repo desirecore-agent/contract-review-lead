@@ -62,7 +62,7 @@ metadata:
 7. **禁止对 `review-reporter` 使用 `mode: subtask`。**
 8. **Lead 根与成员产物必须分属。**当前案件工作区的 canonical `contract-review/` 目录只承载 Lead 的 review context、账本与覆盖矩阵；不得把该目录路径本身写成文件，也不得静默改用其他目录。成员在各自确认的 workspace 创建唯一产物并返回绝对 `artifact_path`；Lead 只读、核验和登记该路径，绝不指定、写入或覆盖成员产物文件。
 9. **材料提交是 O0 的唯一入口。**没有当前用户提交的合同或明确文件指向，不得执行 O0 的 `Ls` / `Glob`，不得通过扫描历史工作区来推定材料已提交。
-10. **完整审查连续推进。**用户已明确授权完整审查时，按固定顺序连续执行当前已获授权且可执行的常规步骤；不得在准备步骤后为逐步确认而结束或询问“是否继续”。只有既有规则要求的实际等待/状态未知、HOLD、Human Gate、确实缺少的事实澄清，或用户明确暂停、停止或限缩范围，才可停止推进；这不改变仅登记或用户明确 O0-only 的限制。
+10. **完整审查连续推进。**用户已明确授权完整审查时，按固定顺序连续执行当前已获授权且可执行的常规步骤；O1 的真实 `passed` 或 `conditional` 回执通过下文 RC 后即继续 O2，不得在准备步骤后为逐步确认而结束或询问“是否继续”。提问前先实际 `Read` 当前 `review-context.yaml` 和本轮已提交的操作者业务上下文文件（如有），并复核当前请求已明确的事实；已明确的审查立场、目的、范围或其他事实必须原样复用，不得重复询问。只有既有规则要求的实际等待/状态未知、HOLD、Human Gate、在上述上下文中确实缺少或相互冲突的事实澄清，或用户明确暂停、停止或限缩范围，才可停止推进；这不改变仅登记或用户明确 O0-only 的限制，也不允许发明用户授权。
 
 ### Delegate Work Context 兼容说明
 
@@ -451,13 +451,17 @@ review_context_output_constraints: <current closed object>
 
 在任一 O3 回执的 RC、覆盖矩阵更新或 O4 前，Lead 必须再次 `Read` 当前 `review-context.yaml`，逐字段比较 context path、case_id、revision、current manifest 和 constraints 与交接快照及 `review_context_echo`。任一不符写 `REJECT-STALE-REVIEW-CONTEXT`，不得消费、登记或覆盖当前产物；较高 revision 使旧受影响 O3 产物标记 `superseded_context_revision`，然后仅以普通 `contextMode: isolated` 重派受影响分支，绝不 `continue`、resume 或从旧回执重建身份。该拒收不关闭既有 Human Gate 或变更其账本状态。
 
+**法域逐 ID 覆盖更新。**在改动任一 `jurisdiction-auditor` 矩阵行前，Lead 必须实际 `Read` 该分支返回的 `artifact_path`，并从同一产物根级 `jurisdiction.coverage_updates` 读取权威数组；handoff 的 `coverage_updates_ref`（应为该绝对产物路径加 `#/jurisdiction/coverage_updates`）和 `coverage_updates_count` 只用于定位与对账，不是权威数据，不能替代实际数组。ref/path/pointer 或 count/实际数组长度不一致时回执不合格；即使一致也不能证明数组内容。数组最多 8000 项；每项必须且只能含 `rule_id`、`section`、`check_source`、`status`、`reason`、`evidence_refs`：`section` 只能是 `rules|conflicts`，`status` 只能是 `covered|not_applicable|blank|blocked|deferred`，每个 evidence ref 只能含 `collection` 与 `id`，其中 collection 只能是 `governed_by_edges|compliance_findings|conflict_findings|coverage_gaps|human_gates`。
+
+Lead 以 O0 已读的同一 pinned `rules_path` 重新机械构造完整 tuple 集合 `(rule_id, section, check_source=<rules_path>#<section>/<rule_id>)`，并要求它与数组逐项唯一、无缺失无额外地完全相等。每个非 `blank` 状态必须有非空 `reason` 和至少一个可在**同一实际产物**相应 collection 中按 `id` 精确解析、且确实支持该处置的 evidence ref；`blank` 只有在 reason 明确为 locked、unknown、unassessed 或 pending 时才可为空 refs，并继续保持 `blank`，绝不得当作 `not_applicable`。任何数组缺失、重复、额外 ID、section/source 不符、引用不存在或证据不支持，都使该法域分支回执不合格，相关行保持 `blank` 并按既有 R/H 处理；不得相信 count/ref 指针、不得根据未返回项推断结论。只有完整集合与逐项引用全部通过后，才按每项真实 `status`、`reason` 和 refs 机械更新对应唯一行；分支合格也绝不批量翻 `covered`。
+
 并行的理由：两者输入完全相同（原文 + 条款结构表 + 规则包），互不依赖，输出互不覆盖。并行不仅省时，还天然保证两条判断线互不读对方结论——串行会让后跑的一方被先跑一方的措辞锚定。
 
 **部分成功处理**（最易出错，见 principles L2）：
 
 | 情况 | 处理 |
 |---|---|
-| 两支都返回合格分支回执 | 仅按 `coverage-matrix` 对回执以精确 ID/source section 明确处置且证据闭合的行更新五状态；未逐 ID 声明的行保持 `blank`，不得因分支合格批量翻成 `covered` |
+| 两支都返回合格分支回执 | 风险支仅按 `coverage-matrix` 的既有逐 ID 规则更新；法域支还必须先实际 `Read` 同一产物的 `jurisdiction.coverage_updates` 并通过完整 tuple 集合与同产物 refs 核验，才机械更新五状态。未证明的行保持 `blank`，不得因分支合格批量翻成 `covered` |
 | 仅 `risk-scanner` 合格 | 法域类 `check_id` 全部记 `blocked`，原因写「jurisdiction-auditor 未返回合格产出」 |
 | 仅 `jurisdiction-auditor` 合格 | 风险类 `check_id` 同上处理 |
 | 两支都不合格 | 进 `R`；两次仍不合格进 `H` |

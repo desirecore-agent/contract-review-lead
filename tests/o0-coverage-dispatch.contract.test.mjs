@@ -28,9 +28,27 @@ test('O0 enumerates the complete resolved jurisdiction source before dispatch wi
   assert.match(skill, /验证发现集合与行集合双向完全相等/)
   assert.match(skill, /不得先判断适用性\/trigger，不得漏冲突条目/)
   assert.match(skill, /分支合格本身不表示其全部行 `covered`/)
-  assert.match(skill, /未逐 ID 声明的行保持 `blank`，不得因分支合格批量翻成 `covered`/)
+  assert.match(skill, /未声明行保持 `blank`/)
+  assert.match(skill, /未证明的行保持 `blank`，不得因分支合格批量翻成 `covered`/)
   assert.doesNotMatch(skill, /两支均合格[^\n]*矩阵对应行翻 `covered`/)
   assert.doesNotMatch(skill, /两支都合格[^\n]*各自负责的 `check_id` 翻 `covered`/)
+})
+
+test('O3 consumes the Jurisdiction artifact array by exact discovered tuple and same-artifact evidence', async () => {
+  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+
+  assert.match(skill, /实际 `Read` 该分支返回的 `artifact_path`.*`jurisdiction\.coverage_updates` 读取权威数组/s)
+  assert.match(skill, /`coverage_updates_ref`.*`coverage_updates_count` 只用于定位与对账，不是权威数据/s)
+  assert.match(skill, /ref\/path\/pointer 或 count\/实际数组长度不一致时回执不合格.*数组最多 8000 项/s)
+  assert.match(skill, /`rule_id`、`section`、`check_source`、`status`、`reason`、`evidence_refs`/)
+  assert.match(skill, /`section` 只能是 `rules\|conflicts`/)
+  assert.match(skill, /`status` 只能是 `covered\|not_applicable\|blank\|blocked\|deferred`/)
+  assert.match(skill, /`governed_by_edges\|compliance_findings\|conflict_findings\|coverage_gaps\|human_gates`/)
+  assert.match(skill, /完整 tuple 集合.*逐项唯一、无缺失无额外地完全相等/s)
+  assert.match(skill, /每个非 `blank` 状态必须有非空 `reason` 和至少一个可在\*\*同一实际产物\*\*.*按 `id` 精确解析/s)
+  assert.match(skill, /`blank` 只有在 reason 明确为 locked、unknown、unassessed 或 pending 时才可为空 refs/)
+  assert.match(skill, /任何数组缺失、重复、额外 ID、section\/source 不符、引用不存在或证据不支持.*相关行保持 `blank`/s)
+  assert.match(skill, /只有完整集合与逐项引用全部通过后.*机械更新对应唯一行/s)
 })
 
 test('invalid O0 coverage arithmetic holds before dispatch instead of carrying an empty-template marker forward', async () => {
