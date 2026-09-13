@@ -641,7 +641,7 @@ workContextId: "<trusted_delegate_binding.work_context_id>"  # 原样复制，�
 |---|---|---|
 | **RC-1** | **对象与输入版本一致** | 回执的 `case_id`、`object_id`、`version_label`、规范化绝对输入路径及对应 `content_digest` 必须逐项匹配组长账本中的同一登记行；完整文件集的 `manifest_digest` 也必须匹配。任一不一致立即停，不猜。相同摘要不能替代其余字段，亦不构成对象身份或法律确认。摘要为 `unknown` 时只降级为 `object_id + version_label` 的弱匹配，并在矩阵标 `identity_weakly_matched: true`。 |
 | **RC-2** | **结论四元组齐备** | 任一条结论缺 条款编号 / 证据位置（页码） / 结论等级 / 对应动作 中的任一项。`conclusion_level` 非 `blank` 却缺 `clause_no`、`page` 或 `quote` 时同样不合格（`INV-011`） |
-| **RC-3** | **证据可追溯** | `quote` 无法在其声明的文件中原文命中。用 `Grep` 固定字符串抽检：全部 `block` 级结论 100% 抽检；其余条目总数 ≤20 时全量，>20 时随机 30% 且不少于 6 条。命中失败任一条 → 整份打回 |
+| **RC-3** | **证据可追溯** | `quote` 无法在其声明的文件中原文命中。用 `Grep` 固定字符串抽检（`pattern: <quote>, is_regex: false`）：全部 `block` 级结论 100% 抽检；其余条目总数 ≤20 时全量，>20 时随机 30% 且不少于 6 条。命中失败任一条 → 整份打回 |
 | **RC-4** | **pending 有落点** | 上游交接块中的每个 `pending.id` 在本回执里都必须被显式承接（消化 / 升级 / 留白三选一）。静默消失 → 打回 |
 | **RC-5** | **范围合规** | 越界产出（如 `clause-extractor` 给出风险评分）、或引用了前序 Agent 的推理过程作为依据 → 打回 |
 | **RC-6** | **回执字段完整** | `receipt` 缺 对象版本 / 规则版本 / 证据位置 / 执行 Agent / 人工确认点 任一项（`rules.md#R-005`，违反时下一步不得启动） |
