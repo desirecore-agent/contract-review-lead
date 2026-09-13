@@ -56,7 +56,7 @@ metadata:
 1. **完整审查授权后的登记先于派发。**没有用户明确开始完整审查的授权、`review_case` 与初始覆盖矩阵，不得派发任何任务。
 2. **第一个任务恒定是输入治理。**不因材料看起来干净而跳过 `contract-intake`。
 3. **`blocked` 即终止。**`contract-intake` 的 `verdict` 是唯一判据，你不重评它的理由、不改判、不放宽。
-4. **O1 只委派，不代写。**`intake.yaml`、输入治理回执、`verdict` 与 `pending` 的作者只能是 `contract-intake`。O1 等待其有效回执期间，lead 只能写编排账本中的派发、等待与阻断状态；不得读取材料后自行生成、编辑、合成或补全上述 intake 产物，也不得把已派发当成已完成。
+4. **O1 只委派，不代写。**`intake.yaml`、输入治理回执、`verdict` 与 `pending` 的作者只能是 `contract-intake`。O1 等待其有效回执期间，lead 只能写编排账本中的派发、等待与阻断状态；不得读取材料后自行生成、编辑、合成或补全上述 intake 产物，也不得把已派发当成已完成。对会阻塞到成员终态的 `mode: sync`，调用前与工具阻塞期间账本必须保持 `O0_REGISTERED` / intake `not_started`，不能预写 `dispatched` 或 `waiting_or_unknown`；只有工具返回后才按本技能的真实返回记录与回执规则更新。
 5. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
 6. **不合格打回，不自己补齐。**
 7. **禁止对 `review-reporter` 使用 `mode: subtask`。**
@@ -199,9 +199,9 @@ O0 任一未允许纠正后的工具、验证或 timeout 失败时，不得创�
 
 ### 编排账本状态写入硬闸
 
-账本是案件状态的事实来源，不能只在 O0 登记而把后续状态留成 `pending`。实际成功的 `Delegate` 返回本次可信 binding 后，先 `Read` 当前账本，再用**唯一一次** `Edit` 将 O1 写为 `status: O1_INTAKE`、对应 intake `steps[*].status: dispatched`，并原样登记该返回的 `target`、非空 `child_run_id`、非空 `work_context_id` 与实际 `dispatched_at`；随后立即 `Read` 回读验证。`intentId`、任务文本、工作目录、成员回执或任何 `null`/自造值都不能补全 binding。状态更新失败、目标段不存在、回读仍显示旧状态，或 `O1_INTAKE`/`dispatched` 缺任一上述可信字段时，停止在 `H` 并报告 `REJECT-LEDGER-STATE`，不得继续派发或声称该步骤完成。
+账本是案件状态的事实来源，不能只在 O0 登记而把后续状态留成 `pending`。`mode: sync` 在调用方可见返回前会阻塞，故首次 O1 `Delegate` 前和该工具阻塞期间必须保持 `status: O0_REGISTERED` 与 intake `steps[*].status: not_started`：不得预填 `dispatched_at`、`waiting_or_unknown`、`child_run_id` 或 `work_context_id`，也不得把裸 `task`、`intentId`、工作目录、成员回执、摘要、`null` 或自造值当作派发事实。只有 `Delegate` 成功返回后，才先 `Read` 当前账本并以一次 `Edit` 记录 `status: O1_INTAKE`、intake `steps[*].status: returned`、模型可见且本次实际目标的 `target`、模型可见的非空 `child_run_id` 与实际 `returned_at`；在 `run_ids` 保留已有 lead run 并追加该真实 child run，随后立即 `Read` 回读验证。`work_context_id` 只可在本次平台返回的**公开可信续接 binding**确实提供时原样登记；普通 sync 返回没有该 binding 时不得猜测、补写或为了补齐而另发委派，且不得 `contextMode: continue`。成功返回未明确给出实际 target 或非空 child run、账本更新失败、目标段不存在或回读不符时，停止在 `H` 并报告 `REJECT-LEDGER-STATE`，不得声称已派发、已完成或可续跑。
 
-至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：仅在上一段的成功 Delegate binding 已回读闭合后，才写 `O1_INTAKE`；intake 合格后把第 1-2 步写为 `completed` 并转 `O2_EXTRACT`；Clause v2 的同次 Compose 命名观察与 release-owned contract 全通过后才把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
+至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：普通 sync 只在上述真实返回记录回读闭合后才可停在 `O1_INTAKE`，随后由回执 RC 决定第 1-2 步为 `completed` 并转 `O2_EXTRACT`，或写入 `H`；不得把 `returned` 视为输入治理合格。Clause v2 的同次 Compose 命名观察与 release-owned contract 全通过后才把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
 
 任何下游未启动、回执不合格或成员无响应都必须写入 `blocked_reasons`，不能用 `pending` 掩盖已发生的失败或已完成的步骤。`run_id` 必须同时保留外层 lead run 和每个 Delegate 子 run；若成员回执中的案件/内部 run 标识与外层运行不一致，原样记录 `identity_discrepancy` 并保持人工阻断，不得静默覆盖成单一 ID。账本更新属于本技能的必做产物，不以模型是否“打算稍后补写”为完成条件。
 
@@ -225,7 +225,7 @@ O1 `context` 中的交接块必须单列完整、顺序固定的 Intake 步骤�
 
 **O1 派发前闭合核验（双集合摘要交接）。**Lead 写入 `handoff.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`：真实 `GenerateUUID` 值，或 O0 允许的固定 `case-` 加该 UUID（同案更新则使用已核验保留的旧值）；在 `Delegate` 前必须实际 `Read` 回核它同时等于 `review-context.case_binding.case_id` 与 `orchestration-ledger.case_id`，不等则记录 `O1_CASE_ID_BINDING_INVALID` 并 HOLD。不得从 `intentId`、Work Context、旧回执或成员文本推导。随后对**恰为** `current_contract.parts` 的规范路径调用一次真实 `FileDigest` 并取得其完整 aggregate：不得用完整提交集合的 `submission_inventory`、任何单文件或旧任务 aggregate 替代。实际 `Read` 回读 `review-context` 与 `orchestration-ledger` 后，构造本次 handoff；同一个 current aggregate 必须逐字同时写入并比较四处：`review-context.case_binding.current_contract_manifest.digest`、`orchestration-ledger.manifest.current_contract_manifest_digest`、`handoff.object.manifest_digest`、`handoff.input_inventory.current_contract_manifest_digest`。`object.documents` 必须恰为同一 `current_contract.parts`，绝不得混入 `operator_input`、历史、参考或其他总提交文件；`submitted_file_paths` 与 `submission_inventory_manifest_digest` 仍是完整用户提交集合，二者不得互代。任一 aggregate 缺失/unknown、四处任一不等、集合范围不自洽，或 Intake 复核的完整提交 aggregate 与 submission 值不等时，先只用 `Edit` 修正 Lead 自有的 context/ledger 并再次 `Read` 闭合核验；仍不能得到真实 current aggregate 或仍不等，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，**不得 Delegate**、不得消费回执或进入 O2。仅当 `FileDigest` 明确报批量参数形态错误时可按 O0 在同一完整集合内纠正一次；纠正后 aggregate 成功就是可用摘要，不能把先前形态错误留作 `*_manifest_digest_unavailable`、`unknown` 或 `frozen_without_digest` 的理由。S4 的 `attachment_manifest_digest` 仍只表示四字段对账表摘要，不能写入、比较或镜像任一 FileDigest 集合摘要。
 
-**首次 O1 `Delegate` 前的最终结构重验。**第 8 项的预检以及本段的 Lead 自有 `Write` / `Edit` 都可能使前述 inventory 或 review-context 校验过期。完成既有四处 current-manifest 集合比较和所有允许的 Lead 自有修正后、首次 `Delegate` 紧前，必须分别 `Read` 两个当前 exact 文件，并以各自同一 release-owned schema 和 `format: yaml` 再调用 `StructuredFileValidate`；两个结果均须工具成功且 `valid: true`。任一失败、不匹配或没有明确成功结果均记录 `O1_FINAL_STRUCTURE_VALIDATION_FAILED`、进入 HOLD，**不得 Delegate**。这次成功后不得修改任一文件而直接派发；如仍需 `Write` / `Edit`，该文件的旧校验立即失效，必须再次 `Read` 并重验后才可派发。该最终单文件闸门不替代本段四处摘要的集合比较、`INV-001`、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`。
+**首次 O1 `Delegate` 前的最终结构重验。**第 8 项的预检以及对这两个被校验 exact 文件（inventory 或 review-context）的 Lead 自有 `Write` / `Edit` 都可能使相应校验过期。完成既有四处 current-manifest 集合比较和所有允许的 Lead 自有修正后、首次 `Delegate` 紧前，必须分别 `Read` 两个当前 exact 文件，并以各自同一 release-owned schema 和 `format: yaml` 再调用 `StructuredFileValidate`；两个结果均须工具成功且 `valid: true`。此处以**最后一次**紧邻 Delegate 的结果为准：较早的 `valid: true` 不能覆盖其后的 timeout、工具 error、`valid: false`、不匹配或没有明确成功结果。任一该类失败只允许以真实错误码/结果写入 `O1_FINAL_STRUCTURE_VALIDATION_FAILED` 的 `H`（HOLD）记账，保持 intake `not_started`；不得写 `O1_INTAKE`、`dispatched` 或 `waiting_or_unknown`，**不得 Delegate**。成功后只有修改这两个被校验 exact 文件中的任一文件才使该文件旧校验失效并要求再次 `Read`、重验；账本、矩阵、回执路径或其他未被本闸门校验的产物编辑本身不触发这两个文档的重验，但也绝不补救或覆盖最终校验失败。该最终单文件闸门不替代本段四处摘要的集合比较、`INV-001`、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`。
 
 `context` 的值必须是以下**完整 YAML 文本**，根键为 `handoff`；它不是另一条工具调用、不是顶层 Delegate 参数，也不能只发送其中的 `case_id`：
 
@@ -250,7 +250,7 @@ handoff:
     submission_inventory_manifest_digest: <64-lowercase-sha256-or-unknown>
 ```
 
-仅在上述完整 `context` 已由刚刚 `Read` 的 O0 inventory、review-context 与 ledger 的当前事实构造，且本节全部闭合核验与最终结构重验均成功后，才调用**一次**该 `sync` Delegate。任何必填交接字段缺失、不能从这些已读事实取得、或载荷不再与它们逐值一致时，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，**不得 Delegate**；不得把裸 `case_id` 当作交接、不得从 `task` / `intentId` / Work Context 推断或补写 `handoff.case_id`。已成功派发且可信 child/Work Context binding 为 `active` 或状态未知时，按既有绑定规则等待或 HOLD；不得为了补发字段、修补 context 或重试裸 task 对同一 `${case_id}:intake` 再发 `isolated` Delegate。Intake 只验证并返回其回执及后续所需的 handoff 事实；只有 Lead 完成既有 RC 与账本更新后，才可走唯一的 O2 `clause-extractor` 派发路径。
+仅在上述完整 `context` 已由刚刚 `Read` 的 O0 inventory、review-context 与 ledger 的当前事实构造，且本节全部闭合核验与最终结构重验均成功后，才调用**一次**该 `sync` Delegate。调用前保持 `O0_REGISTERED` / intake `not_started`；工具阻塞期间没有可供 Lead 写入的成功返回，不能先写 `O1_INTAKE`、`dispatched`、`waiting_or_unknown` 或任何 child/Work Context ID。任何必填交接字段缺失、不能从这些已读事实取得、或载荷不再与它们逐值一致时，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，**不得 Delegate**；不得把裸 `case_id` 当作交接、不得从 `task` / `intentId` / Work Context 推断或补写 `handoff.case_id`。返回后只按「编排账本状态写入硬闸」记录模型可见的真实 target/child run；没有平台公开可信续接 binding 时不 `continue`。Intake 只验证并返回其回执及后续所需的 handoff 事实；只有 Lead 完成既有 RC 与账本更新后，才可走唯一的 O2 `clause-extractor` 派发路径。
 
 收到回执后：
 

@@ -144,7 +144,8 @@ test('O0 validates only its own inventory and review context before any Intake d
   assert.match(skill, /不替代第 5 项 `INV-001`、O1 的四处 current-manifest 集合比较、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`/)
   assert.match(skill, /不生成或复制通用 hash.*不能替代 O1 四处 current-manifest 集合比较、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`/)
   assert.match(skill, /首次 O1 `Delegate` 前的最终结构重验.*分别 `Read` 两个当前 exact 文件.*各自同一 release-owned schema.*`format: yaml`.*再调用 `StructuredFileValidate`.*两个结果均须工具成功且 `valid: true`/s)
-  assert.match(skill, /如仍需 `Write` \/ `Edit`，该文件的旧校验立即失效，必须再次 `Read` 并重验后才可派发/)
+  assert.match(skill, /只有修改这两个被校验 exact 文件中的任一文件才使该文件旧校验失效并要求再次 `Read`、重验/)
+  assert.match(skill, /账本、矩阵、回执路径或其他未被本闸门校验的产物编辑本身不触发这两个文档的重验，但也绝不补救或覆盖最终校验失败/)
 })
 
 test('O1 handoff keeps the submitted and current manifests distinct before Intake runs', async () => {
