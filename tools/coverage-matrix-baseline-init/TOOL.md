@@ -4,9 +4,9 @@ description: 从受权的发布 catalog 与已读取规则快照机械生成首�
 risk_level: low
 requires_confirmation: false
 executor: script
+command: runtime.mjs
 script:
   runtime: node
-  command: runtime.mjs
   args: []
   io:
     protocol: snapshot-v1
@@ -66,7 +66,7 @@ input_schema:
         redlines_sha256: {type: string, pattern: '^[a-f0-9]{64}$'}
 metadata:
   author: DesireCore
-  version: '1.0.0'
+  version: '1.0.1'
   provider_type: script
 ---
 

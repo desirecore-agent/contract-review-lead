@@ -180,7 +180,7 @@ test('tool and controller keep snapshot-only, create-only and post-output gates 
   assert.match(o0, /未知动态 catalog/)
   assert.match(o0, /\$\{SKILL_DIR\}\/references\/coverage-matrix-baseline\.catalog\.json/)
   assert.doesNotMatch(o0, /\$\{TOOL_DIR\}/)
-  assert.equal(JSON.parse(agent).version, '1.0.24')
+  assert.equal(JSON.parse(agent).version, '1.0.25')
   assert.match(coverageSkill, /^version: 1\.0\.8$/m)
   assert.match(orchestrationSkill, /^version: 1\.0\.18$/m)
   assert.deepEqual(JSON.parse(agent).tool_permissions.allowed.slice(-2), ['contract-intake-deterministic-check', 'coverage-matrix-baseline-init'])

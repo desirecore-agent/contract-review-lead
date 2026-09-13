@@ -207,7 +207,7 @@ test('Lead routes bounded registration to its dedicated skill while full orchest
   assert.equal(frontmatter.metadata.version, '1.0.3')
   assert.notEqual(frontmatter['disable-model-invocation'], false, 'registration must remain explicit-only')
   assert.notEqual(frontmatter.disable_model_invocation, false, 'registration alias must remain explicit-only')
-  assert.equal(agent.version, '1.0.24')
+  assert.equal(agent.version, '1.0.25')
   assert.deepEqual(agent.default_enabled.skills, ['review-orchestration', 'coverage-matrix', 'review-registration'])
   assert.ok(agent.tool_permissions.allowed.includes('Skill'))
   assert.match(registration, /直接保留其真实返回值作为唯一 `case_id`/)
