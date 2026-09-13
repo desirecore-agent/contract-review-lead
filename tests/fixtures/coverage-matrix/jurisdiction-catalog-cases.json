@@ -1,0 +1,100 @@
+{
+  "description": "Synthetic catalog-only fixture. It tests complete rules/conflicts enumeration and contains no legal conclusion or production jurisdiction count.",
+  "rules_path": "/synthetic/jurisdiction/rules.yaml",
+  "resolved_pack": {
+    "rules": [
+      {"id": "fixture-primary-alpha", "title": "Synthetic primary alpha"},
+      {"id": "fixture-primary-beta", "title": "Synthetic primary beta"}
+    ],
+    "conflicts": [
+      {"id": "fixture-conflict-alpha", "title": "Synthetic conflict alpha"}
+    ]
+  },
+  "expected_initial_stage4_rows": [
+    {
+      "check_id": "fixture-primary-alpha",
+      "check_title": "Synthetic primary alpha",
+      "check_source": "/synthetic/jurisdiction/rules.yaml#rules/fixture-primary-alpha",
+      "rule_kind": "jurisdiction_rule",
+      "stage": 4,
+      "owner_agent": "jurisdiction-auditor",
+      "status": "blank",
+      "not_covered_reason": "awaiting jurisdiction-auditor receipt",
+      "updated_at": "<runtime timestamp>"
+    },
+    {
+      "check_id": "fixture-primary-beta",
+      "check_title": "Synthetic primary beta",
+      "check_source": "/synthetic/jurisdiction/rules.yaml#rules/fixture-primary-beta",
+      "rule_kind": "jurisdiction_rule",
+      "stage": 4,
+      "owner_agent": "jurisdiction-auditor",
+      "status": "blank",
+      "not_covered_reason": "awaiting jurisdiction-auditor receipt",
+      "updated_at": "<runtime timestamp>"
+    },
+    {
+      "check_id": "fixture-conflict-alpha",
+      "check_title": "Synthetic conflict alpha",
+      "check_source": "/synthetic/jurisdiction/rules.yaml#conflicts/fixture-conflict-alpha",
+      "rule_kind": "jurisdiction_conflict",
+      "stage": 4,
+      "owner_agent": "jurisdiction-auditor",
+      "status": "blank",
+      "not_covered_reason": "awaiting jurisdiction-auditor receipt",
+      "updated_at": "<runtime timestamp>"
+    }
+  ],
+  "invalid_duplicate_packs": [
+    {
+      "name": "duplicate within primary rules",
+      "pack": {
+        "rules": [
+          {"id": "fixture-duplicate", "title": "First"},
+          {"id": "fixture-duplicate", "title": "Second"}
+        ],
+        "conflicts": []
+      },
+      "expected_error": "JURISDICTION_CATALOG_INVALID"
+    },
+    {
+      "name": "duplicate across rules and conflicts",
+      "pack": {
+        "rules": [{"id": "fixture-cross-duplicate", "title": "Primary"}],
+        "conflicts": [{"id": "fixture-cross-duplicate", "title": "Conflict"}]
+      },
+      "expected_error": "JURISDICTION_CATALOG_INVALID"
+    },
+    {
+      "name": "missing conflicts section",
+      "pack": {
+        "rules": [{"id": "fixture-primary", "title": "Primary"}]
+      },
+      "expected_error": "JURISDICTION_CATALOG_INVALID"
+    },
+    {
+      "name": "rules section is not an array",
+      "pack": {
+        "rules": {"id": "fixture-primary", "title": "Primary"},
+        "conflicts": []
+      },
+      "expected_error": "JURISDICTION_CATALOG_INVALID"
+    },
+    {
+      "name": "entry title is missing",
+      "pack": {
+        "rules": [{"id": "fixture-primary"}],
+        "conflicts": []
+      },
+      "expected_error": "JURISDICTION_CATALOG_INVALID"
+    },
+    {
+      "name": "entry id is blank",
+      "pack": {
+        "rules": [{"id": "", "title": "Primary"}],
+        "conflicts": []
+      },
+      "expected_error": "JURISDICTION_CATALOG_INVALID"
+    }
+  ]
+}

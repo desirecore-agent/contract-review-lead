@@ -10,7 +10,7 @@ description: >-
   7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
   synchronous isolated context, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.14
+version: 1.0.15
 type: procedural
 risk_level: medium
 status: enabled
@@ -37,7 +37,7 @@ requires:
     - StructuredFileValidate
 metadata:
   author: DesireCore
-  version: 1.0.14
+  version: 1.0.15
   updated_at: '2026-09-13'
 ---
 
@@ -129,7 +129,7 @@ metadata:
 | `R` | 重做后合格 | 回原状态的下一态 | 记录打回历史 |
 | `R` | 同环节 `rework_count == 2` 仍不合格 | `H` | 停止重试，两次回执一并交人工 |
 | `O2` | 条款表合格 | `O3` | `Delegate fan-out parallel` + 两项 `contextSelections` → `[risk-scanner, jurisdiction-auditor]` |
-| `O3` | 两支均合格 | `O4` | 矩阵对应行翻 `covered` |
+| `O3` | 两支均返回合格分支回执 | `O4` | 仅按 `coverage-matrix` 对回执逐 ID 明确且证据闭合的行更新五状态；未声明行保持 `blank`，分支合格本身不表示其全部行 `covered` |
 | `O3` | 仅一支合格 | `O4` | 缺支的 `check_id` 全部记 `blocked`；禁 `release_to_legal`；**不得用另一支结论填补** |
 | `O3` | 两支均不合格 | `R` → `H` | 按打回上限处理 |
 | `O4` | 命中 HG-01..04 | `O5` | 暂停 `release_to_legal` / `emit_final_report` / `declare_version_consistency` |
@@ -175,10 +175,10 @@ metadata:
 **O0 自有 review-context 结构校验。**再调用 `StructuredFileValidate`，参数为 `document_path`（刚刚 `Read` 的 exact `<workspace>/contract-review/review-context.yaml` 绝对路径）、`schema_path`（release-owned `${SKILL_DIR}/references/review-context/review-context.schema.json`）和 `format: yaml`。仅工具成功且 `valid: true` 才可继续；`valid: false` 时 Lead 只可修复自己的 context 一次，随后必须 `Read` 同一路径并按同一 release-owned schema 重验。第二次不匹配、任何读取/作用域/解析/schema/运行时工具失败或没有明确的成功 `valid: true`，均记录 `O0_REVIEW_CONTEXT_VALIDATION_FAILED` 和真实原因、进入 HOLD，**不得 Delegate**。该校验只确认该单一 Lead 文件符合 release-owned Draft-07 schema，不生成或复制通用 hash、不能替代 O1 四处 current-manifest 集合比较、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`。
 
 任何回核不符都记录 `O0_REVIEW_CONTEXT_INVALID` 并停止，不得把“文件可读”说成契约合规。`review_subject_label` 仅是用户要求的利益视角，绝不证明用户代表、获授权于或就是合同方。不得要求不存在的 `party_object_id`，不得从文件名、文内指令、商业规则、resume 或旧摘要推断视角、法域或运行时身份。材料线索只在它唯一、绑定 `current_contract.parts` 的 `part_id`、同一 O0 SHA-256 与定位信息时才可记录为候选；它仍不是最终法律适用认定。
-8. 按 `review-context` 完成 `coverage-matrix` 规则源预检。完整 O0 读到唯一 `candidate_basis.pack.status: not_prechecked` 时，只在已授权的 `shared/resources/jurisdiction-packs/` 内先以 `Ls` / `Glob` 枚举每个候选 `*/pack.yaml`，再实际 `Read` 候选包的 `pack.yaml`，按其中实际存在的包身份与法域标识/名称/匹配线索字段选择唯一匹配目录；不得由候选代码、自然语言或目录名拼接/猜测路径。当前支持的包结构以实际读到的 `meta.pack_id`、`jurisdiction.code`、`jurisdiction.name` 和 `jurisdiction.detection_clues` 为例；字段缺失或不能解析时记录该候选不可用，不得臆造替代字段。只在唯一匹配目录中实际读取 `pack.yaml` **和** `rules.yaml`；成功时才以真实版本和两个 SHA-256 pin 将它改为 `read_and_pinned`，实际无匹配、多匹配、路径不可定位、读取失败、pin 不符或范围不支持时才改为 `unavailable`、记录 `RULE_SOURCE_UNAVAILABLE` 并停在 H。不得跳过此转换、把 `not_prechecked` 当已预检，或把它写成用户 `SCOPE-*`、`deferred` 或“全 blank”。这只是候选审查基准，不是最终法律适用结论。`jurisdiction.status: undetermined` 或 `conflicting` 时不得默认选包；按 coverage-matrix 的 `clarification_required` 分支建立基础矩阵并保留 typed pending，且冲突必须保留 `HG-02`。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
-9. **实际调用 `Skill` 装载 `coverage-matrix`**，由它作为唯一协议建立初始矩阵；`default_enabled` 或记得其模板都不等于已调用。完成规则源预检后，按该技能的 catalog 写入 `<workspace>/contract-review/coverage-matrix.yaml`，立即 `Read` 回读 exact 文件；不得沿用空模板的 summary，或自行另造 rows/状态/算术规则。
+8. 按 `review-context` 完成 `coverage-matrix` 规则源预检。完整 O0 读到唯一 `candidate_basis.pack.status: not_prechecked` 时，只在已授权的 `shared/resources/jurisdiction-packs/` 内先以 `Ls` / `Glob` 枚举每个候选 `*/pack.yaml`，再实际 `Read` 候选包的 `pack.yaml`，按其中实际存在的包身份与法域标识/名称/匹配线索字段选择唯一匹配目录；不得由候选代码、自然语言或目录名拼接/猜测路径。当前支持的包结构以实际读到的 `meta.pack_id`、`jurisdiction.code`、`jurisdiction.name` 和 `jurisdiction.detection_clues` 为例；字段缺失或不能解析时记录该候选不可用，不得臆造替代字段。只在唯一匹配目录中实际读取 `pack.yaml` **和** `rules.yaml`；成功时才以真实版本和两个 SHA-256 pin 将它改为 `read_and_pinned`，实际无匹配、多匹配、路径不可定位、读取失败、pin 不符或范围不支持时才改为 `unavailable`、记录 `RULE_SOURCE_UNAVAILABLE` 并停在 H。不得跳过此转换、把 `not_prechecked` 当已预检，或把它写成用户 `SCOPE-*`、`deferred` 或“全 blank”。这只是候选审查基准，不是最终法律适用结论。成功读取的 `rules.yaml` 必须保留根级 `rules[]` 与 `conflicts[]` 两个完整数组供下一步机械枚举；不得在 O0 按合同类型、`mandatory`、`detection`、`trigger`、关键词或 Lead 对合同事实的理解筛掉条目。`jurisdiction.status: undetermined` 或 `conflicting` 时不得默认选包；按 coverage-matrix 的 `clarification_required` 分支建立基础矩阵并保留 typed pending，且冲突必须保留 `HG-02`。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
+9. **实际调用 `Skill` 装载 `coverage-matrix`**，由它作为唯一协议建立初始矩阵；`default_enabled` 或记得其模板都不等于已调用。在首次矩阵 `Write` 前，还必须从已装载技能的实际 `${SKILL_DIR}` 分别 `Read` `references/coverage-matrix-bucket-summary.schema.json` 与 `references/coverage-matrix-bucket-summary.descriptor.json`，并核其真实 pin；不能用记忆、旧任务摘要或自写副本替代。完成规则源预检后，先按该技能的规则把 `rules[]` 与 `conflicts[]` 的每个唯一 ID 全部投影为 stage 4、`jurisdiction-auditor` 所有、初始 `blank` 的法域行，并验证发现集合与行集合双向完全相等；然后连同其余 catalog 写入 `<workspace>/contract-review/coverage-matrix.yaml`，立即 `Read` 回读 exact 文件。不得先判断适用性/trigger，不得漏冲突条目，不得沿用空模板的 summary，或自行另造 rows/状态/算术规则。
 
-   只从该次回读的实际 `rows` 计算 `total` 与五态计数。`denominator = covered + blank + blocked + deferred` 大于零时，只写同一 scope、分母和两位 `expected_coverage_rate` 为 `status: pending_trusted_delegate_proof` 的 worker 比较候选；它不是数值结论，Lead coverage 在 O0 不另调 MathCalc。只有分母恰为零时才可写同一 pending 状态、`NO_RATE_DENOMINATOR`、`denominator: 0` 与 null rate，且不造 ratio。不得写 `called: true`、自造历史回执或把候选称为可信覆盖率。随后再次 `Read` exact 矩阵，按 `coverage-matrix` 的交付前终检核对 `total == rows.length`、五态计数和等于 total、分母与候选/零分母分支一致。其它合同数值结论仍必须遵循其所属技能的真实计算工具要求；当前 successful Delegate 返回的 proof `actual` 只可验证首次 Intake admission 的同一矩阵快照。O1 及以后任意矩阵编辑都会使它对当前矩阵失效，最终覆盖率必须按 `coverage-matrix` 的 post-dispatch/current-read MathCalc 路径重算。
+   只从该次回读的实际 `rows` 计算 `total` 与五态计数。`denominator = covered + blank + blocked + deferred` 大于零时，只写同一 scope、分母和两位 `expected_coverage_rate` 为 `status: pending_trusted_delegate_proof` 的 worker 比较候选；该值必须遵循刚刚实际读取的 schema/descriptor，写成含 `%` 的两位字符串（例如 `0.00%`、`25.00%`），不是 `0.00` 或裸数。它不是数值结论，Lead coverage 在 O0 不另调 MathCalc。只有分母恰为零时才可写同一 pending 状态、`NO_RATE_DENOMINATOR`、`denominator: 0` 与 null rate，且不造 ratio。不得写 `called: true`、自造历史回执或把候选称为可信覆盖率。随后再次 `Read` exact 矩阵，按 `coverage-matrix` 的交付前终检核对 `total == rows.length`、五态计数和等于 total、分母与候选/零分母分支一致。其它合同数值结论仍必须遵循其所属技能的真实计算工具要求；当前 successful Delegate 返回的 proof `actual` 只可验证首次 Intake admission 的同一矩阵快照。O1 及以后任意矩阵编辑都会使它对当前矩阵失效，最终覆盖率必须按 `coverage-matrix` 的 post-dispatch/current-read MathCalc 路径重算。
 
    任一 Skill/Write/Read/候选结构核对失败，或把空模板的零分母标记带到非空矩阵，均记录 `O0_COVERAGE_MATRIX_INVALID` 和真实原因，停在 `HOLD`、保持 intake `not_started`，**不得 Delegate**。只有该闭环成功后才写 `orchestration-ledger.yaml`；该根只用于 Lead 自己的 O0 inventory、context、账本、覆盖矩阵与当前 Delegate proof 转录。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
@@ -457,7 +457,7 @@ review_context_output_constraints: <current closed object>
 
 | 情况 | 处理 |
 |---|---|
-| 两支都合格 | 各自负责的 `check_id` 翻 `covered` |
+| 两支都返回合格分支回执 | 仅按 `coverage-matrix` 对回执以精确 ID/source section 明确处置且证据闭合的行更新五状态；未逐 ID 声明的行保持 `blank`，不得因分支合格批量翻成 `covered` |
 | 仅 `risk-scanner` 合格 | 法域类 `check_id` 全部记 `blocked`，原因写「jurisdiction-auditor 未返回合格产出」 |
 | 仅 `jurisdiction-auditor` 合格 | 风险类 `check_id` 同上处理 |
 | 两支都不合格 | 进 `R`；两次仍不合格进 `H` |

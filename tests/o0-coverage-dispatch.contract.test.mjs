@@ -8,6 +8,8 @@ test('O0 loads the coverage policy and keeps the row-derived comparison candidat
   const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
 
   assert.match(skill, /实际调用 `Skill` 装载 `coverage-matrix`/)
+  assert.match(skill, /首次矩阵 `Write` 前.*分别 `Read` `references\/coverage-matrix-bucket-summary\.schema\.json` 与 `references\/coverage-matrix-bucket-summary\.descriptor\.json`/s)
+  assert.match(skill, /含 `%` 的两位字符串.*`0\.00%`、`25\.00%`.*不是 `0\.00` 或裸数/s)
   assert.match(skill, /coverage-matrix\.yaml.*立即 `Read` 回读 exact 文件/s)
   assert.match(skill, /只从该次回读的实际 `rows` 计算 `total` 与五态计数/)
   assert.match(skill, /denominator = covered \+ blank \+ blocked \+ deferred.*大于零.*`expected_coverage_rate`.*pending_trusted_delegate_proof/s)
@@ -15,6 +17,20 @@ test('O0 loads the coverage policy and keeps the row-derived comparison candidat
   assert.match(skill, /只有分母恰为零时.*`NO_RATE_DENOMINATOR`.*且不造 ratio/s)
   assert.match(skill, /不得写 `called: true`、自造历史回执或把候选称为可信覆盖率/)
   assert.match(skill, /随后再次 `Read` exact 矩阵.*total == rows\.length.*五态计数和等于 total.*候选\/零分母分支一致/s)
+})
+
+test('O0 enumerates the complete resolved jurisdiction source before dispatch without deciding applicability', async () => {
+  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+
+  assert.match(skill, /`rules\.yaml` 必须保留根级 `rules\[\]` 与 `conflicts\[\]` 两个完整数组/)
+  assert.match(skill, /不得在 O0 按合同类型、`mandatory`、`detection`、`trigger`、关键词或 Lead 对合同事实的理解筛掉条目/)
+  assert.match(skill, /`rules\[\]` 与 `conflicts\[\]` 的每个唯一 ID 全部投影为 stage 4、`jurisdiction-auditor` 所有、初始 `blank`/)
+  assert.match(skill, /验证发现集合与行集合双向完全相等/)
+  assert.match(skill, /不得先判断适用性\/trigger，不得漏冲突条目/)
+  assert.match(skill, /分支合格本身不表示其全部行 `covered`/)
+  assert.match(skill, /未逐 ID 声明的行保持 `blank`，不得因分支合格批量翻成 `covered`/)
+  assert.doesNotMatch(skill, /两支均合格[^\n]*矩阵对应行翻 `covered`/)
+  assert.doesNotMatch(skill, /两支都合格[^\n]*各自负责的 `check_id` 翻 `covered`/)
 })
 
 test('invalid O0 coverage arithmetic holds before dispatch instead of carrying an empty-template marker forward', async () => {

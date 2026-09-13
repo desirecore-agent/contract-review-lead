@@ -4,7 +4,7 @@ description: >-
   合同审查覆盖矩阵的唯一生成、更新和交付控制协议。它从已解析的规则清单生成唯一 rows，
   保存欠账状态与可复算汇总；不把规则源或配置问题伪装为用户材料缺失。用户提到覆盖矩阵、
   欠账表、检查项、漏检、通过率或审查进度时使用。
-version: 1.0.5
+version: 1.0.6
 type: procedural
 risk_level: low
 status: enabled
@@ -13,7 +13,7 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, GenerateUUID, FileDigest, MathCalc, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.0.5
+  version: 1.0.6
   updated_at: '2026-09-13'
 ---
 
@@ -36,14 +36,14 @@ metadata:
   "deferred_requires": "a trusted contract-intake receipt SCOPE-* fact identifying material absent from this user submission",
   "pre_dispatch_failures": ["RULE_SOURCE_UNAVAILABLE", "CUSTOM_RULE_SOURCE_REQUIRED"],
   "jurisdiction_context": {
-    "resolved": "one candidate_basis with an already-read pinned supported pack; generate each applicable jurisdiction rule row",
+    "resolved": "one candidate_basis with an already-read pinned supported pack; enumerate every rules[] and conflicts[] entry before dispatch, then wait for jurisdiction receipt disposition",
     "clarification_required": "undetermined or conflicting review-context; generate no jurisdiction rule row, preserve typed pending, and do not treat it as a source failure"
   },
   "catalog": {
     "intake": {"source": "review-orchestration#O1 intake_gate_coverage", "ids": ["CHK-INTAKE-S1-SCOPE", "CHK-INTAKE-S2-MASTER-VERSION", "CHK-INTAKE-S3-PAGE-RANGE", "CHK-INTAKE-S4-ATTACHMENT-MANIFEST", "CHK-INTAKE-S5-EXECUTION-STATUS", "CHK-INTAKE-S6-PLACEHOLDER", "CHK-INTAKE-S7-PARTY-AND-AMOUNT", "CHK-INTAKE-S8-VERSION-MATRIX"]},
     "missing_clauses": {"source": "base/missing-clauses.yaml", "ids": ["liability-cap", "breach-remedy", "grace-period", "termination-convenience", "subcontracting", "audit-right", "dispute-resolution", "force-majeure", "data-export"]},
     "market_benchmarks": {"source": "base/market-benchmarks.yaml", "ids": ["liability-cap-months", "renewal-notice-days", "non-compete-years", "data-export-window-days"]},
-    "jurisdiction": {"source": "<resolved-jurisdiction>/rules.yaml", "ids": "each applicable rule id after successful resolved preflight; none in clarification_required mode"},
+    "jurisdiction": {"source": "<resolved-jurisdiction>/rules.yaml", "sections": ["rules", "conflicts"], "ids": "every unique entry id from both arrays after successful resolved preflight; none in clarification_required mode", "stage": 4, "owner_agent": "jurisdiction-auditor", "initial_status": "blank"},
     "custom": {"source": "custom/rules.yaml", "ids": "each loaded rule id; optional-absent emits only CUSTOM-LAYER-ABSENT"},
     "closure": {"source": "blueprint#section-15", "ids": ["CLOSURE-COMPLETENESS", "CLOSURE-CONSISTENCY", "CLOSURE-BLOCKING-RISK", "CLOSURE-SUBSTANTIVE-TERMS", "CLOSURE-DOCUMENT"]}
   },
@@ -61,7 +61,8 @@ metadata:
 
 | 字段 | 要求 |
 |---|---|
-| `check_id`, `check_title`, `check_source`, `stage`, `owner_agent`, `status`, `updated_at` | 每行必填；`check_source` 为 `<file>#<id>`。Intake 回执 `checks[].id` 的 `S1`–`S8` 不得与矩阵 `check_id` 混用。 |
+| `check_id`, `check_title`, `check_source`, `stage`, `owner_agent`, `status`, `updated_at` | 每行必填；`check_source` 为 `<file>#<section>/<id>`（固定 catalog 没有 section 时沿用既有 `<file>#<id>`）。Intake 回执 `checks[].id` 的 `S1`–`S8` 不得与矩阵 `check_id` 混用。 |
+| `rule_kind` | 法域行可填 `jurisdiction_rule` 或 `jurisdiction_conflict`，只标识它来自 `rules[]` 还是 `conflicts[]`，不表示适用性、触发或结论。 |
 | `receipt_ref` | 仅 `covered` 必填，且指向通过 RC-1..RC-6 的该 owner 回执条目 |
 | `source_location`, `conclusion`, `evidence`, `action` | `covered` 必填；evidence 必须能在声明输入中原文 `Grep` 命中 |
 | `not_covered_reason` | 每个非 `covered` 必填；不得写“未提及” |
@@ -90,9 +91,38 @@ optional-absent custom 的唯一可用行固定如下；它保留企业红线未
   updated_at: <timestamp>
 ```
 
+### resolved 法域 catalog 的机械枚举
+
+法域包已成功读取并 pin 后，O0 必须从**同一次完整 `Read` 的 `rules.yaml`**机械枚举根级
+`rules[]` 与 `conflicts[]`。两个字段都必须是数组；每个元素都必须有非空字符串 `id` 与可读标题。
+把两数组中每个条目的原始 `id` 组成一个联合集合：数组内重复、跨数组重复、缺失或非字符串 ID
+一律记录 `JURISDICTION_CATALOG_INVALID` 并 HOLD，不得静默去重、改名或继续派发。
+
+联合集合中的每一项在任何 Delegate 前恰好生成一行：`check_id` 原样等于条目 `id`；主规则的
+`check_source` 为 `<实际 rules.yaml 绝对路径>#rules/<id>`，冲突规则为
+`<实际 rules.yaml 绝对路径>#conflicts/<id>`；`stage: 4`、
+`owner_agent: jurisdiction-auditor`、`status: blank`，并写明正在等待法域回执。可用
+`rule_kind: jurisdiction_rule|jurisdiction_conflict` 保留来源类别。生成后比较发现集合与 stage 4
+法域行的 `(check_id, check_source)` 集合，必须双向完全相等且无额外行，不能按合同类型、
+`mandatory`、`category`、`detection`、`trigger`、关键词或 Lead 对合同事实的理解提前筛选。
+
+这些初始 `blank` 行不是法律适用判断。Jurisdiction 后续回执通过 RC-1..RC-6 后，只对回执以精确
+规则 ID、`rules|conflicts` section 和证据明确处置的对应行按本技能既有五状态规则更新：有证据确认
+条件不适用时可为 `not_applicable`；触发未知、事实不足或 Human Gate 未确认时保持 `blank`，不得
+默认改为 `not_applicable`。未被回执逐 ID 处置的行继续 `blank`；汇总 `rules_evaluated`、finding/gap
+数量或“已审法域包”等概括不能替代逐行证据，也不保证首次 Jurisdiction 返回后所有行都脱离
+`blank`。冲突条目与主规则遵循同一回执、证据和 Human Gate 边界，不增加另一套
+catalog-disposition 协议。
+
 ## 完整模板与内部计算候选
 
-首次生成后立即写下列完整结构，再 `Read` 回读。动态行只能由已解析 catalog 追加；不得从成员产物反推 rows。
+首次矩阵 `Write` 前，必须实际 `Read`
+`${SKILL_DIR}/references/coverage-matrix-bucket-summary.schema.json` 和
+`${SKILL_DIR}/references/coverage-matrix-bucket-summary.descriptor.json`；任一不可读、解析失败或与
+`agent.json#delegation_preconditions` 的 pin 不一致都 HOLD，不得凭记忆重建。正分母候选必须按实际
+schema 的 percent 形状和 descriptor 的两位小数规则写成带 `%` 的字符串，例如 `0.00%`、
+`25.00%`，不能写成 `0.00` 或裸数。随后才写下列完整结构并 `Read` 回读。动态行只能由已解析
+catalog 追加；不得从成员产物反推 rows。
 
 ```yaml
 coverage_matrix:
@@ -216,7 +246,7 @@ HOLD，不得自由编写旁车形状或先行计算：
 
 ## 交付前终检
 
-- [ ] 已选择候选时所有规则源预检成功；未决/冲突 context 只用 `clarification_required` 模式且没有法域规则行；没有把 source/config failure 写成 `deferred`
+- [ ] 已选择候选时所有规则源预检成功，`rules[]` 与 `conflicts[]` 的唯一 ID 联合集合和初始 stage 4 法域 `blank` 行双向完全相等；未决/冲突 context 只用 `clarification_required` 模式且没有法域规则行；没有把 source/config failure 写成 `deferred`
 - [ ] `generated_before_dispatch: true`，每一行有唯一 catalog 来源，且无 `INV-001-MAIN-CONTRACT`
 - [ ] 每个状态按本技能类别顺序可解释；欠账未删除
 - [ ] 每个 `covered` 的 owner、receipt 和证据一致；非 covered 有具体理由
