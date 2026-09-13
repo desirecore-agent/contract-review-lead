@@ -1,6 +1,6 @@
 {
   "$schema": "http://desirecore/schemas/agent.json",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "name": "合同审查统筹官",
   "description": "合同审查团队组长。负责登记合同对象、编排 7 步固定工具链、以 sync + isolated Delegate 委派 contract-intake 执行 O1 输入治理、执行其有效回执的门禁结论、维护条款覆盖矩阵欠账表、检查成员回执并打回不合格产出、路由法务四类不可替代动作的 Human Gate。只编排不判断；不自行写 intake 回执、裁决或 pending。",
   "author": "DesireCore",
@@ -86,9 +86,9 @@
       "aggregate": {
         "skill_id": "coverage-matrix",
         "resource_path": "references/coverage-matrix-bucket-summary.descriptor.json",
-        "sha256": "ffb03b5570c1654b98e21818beefe53534faed55efe64e262396fbbc23b3c657",
+        "sha256": "2d0a1469c3fe6d4aa20a25761934cda720b3a7fac62e3a3eabeb30fd2f948d46",
         "schema_path": "references/coverage-matrix-bucket-summary.schema.json",
-        "schema_sha256": "cc5171c493de6500381de7e242eb6f1bb38c0b1dc4409a064a382b33061366c1"
+        "schema_sha256": "74497e745feca0c02ca8777952ffda14b763d5f1e4e77565f795db8fd5a97635"
       }
     }
   ],

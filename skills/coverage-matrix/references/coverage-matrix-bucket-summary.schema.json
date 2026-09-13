@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Lead coverage-matrix delegated-summary snapshot",
-  "description": "Static shape for one Lead coverage-matrix snapshot. This schema constrains declared summary branches only; it does not prove catalog membership, a historical MathCalc call, Human Gate completion, or any legal conclusion.",
+  "title": "Lead coverage-matrix delegated-summary candidate",
+  "description": "Static shape for one Lead coverage-matrix snapshot. It constrains row-derived counts and one internal calculation candidate; it does not prove catalog membership, a historical MathCalc call, a successful Delegate, Human Gate completion, or any legal conclusion.",
   "type": "object",
   "additionalProperties": false,
   "required": ["coverage_matrix"],
@@ -13,7 +13,7 @@
         "summary": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["total", "covered", "blank", "blocked", "deferred", "not_applicable", "coverage_rate", "coverage_rate_reason", "mathcalc_receipt"],
+          "required": ["total", "covered", "blank", "blocked", "deferred", "not_applicable", "calculation_candidate"],
           "properties": {
             "total": {"$ref": "#/definitions/count"},
             "covered": {"$ref": "#/definitions/count"},
@@ -21,26 +21,14 @@
             "blocked": {"$ref": "#/definitions/count"},
             "deferred": {"$ref": "#/definitions/count"},
             "not_applicable": {"$ref": "#/definitions/count"},
-            "coverage_rate": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/percent"}]},
-            "coverage_rate_reason": {"oneOf": [{"type": "null"}, {"const": "NO_RATE_DENOMINATOR"}]},
-            "mathcalc_receipt": {"type": "object"}
-          },
-          "oneOf": [
-            {
-              "properties": {
-                "coverage_rate": {"$ref": "#/definitions/percent"},
-                "coverage_rate_reason": {"type": "null"},
-                "mathcalc_receipt": {"$ref": "#/definitions/nonzeroReceipt"}
-              }
-            },
-            {
-              "properties": {
-                "coverage_rate": {"type": "null"},
-                "coverage_rate_reason": {"const": "NO_RATE_DENOMINATOR"},
-                "mathcalc_receipt": {"$ref": "#/definitions/zeroReceipt"}
-              }
+            "calculation_candidate": {
+              "description": "Internal pending candidate. Its values are not trusted provenance and must never be cited as a verified coverage result before the current successful Delegate returns its platform proof.",
+              "oneOf": [
+                {"$ref": "#/definitions/positiveCandidate"},
+                {"$ref": "#/definitions/zeroCandidate"}
+              ]
             }
-          ]
+          }
         },
         "rows": {
           "type": "array",
@@ -58,6 +46,7 @@
   },
   "definitions": {
     "count": {"type": "integer", "minimum": 0, "maximum": 8000},
+    "positiveCount": {"type": "integer", "minimum": 1, "maximum": 8000},
     "percent": {"type": "string", "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,2})?%$", "maxLength": 64},
     "scope": {
       "type": "object",
@@ -70,24 +59,29 @@
         "deferred": {"$ref": "#/definitions/count"}
       }
     },
-    "nonzeroReceipt": {
+    "positiveCandidate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["called", "expression", "scope", "result"],
+      "required": ["status", "branch", "expression", "scope", "denominator", "expected_coverage_rate"],
       "properties": {
-        "called": {"const": true},
+        "status": {"const": "pending_trusted_delegate_proof"},
+        "branch": {"const": "positive_denominator"},
         "expression": {"const": "covered / (covered + blank + blocked + deferred) * 100"},
         "scope": {"$ref": "#/definitions/scope"},
-        "result": {"type": "number", "minimum": 0}
+        "denominator": {"$ref": "#/definitions/positiveCount"},
+        "expected_coverage_rate": {"$ref": "#/definitions/percent", "description": "Untrusted expected value used only as the worker comparison operand; only the successful Delegate proof assertion actual is a verified numeric result."}
       }
     },
-    "zeroReceipt": {
+    "zeroCandidate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["called", "reason"],
+      "required": ["status", "branch", "denominator", "coverage_rate", "coverage_rate_reason"],
       "properties": {
-        "called": {"const": false},
-        "reason": {"const": "NO_RATE_DENOMINATOR"}
+        "status": {"const": "pending_trusted_delegate_proof"},
+        "branch": {"const": "zero_denominator"},
+        "denominator": {"const": 0},
+        "coverage_rate": {"type": "null"},
+        "coverage_rate_reason": {"const": "NO_RATE_DENOMINATOR"}
       }
     }
   }

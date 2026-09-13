@@ -11,7 +11,7 @@
   "schema": {
     "source_name": "pinned_schema",
     "relative_source": "clause-extractor/schemas/clause-extraction-artifact-v22.schema.json",
-    "sha256": "eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439"
+    "sha256": "46a2b4a99fc6dcf659117f4d33b7556c07a59b3628388b2272c58cd5fbc25dfb"
   },
   "baseline": {
     "file": "baseline",

@@ -10,7 +10,7 @@ description: >-
   7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
   synchronous isolated context, enforces the intake gate, audits member receipts and returns
   non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.12
+version: 1.0.14
 type: procedural
 risk_level: medium
 status: enabled
@@ -37,8 +37,8 @@ requires:
     - StructuredFileValidate
 metadata:
   author: DesireCore
-  version: 1.0.12
-  updated_at: '2026-09-11'
+  version: 1.0.14
+  updated_at: '2026-09-13'
 ---
 
 # 合同审查编排主控
@@ -178,16 +178,26 @@ metadata:
 8. 按 `review-context` 完成 `coverage-matrix` 规则源预检。完整 O0 读到唯一 `candidate_basis.pack.status: not_prechecked` 时，只在已授权的 `shared/resources/jurisdiction-packs/` 内先以 `Ls` / `Glob` 枚举每个候选 `*/pack.yaml`，再实际 `Read` 候选包的 `pack.yaml`，按其中实际存在的包身份与法域标识/名称/匹配线索字段选择唯一匹配目录；不得由候选代码、自然语言或目录名拼接/猜测路径。当前支持的包结构以实际读到的 `meta.pack_id`、`jurisdiction.code`、`jurisdiction.name` 和 `jurisdiction.detection_clues` 为例；字段缺失或不能解析时记录该候选不可用，不得臆造替代字段。只在唯一匹配目录中实际读取 `pack.yaml` **和** `rules.yaml`；成功时才以真实版本和两个 SHA-256 pin 将它改为 `read_and_pinned`，实际无匹配、多匹配、路径不可定位、读取失败、pin 不符或范围不支持时才改为 `unavailable`、记录 `RULE_SOURCE_UNAVAILABLE` 并停在 H。不得跳过此转换、把 `not_prechecked` 当已预检，或把它写成用户 `SCOPE-*`、`deferred` 或“全 blank”。这只是候选审查基准，不是最终法律适用结论。`jurisdiction.status: undetermined` 或 `conflicting` 时不得默认选包；按 coverage-matrix 的 `clarification_required` 分支建立基础矩阵并保留 typed pending，且冲突必须保留 `HG-02`。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
 9. **实际调用 `Skill` 装载 `coverage-matrix`**，由它作为唯一协议建立初始矩阵；`default_enabled` 或记得其模板都不等于已调用。完成规则源预检后，按该技能的 catalog 写入 `<workspace>/contract-review/coverage-matrix.yaml`，立即 `Read` 回读 exact 文件；不得沿用空模板的 summary，或自行另造 rows/状态/算术规则。
 
-   只从该次回读的实际 `rows` 计算 `total` 与五态计数。`denominator = covered + blank + blocked + deferred` 大于零时，必须以该四个数字调用一次真实 `MathCalc`，写回 `called: true`、同一 scope、返回 result 和非空 `coverage_rate`；只有分母恰为零时才可写 `NO_RATE_DENOMINATOR` 与 `called: false`。随后再次 `Read` exact 矩阵，按 `coverage-matrix` 的交付前终检核对 `total == rows.length`、五态计数和等于 total、分母与 MathCalc/零分母分支一致。
+   只从该次回读的实际 `rows` 计算 `total` 与五态计数。`denominator = covered + blank + blocked + deferred` 大于零时，只写同一 scope、分母和两位 `expected_coverage_rate` 为 `status: pending_trusted_delegate_proof` 的 worker 比较候选；它不是数值结论，Lead coverage 在 O0 不另调 MathCalc。只有分母恰为零时才可写同一 pending 状态、`NO_RATE_DENOMINATOR`、`denominator: 0` 与 null rate，且不造 ratio。不得写 `called: true`、自造历史回执或把候选称为可信覆盖率。随后再次 `Read` exact 矩阵，按 `coverage-matrix` 的交付前终检核对 `total == rows.length`、五态计数和等于 total、分母与候选/零分母分支一致。其它合同数值结论仍必须遵循其所属技能的真实计算工具要求；当前 successful Delegate 返回的 proof `actual` 只可验证首次 Intake admission 的同一矩阵快照。O1 及以后任意矩阵编辑都会使它对当前矩阵失效，最终覆盖率必须按 `coverage-matrix` 的 post-dispatch/current-read MathCalc 路径重算。
 
-   任一 Skill/Write/Read/MathCalc/算术核对失败，或把空模板的零分母标记带到非空矩阵，均记录 `O0_COVERAGE_MATRIX_INVALID` 和真实原因，停在 `HOLD`、保持 intake `not_started`，**不得 Delegate**。只有该闭环成功后才写 `orchestration-ledger.yaml`；该根只用于 Lead 自己的 O0 inventory、context、账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
+   任一 Skill/Write/Read/候选结构核对失败，或把空模板的零分母标记带到非空矩阵，均记录 `O0_COVERAGE_MATRIX_INVALID` 和真实原因，停在 `HOLD`、保持 intake `not_started`，**不得 Delegate**。只有该闭环成功后才写 `orchestration-ledger.yaml`；该根只用于 Lead 自己的 O0 inventory、context、账本、覆盖矩阵与当前 Delegate proof 转录。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
    对 canonical `contract-intake` 的每一次新 `Delegate`，平台还会在真正启动 child 前按本 Agent
    已发布的 `delegation_preconditions` 重新读取当前 effective cwd 内该 exact 矩阵快照，并以
    `coverage-matrix` 技能内的 release-pinned schema/descriptor 作有限 bucket-summary 校验。该
    通用 admission 失败、pin 不符、scope 不可读或快照不满足零/非零分支时，保持 HOLD，**不得
-   Delegate**；它不读取旧回执、不替代上述真实 `MathCalc` 调用、不证明历史工具调用、catalog
-   身份、Human Gate 或法律结论，也不授权修改矩阵、资源或任何成员产物。
+   Delegate**。启动前的矩阵只含内部 pending 候选；它不读取旧回执、不证明历史工具调用、catalog
+   身份、Human Gate 或法律结论，也不授权修改矩阵、资源或任何成员产物。只有当前 Delegate
+   成功正文末尾的完整 `{"verified_preconditions":{"preconditions": [...], "proofs": [...]}}`
+   JSON 才可按 `coverage-matrix` 的固定序号规则消费。`child_run_id` 只能从该同一次成功 Delegate 的
+   模型可见正文标记 `[子会话 runId: <真实值>]` 原样取得；缺失或不能绑定时 HOLD，不能读取 metadata、
+   从 session/path 推断或自行生成。Lead 必须保留 `preconditions[].proofIndexes`
+   到去重 `proofs[]` 的真实关联，不得展平或按目标重造 proof，并原样保存 proof 的 snake_case
+   字段与本次 child run。随后以 `FileDigest` 复核 exact 矩阵仍等于所索引 proof 的
+   `document_sha256`，并校验旁车 schema。`preconditions[].configSha256` 是声明该 precondition 的源
+   Agent 配置 digest，不得误称目标配置。失败、超时、取消、缺字段、目标/配置/
+   child 不符、摘要变化或断言不符时继续保持 pending；不得从矩阵、旧旁车、工具摘要或自身文字
+   补出可信 proof，也不得修改已被 hash 的矩阵来迁就 proof。
 
 **O0 成功后的账本初态。**完整 O0 已真实成功后，才可把账本状态迁移为 `O0_REGISTERED`。如下只是附加到已完成、已核验 O0 ledger 的**状态片段**，只表示已登记，绝不表示已派发；它不得重建、删除或覆盖已核验的 `case_id`、双 manifest 摘要、`objects`、`jurisdiction_pack`、`freeze` 或已有可信 lead run。不得预填 `dispatched_at`、`run_id`、`child_run_id` 或 `work_context_id`，也不得以 `null` 占位冒充未知的派发事实：
 
@@ -266,16 +276,17 @@ handoff:
 收到回执后：
 
 - **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径；若它返回 `artifact_path`，原样复制完整绝对路径（不删除 UUID 或 `agents` 路径段、不猜测或重拼）并对该精确路径再 `Read`。任一读取失败时不得凭最终文本、工具摘要或中间文件完成 RC-1..RC-6。确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
+- **两个 manifest 摘要必须分别镜像且完整相等。**从 exact 回执逐字段读取 `input_inventory.submission_inventory_manifest_digest` 与 `input_inventory.current_contract_manifest_digest`，分别和 Lead O0 inventory/ledger 中原先冻结的全部提交文件清单摘要、当前合同 parts 清单摘要比较。两项都可得时必须各自完全相等；总提交摘要不等即 RC-1 无效，即使当前合同子集摘要相等也不得降级为 `conditional`、不得进入 O2。返回 `contract-intake` 修正其回执并保留原 O0 事实；Lead 不得编辑回执、删掉 operator input（如 intake 文件）或用合同子集摘要替代总提交摘要。
 - **八项 Intake 步骤是有效回执的必要组成。**`checks[]` 必须逐项且恰好一次给出本节映射表中的真实 `S1`–`S8`，并保留其对应的真实检查语义；不得用相近名称猜测、重排或自造同名编号。只有先按 RC-1..RC-6 核验该回执，再按本节映射消费其有效 `checks[]`，Lead 才能更新相应的 `CHK-INTAKE-*` 矩阵行。`pass` 的真实检查及其回执证据才可按既有矩阵协议翻 `covered`；非 `pass` 的项保留原始状态与证据/阻断原因，不能由 Lead 补成 `covered`。
 - **回执缺失或无效时停在 O1。**缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符、或未通过 RC-1..RC-6 时，记录 `O1_INTAKE_GATE_STEPS_INVALID`（及具体缺失/错映原因）和 `O1_INTAKE_RECEIPT_INVALID` 到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。已可信绑定且 child 为 `active` 或状态未知时，记录 `O1_WAITING_OR_UNKNOWN` 并停在 O1；缺 ID 或 target/child run 不匹配才转 `HALTED_FOR_HUMAN`。只有终态不合格且「可信续接绑定」所定义的已登记 ID 匹配同一 target/child run，才可要求 `contract-intake` 以 `contextMode: continue` 补全或重做；达到打回上限转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
 - **未签署草稿例外必须是双证据，且 YAML 未验证不能结案。**当回执的 `freeze.execution_status.signature_status` 为 `unsigned_draft`，只接受回执该处与 handoff 根中的两个镜像：两处均须有 `review_purpose: draft_negotiation_assistance`，且 `exception_basis.request_scope_evidence` 与 `exception_basis.material_evidence` 必须字段齐全、逐值相同。前者必须保留本轮用户草稿/谈判辅助审查范围的原文，后者必须有材料绝对 `input_path`、`page`、`locator` 和明确未签草稿原文 `quote`；缺失、只在一侧出现、值不一致，或试图用 Lead 自己补写的一侧，均记录 `O1_UNSIGNED_DRAFT_EVIDENCE_INVALID` 并 HOLD/打回，不能由泛化 RC-6 放行。`yaml_unverified`（无论在回执、handoff 或其声明的 YAML 语法状态）表示本次只完成回读、未获 YAML 解析工具验证：记录 `O1_INTAKE_YAML_UNVERIFIED` 并 HOLD，不更新 O1 为已验证完成、不进入 O2，也不得因 `conditional` 或其他 RC 通过把它当作有效输入治理；只有 `contract-intake` 以后在可用专用 YAML 校验工具的真实成功证据下移除该标记，才可重新按全部 RC 检查接收。以上只约束回执的实际字段和回读，不声明平台已对 YAML 或签署事实作确定性验证。
+- **四冻结逐字段镜像后再归一。**从 exact 回执逐项复制 `freeze.master_version.frozen`、`freeze.page_range.frozen`、`freeze.attachment_manifest.frozen`、`freeze.execution_status.frozen` 四个真实布尔值到 Lead ledger，不得用 O0 值、文字摘要、`unsigned_draft` 例外或 `verdict` 提升任何一项。Lead 本地计算 `normalized_all_frozen = master_version && page_range && attachment_manifest && execution_status`；`receipt.all_frozen` 必须与该 AND 完全相等，否则记录 `O1_INTAKE_FREEZE_NORMALIZATION_INVALID`、按无效回执打回并停在 O1，不进入 O2。只有 `normalized_all_frozen === true` 且回执 `consistency_conclusion_allowed === true` 时才写 `version_compare_allowed: true`；其余一律 false。矩阵基线保留四个镜像布尔值、AND 结果、原始 `receipt.all_frozen` 与结论开关，不能只留一句“已冻结”。本项与前述双 manifest 核验均在读取 verdict 的 O2 迁移之前完成。
 - 先跑六项回执检查（见「回执检查」一节）。
 - 读 `verdict` 字段：
   - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
 - `conditional` → 进 `O2`，**全量派发、范围不缩减**，把 `pending[]` 逐条登记为矩阵待确认行并原样传给下游。
 - `passed` → 进 `O2`。
 - 对有效回执的 S8，只能把实际 `jurisdiction_undetermined`、候选线索或版本可得性作为 `review-context` 的来源声明更新，并把同一 `case_binding` 的 revision 递增后 `Read` 回读。S8 未定时保留 `PEND-JURISDICTION-BASIS-REQUIRED`，不默认选包；S8 线索也不单独成为最终法律适用结论。已识别候选的包实际不可读、pin 不符或服务范围不支持时，写 `RULE_SOURCE_UNAVAILABLE`（`required_from: lead`）并按既有 H；不得把它伪装成用户澄清欠项。用户随后补充且不替换材料时，保留旧 revision 与同一冻结案件绑定，仅按普通 `isolated` 编排重跑受影响分支；不得把该澄清伪装为 Delegate `continue`、action resume 或从旧成员摘要取得身份。revision 更新只清理过期 review-context 澄清项，绝不关闭已经存在的 `HG-02`、其他 Human Gate、pending gate artifact 或 `blocked_by_human_gate`；账本、真人回执和 reporter 仍是这些 gate 的权威。
-- 把 `freeze` 四项与 `consistency_conclusion_allowed` 写入矩阵基线。四项未全成立时，在编排账本标 `version_compare_allowed: false`（O4 的第 6 步据此处理）。
 
 #### O1 Intake 覆盖映射（Lead 账本契约）
 
@@ -371,7 +382,7 @@ schema_target: artifact
 rules_source: rules
 ```
 
-仅从 release-owned pin 的相对 source 解析路径：schema 为 `clause-extractor/schemas/clause-extraction-artifact-v22.schema.json`，rules 为 `${SKILL_DIR}/references/compose-contracts/clause-v22-single-main-contract.rules.json`。schema SHA-256 必须为 `eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439`，LF rules SHA-256 必须为 `4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8`。同次 capture 的 `part_0` snapshot format 必须为 `docx`；worker 必须成功派生 canonical text。任何 native、derivation、scope、schema、rules、deadline 或 public-envelope 错误均写 `O2_CLAUSE_V22_DOCX_COMPOSE_UNAVAILABLE` 并 HOLD，不归责为成员返工，也不能让成员自报派生 SHA/codec/长度替代平台结果。
+仅从 release-owned pin 的相对 source 解析路径：schema 为 `clause-extractor/schemas/clause-extraction-artifact-v22.schema.json`，rules 为 `${SKILL_DIR}/references/compose-contracts/clause-v22-single-main-contract.rules.json`。只接受 `clause-extraction@1.0.12`；schema SHA-256 必须为 `46a2b4a99fc6dcf659117f4d33b7556c07a59b3628388b2272c58cd5fbc25dfb`，LF rules SHA-256 必须为 `4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8`。同次 capture 的 `part_0` snapshot format 必须为 `docx`；worker 必须成功派生 canonical text。任何 native、derivation、scope、schema、rules、deadline 或 public-envelope 错误均写 `O2_CLAUSE_V22_DOCX_COMPOSE_UNAVAILABLE` 并 HOLD，不归责为成员返工，也不能让成员自报派生 SHA/codec/长度替代平台结果。
 
 仍只消费公共 `ToolExecutionResult.success: true` 的唯一 text JSON receipt。除上节公共 envelope 规则外，receipt 必须 `ok: true`，快照名称集合仍恰为五项，schema/rules/artifact binding 与双 release pin 必须逐项匹配；`binding.rule_manifest` 必须精确为 assertion_count `58`，selectors 依序为 `payloadEvidence`、`coverageEvidence`、`ambiguityEv`。其 `derived_sources` 必须恰有一项 `part_0`，且含原件 SHA/size、derived text SHA、`text_offset_codec: utf16_code_unit` 与 UTF-16 code-unit 长度，不含正文、路径或 lease ref。release-owned v2.2 rules 使用同次 worker 内的封闭 `derived_source` operand，把 artifact `source_representations[0]` 的原件 SHA/size、`format: docx`、`canonical_text`、派生 SHA、codec 和长度逐项绑定；Lead 不手工比较这些字符串。
 
@@ -401,7 +412,7 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 
 v2.3 是 v2.2 schema 的多材料候选，不替代已 pin 的 v2.1/v2.2 分支，也不表示平台或团队版本已发布。Lead 必须先在既有 O2 决策记录中明确选择**本节具名的 `v2.3 current multipart` 分支**；未选择、不能确认当前安装团队，或未能从该团队实际 read scope 解析 controls 的精确绝对路径时一律 HOLD，不能借用 Lead Skill、旧个人 workspace、其他 AgentFS 或猜测的根路径。仅当 O0 已用完整库存 schema 验证并冻结同次 baseline，且 `current_contract.parts` 中恰有一份 `main_contract`、所有当前已交付 part 不超过 28 份时，才可准备一次 Compose：`pinned_schema`、`artifact`、`rules`、同次完整 O0 `baseline` 四个 control captures，加上每个已交付 current part 的实际 capture。历史合同、reference、operator、commercial、resume 和 unclassified 材料不得进入 Clause parts、frozen baseline、source representations 或 delivered captures；这些桶可合法非空，Compose 链只绑定 O0 已声明的 current 集合，不证明 Agent 分类语义本身。
 
-固定 schema 与 rules 均必须从**当前实际安装团队**的 `shared/resources/compose-contracts/` 在当前 read scope 内解析并 `Read` 精确字节：`clause-extraction-artifact-v22.schema.json` 的 SHA-256 必须为 `eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439`；`clause-v23-current-multipart.rules.json` 必须保持 LF-only，SHA-256 必须为 `161a1eeb124db1f69320930d81c3076d2f8a8940bb63627490bacd4da040b82f`。Compose 的 `pinned_schema` 与 `rules` 分别使用这两个已解析的绝对路径；不得从 `${SKILL_DIR}`、Lead workspace、成员 workspace 或其他 AgentFS 复制、换根或替代。任一 exact `Read`、scope 或 hash 检查失败均记录实际 code 并 HOLD。Clause 委派仍必须按 v2.2 schema 输出：每个 delivered part 在 `parts`、`frozen_baseline.parts` 和 `source_representations` 中保持一致；未交付 part 保留 typed `part_not_delivered` debt，且不得有 representation 或 capture。Lead 不从 part index 猜 source name/format，也不把 artifact 自报 metadata 当 capture 事实。
+固定 schema 与 rules 均必须从**当前实际安装团队**的 `shared/resources/compose-contracts/` 在当前 read scope 内解析并 `Read` 精确字节：只接受 `clause-extraction@1.0.12`，且 `clause-extraction-artifact-v22.schema.json` 的 SHA-256 必须为 `46a2b4a99fc6dcf659117f4d33b7556c07a59b3628388b2272c58cd5fbc25dfb`；`clause-v23-current-multipart.rules.json` 必须保持 LF-only，SHA-256 必须为 `161a1eeb124db1f69320930d81c3076d2f8a8940bb63627490bacd4da040b82f`。Compose 的 `pinned_schema` 与 `rules` 分别使用这两个已解析的绝对路径；不得从 `${SKILL_DIR}`、Lead workspace、成员 workspace 或其他 AgentFS 复制、换根或替代。任一 exact `Read`、scope 或 hash 检查失败均记录实际 code 并 HOLD。Clause 委派仍必须按 v2.2 schema 输出：每个 delivered part 在 `parts`、`frozen_baseline.parts` 和 `source_representations` 中保持一致；未交付 part 保留 typed `part_not_delivered` debt，且不得有 representation 或 capture。Lead 不从 part index 猜 source name/format，也不把 artifact 自报 metadata 当 capture 事实。
 
 三个正向 evidence selector 使用 release-owned dynamic part-to-capture mapping；receipt 的 `source_requirement: captured_representation_part` 只说明动态来源账务。所有动态 required sources 都必须 complete，且 receipt `ok:true`、binding、snapshot、schema/rules pin、metadata/provenance 与 public envelope 均通过才可进入 O3。无 quote 只可能完成来源可读性，不能证明条款不存在、语义结论或 Human Gate。任一 capture 超限、动态 map/metadata/provenance 不匹配、未交付 part 被引用、native/unsupported/deadline 或 receipt 缺失都 HOLD；不得删件、降级为旧静态规则，或提前发布团队版本。
 
@@ -469,9 +480,9 @@ contextReason: "合同案件版本对比与独立复核报告。"
 
 | 条件 | 处理 |
 |---|---|
-| 有历史基线且四大冻结全成立 | 正常做版本对比，要求输出 `risk_direction` |
+| 有历史基线、四大冻结规范化 AND 为 true 且有效回执 `consistency_conclusion_allowed: true` | 正常做版本对比，要求输出 `risk_direction` |
 | 单一版本、无历史基线 | 标 `not_applicable` 并在报告显式记录——**标记不是跳过** |
-| 四大冻结未全成立，或 `manifest_digest_unavailable` | `risk_direction` 只能是 `undetermined`；禁止任何一致性结论（`rules.md#R-013`） |
+| 四大冻结规范化 AND 非 true、结论开关非 true，或 `manifest_digest_unavailable` | `risk_direction` 只能是 `undetermined`；禁止任何一致性结论（`rules.md#R-013`） |
 
 **交接块必须剔除的内容**（`rules.md#R-003`）：前序成员的推理过程、理由陈述、置信度自评、结论草稿。可以传的是：原文绝对路径、结构化事实（条款表 / 文档对象 / 规则包版本）、覆盖矩阵骨架、上游的 `failure_mark`（那是事实，不是推理）。
 
@@ -534,7 +545,18 @@ handoff:
 
 ### O6 交付
 
-写编排回执并交付。回执必备：对象版本（`object_ref[]`）、规则版本（各层 pack version）、证据位置、执行 Agent 清单、人工确认点、**全部打回记录**、**全部留白记录**。
+进入 O6 前必须实际调用 `Skill` 装载 `coverage-matrix` 并执行其中“当前矩阵的最终 MathCalc 旁车”。
+这一步发生在所有合格成员回执和最后一次矩阵更新之后：先以三次相等的 FileDigest 包围完整 Read 与
+真实 MathCalc，五态计数由五组完整一热标志的 `sum(flags)` 返回，分母由四个工具返回值相加；正分母
+再由真实 MathCalc 返回两位比例，零分母只保留真实计数、真实分母 0 与 null ratio。O0 Intake proof
+不得复用，也不得为刷新覆盖率重派 Intake。任一调用、schema、回读或摘要绑定失败，或旁车之后矩阵
+再次变化，都保持 coverage pending/HOLD，交付正文不得输出覆盖率数值。
+
+成功时只新建经过 `coverage-matrix-final-calculation.schema.json` 校验的旁车，并在 Lead 编排回执或
+覆盖率附录引用它；不得修改被 hash 的矩阵或 Reporter 原产物。旁车保留实际输入/原始工具返回和
+状态转录，同时明确状态转录仍需 catalog、RC 与 Human Gate 审核，不是平台对业务语义的认证。
+
+写编排回执并交付。回执必备：对象版本（`object_ref[]`）、规则版本（各层 pack version）、证据位置、执行 Agent 清单、人工确认点、**全部打回记录**、**全部留白记录**，以及当前矩阵最终计算旁车的绝对路径与 SHA-256（零分母时也必备）。
 
 ---
 
@@ -646,7 +668,7 @@ workContextId: "<trusted_delegate_binding.work_context_id>"  # 原样复制，�
 
 | # | 检查项 | 判据（不合格的具体形态） |
 |---|---|---|
-| **RC-1** | **对象与输入版本一致** | 回执的 `case_id`、`object_id`、`version_label`、规范化绝对输入路径及对应 `content_digest` 必须逐项匹配组长账本中的同一登记行；完整文件集的 `manifest_digest` 也必须匹配。任一不一致立即停，不猜。相同摘要不能替代其余字段，亦不构成对象身份或法律确认。摘要为 `unknown` 时只降级为 `object_id + version_label` 的弱匹配，并在矩阵标 `identity_weakly_matched: true`。 |
+| **RC-1** | **对象与输入版本一致** | 回执的 `case_id`、`object_id`、`version_label`、规范化绝对输入路径及对应 `content_digest` 必须逐项匹配组长账本中的同一登记行；`submission_inventory_manifest_digest` 与 `current_contract_manifest_digest` 必须分别匹配 Lead 原先冻结的完整提交清单和当前合同 parts 清单。任一不一致立即停，不猜；总提交摘要不等时不得因合同子集相同而降为 conditional，须退回 Intake 修正。相同摘要不能替代其余字段，亦不构成对象身份或法律确认。摘要为 `unknown` 时只按既有 unavailable 分支降级为 `object_id + version_label` 的弱匹配，并在矩阵标 `identity_weakly_matched: true`；不得把已知不相等当 unknown。 |
 | **RC-2** | **结论四元组齐备** | 任一条结论缺 条款编号 / 证据位置（页码） / 结论等级 / 对应动作 中的任一项。`conclusion_level` 非 `blank` 却缺 `clause_no`、`page` 或 `quote` 时同样不合格（`INV-011`） |
 | **RC-3** | **证据可追溯** | `quote` 无法在其声明的文件中原文命中。用 `Grep` 固定字符串抽检（`pattern: <quote>, is_regex: false`）：全部 `block` 级结论 100% 抽检；其余条目总数 ≤20 时全量，>20 时随机 30% 且不少于 6 条。命中失败任一条 → 整份打回 |
 | **RC-4** | **pending 有落点** | 上游交接块中的每个 `pending.id` 在本回执里都必须被显式承接（消化 / 升级 / 留白三选一）。静默消失 → 打回 |

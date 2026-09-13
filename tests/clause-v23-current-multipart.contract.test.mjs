@@ -5,12 +5,12 @@ import test from 'node:test'
 import Ajv from 'ajv'
 
 const root = new URL('..', import.meta.url)
-const schemaSha = 'eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439'
-const legacyReleaseBytes = {
+const schemaSha = '46a2b4a99fc6dcf659117f4d33b7556c07a59b3628388b2272c58cd5fbc25dfb'
+const pinnedReleaseBytes = {
   'compose-contracts/clause-v21-single-main-contract.rules.json': 'c515bd9b4f6873a1e7acb071e1e991f29f12a076253c85bf7e8581c6d6590ef7',
   'compose-contracts/clause-v21-single-main-contract.pins.json': 'a1cd7f95d67fe840d79c74e87a0d55aa80b9c4023e8712cb2c56bcc4e3a80b99',
   'compose-contracts/clause-v22-single-main-contract.rules.json': '4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8',
-  'compose-contracts/clause-v22-single-main-contract.pins.json': '337ba8bb8cd6c4b770602e6f4dc8ddbb80beeaea53da97caefe7e79c51a32436',
+  'compose-contracts/clause-v22-single-main-contract.pins.json': '63d8a12bfdef6a5b0aaff3ad9a494205ddd7592f278b251d37e5f35d89e8aecf',
 }
 const readJson = async path => JSON.parse(await readFile(new URL(path, root), 'utf8'))
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -45,8 +45,8 @@ test('v23 pins the unchanged Clause v22 schema and a LF-only multipart rule sour
 
 })
 
-test('v23 leaves v21/v22 release bytes and their schema pins untouched', async () => {
-  for (const [path, expected] of Object.entries(legacyReleaseBytes)) {
+test('v23 preserves v21 and both rule sources while the authorized v22 pin tracks Clause 1.0.12', async () => {
+  for (const [path, expected] of Object.entries(pinnedReleaseBytes)) {
     assert.equal(digest(await readFile(new URL(path, root))), expected, path)
   }
   const [v21, v22] = await Promise.all([

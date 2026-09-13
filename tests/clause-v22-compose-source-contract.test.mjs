@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const root = new URL('..', import.meta.url)
-const schemaSha = 'eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439'
+const schemaSha = '46a2b4a99fc6dcf659117f4d33b7556c07a59b3628388b2272c58cd5fbc25dfb'
 const rulesSha = '4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8'
 const catalogSha = '858036a26dfce0f08048884f8580e0dd74b8ae180aff42371ccbc6d470b10b78'
 const coverage = ['parties','definitions','clause_tree','monetary_terms','payment_terms','temporal_terms','termination_grounds','dispute_resolution','governing_law','liability_cap','indirect_damages_excluded','breach_remedies','grace_period','subcontracting','audit_right','force_majeure','data_export','attachment_manifest','attachment_references']

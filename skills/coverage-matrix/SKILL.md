@@ -4,16 +4,16 @@ description: >-
   合同审查覆盖矩阵的唯一生成、更新和交付控制协议。它从已解析的规则清单生成唯一 rows，
   保存欠账状态与可复算汇总；不把规则源或配置问题伪装为用户材料缺失。用户提到覆盖矩阵、
   欠账表、检查项、漏检、通过率或审查进度时使用。
-version: 1.0.3
+version: 1.0.5
 type: procedural
 risk_level: low
 status: enabled
 tags: [contract-review, coverage-matrix, gap-tracking, anti-omission]
 requires:
-  tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc]
+  tools: [Read, Ls, Glob, Grep, Write, Edit, GenerateUUID, FileDigest, MathCalc, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.0.3
+  version: 1.0.5
   updated_at: '2026-09-13'
 ---
 
@@ -49,7 +49,7 @@ metadata:
   },
   "forbidden_row_ids": ["INV-001-MAIN-CONTRACT"],
   "summary_denominator_statuses": ["covered", "blank", "blocked", "deferred"],
-  "mathcalc": {"expression": "covered / (covered + blank + blocked + deferred) * 100", "scope_keys": ["covered", "blank", "blocked", "deferred"], "zero_denominator": {"coverage_rate": null, "coverage_rate_reason": "NO_RATE_DENOMINATOR", "mathcalc_receipt": {"called": false, "reason": "NO_RATE_DENOMINATOR"}}}
+  "calculation_candidate": {"status": "pending_trusted_delegate_proof", "expression": "covered / (covered + blank + blocked + deferred) * 100", "scope_keys": ["covered", "blank", "blocked", "deferred"], "zero_denominator": {"branch": "zero_denominator", "denominator": 0, "coverage_rate": null, "coverage_rate_reason": "NO_RATE_DENOMINATOR"}}
 }
 ```
 
@@ -90,7 +90,7 @@ optional-absent custom 的唯一可用行固定如下；它保留企业红线未
   updated_at: <timestamp>
 ```
 
-## 完整模板与算术回执
+## 完整模板与内部计算候选
 
 首次生成后立即写下列完整结构，再 `Read` 回读。动态行只能由已解析 catalog 追加；不得从成员产物反推 rows。
 
@@ -110,15 +110,19 @@ coverage_matrix:
     blocked: <integer>
     deferred: <integer>
     not_applicable: <integer>
-    coverage_rate: <percent-string-or-null>
-    coverage_rate_reason: <null-or-NO_RATE_DENOMINATOR>
-    mathcalc_receipt: {called: true, expression: "covered / (covered + blank + blocked + deferred) * 100", scope: {covered: <n>, blank: <n>, blocked: <n>, deferred: <n>}, result: <tool-result>}
+    calculation_candidate:
+      status: pending_trusted_delegate_proof
+      branch: positive_denominator
+      expression: "covered / (covered + blank + blocked + deferred) * 100"
+      scope: {covered: <n>, blank: <n>, blocked: <n>, deferred: <n>}
+      denominator: <positive-integer>
+      expected_coverage_rate: <untrusted-percent-string-candidate>
   rows: []
 ```
 
-In `clarification_required` mode the `jurisdiction` object is instead `{mode: clarification_required, path: null, version: null, pending_codes: [<typed review-context codes>]}`. It is not a catalog row and does not change the five-status denominator. After reading the actual `rows`, derive five status counts and `total` from that same array. Then call the real `MathCalc` API once with only `expression` and the numeric `scope` object shown above; it has no `count` operation and must not be asked to inspect rows. Save its returned numerical result in `mathcalc_receipt.result`. If its denominator is zero, do **not** divide and do not call MathCalc: replace `mathcalc_receipt` with `{called: false, reason: NO_RATE_DENOMINATOR}`, and use exactly the policy's null rate fields. Before delivery verify: `total == rows.length`; the five counts sum to total; denominator equals `covered + blank + blocked + deferred`; and the displayed rate is the MathCalc result for that denominator. A failed arithmetic check invalidates the summary, never the underlying rows.
+In `clarification_required` mode the `jurisdiction` object is instead `{mode: clarification_required, path: null, version: null, pending_codes: [<typed review-context codes>]}`. It is not a catalog row and does not change the five-status denominator. After reading the actual `rows`, derive five status counts and `total` from that same array. When the denominator is positive, write the row-derived scope, denominator and a two-decimal `expected_coverage_rate` only as the worker comparison operand. It stays `pending_trusted_delegate_proof` and is not a numerical conclusion or tool receipt; O0 does not call MathCalc for this coverage candidate. When the denominator is exactly zero, use `{status: pending_trusted_delegate_proof, branch: zero_denominator, denominator: 0, coverage_rate: null, coverage_rate_reason: NO_RATE_DENOMINATOR}` and do not invent a ratio. Before dispatch verify only structural correspondence; the verified calculation is the successful Delegate proof assertion's `actual`. A failed admission invalidates the summary candidate, never the underlying rows. Other contract calculations remain governed by their own skills and actual calculation-tool requirements.
 
-## Delegate 前的 release-pinned 汇总快照
+## Delegate 前候选与返回后的可信 proof
 
 `references/coverage-matrix-bucket-summary.schema.json` 与
 `references/coverage-matrix-bucket-summary.descriptor.json` 是随本技能发布、由 Lead
@@ -126,14 +130,89 @@ In `clarification_required` mode the `jurisdiction` object is instead `{mode: cl
 资源。它们只对同一份已授权、当前 effective cwd 下的
 `contract-review/coverage-matrix.yaml` 快照做有限计数和算术比较：完整 `rows` 数、五态各自
 计数及其总和始终比较；四态分母为零时，只接受所有 `covered`、`blank`、`blocked`、`deferred`
-均为零以及上述 null/`NO_RATE_DENOMINATOR` 表示；分母大于零时，额外比较四个
-`mathcalc_receipt.scope` 计数、数值 `result` 与两位百分比 `coverage_rate`。不得改写、另造或
+均为零以及上述 null/`NO_RATE_DENOMINATOR` 候选；分母大于零时，额外比较四个
+`calculation_candidate.scope` 计数、分母与两位 `expected_coverage_rate` 候选。不得改写、另造或
 换根这些资源、矩阵或 pin。
 
-该 admission 只证明当前单文档快照的行桶、汇总、声明的结果与固定表示相符；它**不证明**
-过去曾调用 `MathCalc`、不认证 catalog 来源/成员回执、Human Gate 或法律结论。因此上节的
-真实 `MathCalc` 调用与交付前回读要求仍是必需条件，不能以 admission 结果、hash 或工具摘要
-替代。
+Delegate 启动前，该文件及任何自写旁车都只能是内部候选，不能写成已验证覆盖率、历史
+`MathCalc` 回执或可信来源。只有当前 `Delegate` 成功返回文本末尾完整 JSON 中的
+`verified_preconditions` 才可
+用于引用其真实计算值；失败、取消、超时、缺 proof 或字段不全时，候选仍为 pending，不能从
+矩阵、摘要或旧旁车补证。
+
+成功返回后，先调用一次真实 `GenerateUUID` 取得本次旁车文件名，再从该 JSON 原样复制
+`verified_preconditions: {preconditions, proofs}`。`child_run_id` 只能从**同一次成功 Delegate 的模型可见正文**中
+`[子会话 runId: <真实值>]` 标记原样取得；标记缺失、空值或与同次返回不能绑定时保持 pending/HOLD，
+不得从 metadata、路径、旧会话或自身文字推断。把这两项写入
+`contract-review/coverage-matrix-proofs/<generated-uuid>.json`；该次 `Write` 必须使用
+`createOnly: true`，任何已存在/unknown 结果都停止且不得覆盖。随后按
+`references/coverage-matrix-trusted-proof.schema.json` 校验。`proofs[]` 是平台按完整 proof
+去重的数组；`preconditions[]` 中每项以 `targetAgentId`、源 Agent `configSha256` 和
+`proofIndexes[]` 保留目标到 proof 的关联。不得展平、按目标复制 proof 或把 index 当业务编号。
+本版本只声明一项、只派给一个 canonical `contract-intake` 目标，因此消费时还必须恰有一个
+匹配该目标的 precondition、`proofIndexes: [0]`、一个 proof，且索引在数组范围内；任何额外、
+缺失、重复或越界都不可消费。旁车 Schema 复用平台通用上限，不替代这项 Agent-specific 检查。
+所引用 `proof` 的键保持平台原始 snake_case：`profile`、`format`、`document_sha256`、
+`schema_sha256`、`contract_sha256`、`report_sha256`、`rows`、`buckets`、`matched_group`、
+`assertions[]`。随后再次对 exact 矩阵调用 `FileDigest`，其 SHA-256 必须等于所索引 proof 的
+`document_sha256`；schema/descriptor pin、目标关联、源配置 digest、child run 与本次 Delegate
+必须逐项绑定。任一不符都使 proof 不可消费，矩阵保持 pending，不得改写被 proof 验证的原文件。
+
+断言含义只按本版本 descriptor 的数组顺序解释：序号 0–6 是通用 total/五态/合计断言，
+随后是 `matched_group` 的断言。positive 分支只有所索引 proof 中相应 ratio 断言的 `actual` 可作为可信
+覆盖率数值；zero 分支只引用 count 断言的 `actual: 0` 说明没有适用分母，绝不假造 ratio。
+本 descriptor 声明两个 group，故 `matched_group` 必须是 0 或 1；平台通用 `null` 形态在本技能中
+不可消费。所有断言还必须 `actual === expected`，种类、数量与 ordinal 均和 pinned descriptor 一致。
+旁车必须新建而不覆盖旧文件；不得把 child ID、report hash 或其他外部字符串直接拼成路径。
+旁车是本次公开工具返回的审计转录，不是密码学签名；以后运行不得仅凭旁车认证来源。它只证明
+首次 Intake admission 所读取的 `document_sha256` 快照：O1 及以后任意矩阵 `Write` / `Edit` 都使它
+对当前矩阵失效。不得重派 Intake 来刷新覆盖率，也不得把旧 proof 的 actual 搬到新矩阵；最终覆盖率
+改走下方绑定当前矩阵字节的 MathCalc 路径。
+
+## 当前矩阵的最终 MathCalc 旁车
+
+O0 的唯一例外是首次 admission 候选由成功 Delegate proof 重算，**不调用 MathCalc**。O1 之后只要
+矩阵发生过一次编辑，任何最终五态计数、分母或覆盖率都必须由本节的 post-dispatch/current-read
+真实 MathCalc 路径重新取得；不能把矩阵 `summary`、O0 proof、模型计数或 `called: true` 当作结果。
+`review-registration` 不生成矩阵，也不进入本节。
+
+仅在所有成员回执已经通过既有 RC、所有矩阵行更新完成、Human Gate 已满足相应交付条件，且准备
+进入最终交付时执行。开始前先实际 `Read`
+`${SKILL_DIR}/references/coverage-matrix-final-calculation.schema.json`；不可读、不可解析或内容不完整即
+HOLD，不得自由编写旁车形状或先行计算：
+
+1. 对 exact `contract-review/coverage-matrix.yaml` 调用 `FileDigest` 得到 `H1`，再以 `Read` 完整回读
+   同一文件；任何截断、分页未完成或读取失败都 HOLD。回读后立刻再次 `FileDigest` 得到 `H2`，必须
+   `H1 === H2`。
+2. 从这次完整回读按 `rows` 原序转录 `ordinal`、`check_id`、`check_source`、`status`，并为每行生成
+   `covered`、`blank`、`blocked`、`deferred`、`not_applicable` 五个 0/1 标志。每行必须恰有一个 1，
+   且它与该行实际 status 相同；行数、ordinal 和 `(check_id, check_source)` 必须逐项对应。该转录是
+   可审计的工具输入准备，不是平台对状态语义的认证。
+3. 按五态固定顺序分别调用五次真实 `MathCalc`：每次参数必须是
+   `expression: "sum(flags)"`、`scope: {flags: <该态完整标志数组>}`、`mode: bignumber`、
+   `precision: 64`、`format: auto`。每个 scope 数组必须与 `row_transcription` 按 ordinal 投影出的同名
+   flags 逐元素相等、长度等于 row_count；五个计数只能引用对应工具成功返回的原始文本，不能填写模型自报数。
+4. 用上述四个真实返回值调用一次 `MathCalc`，参数固定为
+   `expression: "covered + blank + blocked + deferred"`，scope 只放这四个返回值，得到分母。再用五个
+   计数核对总和等于 `rows.length`。分母大于零时，以真实 covered 与 denominator 返回值调用一次
+   `MathCalc`：`expression: "covered / denominator * 100"`、`mode: bignumber`、`precision: 64`、
+   `format: fixed`、`format_decimals: 2`；其原始文本才是最终覆盖率。分母恰为零时不调用比例，记录
+   `coverage_rate: null` 与 `NO_RATE_DENOMINATOR`；这个零分支仍须有五次计数和一次分母的成功返回。
+   分母与 ratio 的 scope 必须逐值等于这些前序 MathCalc 的原始返回，不得重新转抄或另算。
+5. 全部调用后再次 `FileDigest` 得到 `H3`，必须 `H3 === H1`。任何矩阵编辑、摘要变化、MathCalc
+   失败、返回非预期整数/百分比、计数闭合失败或字段不可得，都使整组结果 stale/pending；保持 HOLD，
+   最终正文不得给覆盖率数值，也不得重派 Intake 或补写回执。
+6. `GenerateUUID` 后把完整行转录、五组完整标志数组、每次 MathCalc 的**实际输入和原始成功文本**、
+   `H1/H2/H3` 与矩阵绝对路径写入
+   `contract-review/coverage-matrix-calculations/<generated-uuid>.json`。`Write` 必须使用
+   `createOnly: true`，再按
+   `references/coverage-matrix-final-calculation.schema.json` 调用 `StructuredFileValidate` 并 `Read` 回核。
+   已存在、unknown、校验失败或回核不符都 HOLD。旁车不修改被 hash 的矩阵，也不覆盖 Reporter 原产物；
+   Lead 只可在编排回执/覆盖率附录引用该旁车及其中真实返回。旁车之后矩阵再变即整体失效，必须对新
+   字节重新执行本节，不能编辑旧旁车。
+
+该旁车证明的是“这些公开 MathCalc 返回绑定到这次稳定字节与这份显式转录”，不是完整内容 hash
+之外的身份认证，也不证明每个行状态的业务语义正确。行状态仍由 catalog、RC 与 Human Gate 规则决定。
 
 ## 交付前终检
 
@@ -141,5 +220,7 @@ In `clarification_required` mode the `jurisdiction` object is instead `{mode: cl
 - [ ] `generated_before_dispatch: true`，每一行有唯一 catalog 来源，且无 `INV-001-MAIN-CONTRACT`
 - [ ] 每个状态按本技能类别顺序可解释；欠账未删除
 - [ ] 每个 `covered` 的 owner、receipt 和证据一致；非 covered 有具体理由
-- [ ] 五个绝对数、`rows.length`、分母和 MathCalc 回执一致；零分母按模板显式表示
+- [ ] 五个绝对数、`rows.length`、分母和内部计算候选一致；零分母按模板显式表示
+- [ ] Delegate 前没有把候选或自写文件称为可信 proof；O0 只引用同次可见正文的 proof/child run，并以 exact 矩阵 SHA-256 和 pinned descriptor 序号解释
+- [ ] O1 后任意矩阵编辑均未复用 O0 proof；交付前已按当前完整回读执行五态计数、分母与可选比例的真实 MathCalc，并以三次相等摘要写入新的 validated sidecar
 - [ ] `blank`、`blocked`、`deferred` 与 `not_applicable` 在交付正文分别列示，不能用覆盖率掩盖

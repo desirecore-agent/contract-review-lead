@@ -69,13 +69,13 @@
       "extraction_id": "EXTRACT-C01-SYNTHETIC",
       "extracted_at": "2026-09-11T00:00:00Z",
       "executed_by": "clause-extractor",
-      "skill": "clause-extraction@1.0.11",
+      "skill": "clause-extraction@1.0.12",
       "parser_revision": "v2",
       "ontology_version": "onto-v1",
       "contract_schema": {
         "name": "clause-extraction-artifact",
         "version": 22,
-        "sha256": "eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439"
+        "sha256": "46a2b4a99fc6dcf659117f4d33b7556c07a59b3628388b2272c58cd5fbc25dfb"
       },
       "lifecycle": {
         "state": "ready_for_handoff",

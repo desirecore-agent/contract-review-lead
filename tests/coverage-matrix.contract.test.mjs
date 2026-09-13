@@ -26,7 +26,11 @@ function expectedStatus(facts) {
 }
 
 test('coverage policy publishes every fixed catalog ID with its authoritative source, correct precedence, and no INV-001 row', async () => {
-  const policy = policyFrom(await source(policyFile))
+  const [skill, registration] = await Promise.all([
+    source(policyFile),
+    source('skills/review-registration/SKILL.md'),
+  ])
+  const policy = policyFrom(skill)
   const fixedCatalog = Object.fromEntries(Object.entries(policy.catalog)
     .filter(([, entry]) => Array.isArray(entry.ids))
     .map(([name, entry]) => [name, { source: entry.source, ids: entry.ids }]))
@@ -51,11 +55,17 @@ test('coverage policy publishes every fixed catalog ID with its authoritative so
   assert.match(policy.deferred_requires, /contract-intake receipt SCOPE-\*/) 
   assert.ok(policy.pre_dispatch_failures.includes('RULE_SOURCE_UNAVAILABLE'))
   assert.ok(policy.pre_dispatch_failures.includes('CUSTOM_RULE_SOURCE_REQUIRED'))
-  assert.deepEqual(policy.mathcalc, {
+  assert.deepEqual(policy.calculation_candidate, {
+    status: 'pending_trusted_delegate_proof',
     expression: 'covered / (covered + blank + blocked + deferred) * 100',
     scope_keys: ['covered', 'blank', 'blocked', 'deferred'],
-    zero_denominator: { coverage_rate: null, coverage_rate_reason: 'NO_RATE_DENOMINATOR', mathcalc_receipt: { called: false, reason: 'NO_RATE_DENOMINATOR' } },
+    zero_denominator: { branch: 'zero_denominator', denominator: 0, coverage_rate: null, coverage_rate_reason: 'NO_RATE_DENOMINATOR' },
   })
+  assert.match(skill.match(/^---\n([\s\S]*?)\n---/)[1], /tools:.*MathCalc/)
+  assert.doesNotMatch(registration.match(/^---\n([\s\S]*?)\n---/)[1], /MathCalc/)
+  assert.match(skill, /O0 does not call MathCalc for this coverage candidate/)
+  assert.match(skill, /O1 之后只要\s*矩阵发生过一次编辑.*post-dispatch\/current-read\s*真实 MathCalc/s)
+  assert.match(skill, /不得重派 Intake 来刷新覆盖率/)
 })
 
 test('authoritative status fixtures protect precedence over a missing receipt', async () => {
@@ -77,9 +87,11 @@ test('authoritative summary fixtures preserve rows, all five counts, denominator
     assert.deepEqual(item.summary, { total: item.rows.length, ...counts }, `${name}: all status counts are retained`)
     assert.equal(item.denominator, counts.covered + counts.blank + counts.blocked + counts.deferred, `${name}: denominator excludes only not_applicable`)
     if (item.denominator === 0) assert.deepEqual(item.expected_zero_denominator, {
+      status: 'pending_trusted_delegate_proof',
+      branch: 'zero_denominator',
+      denominator: 0,
       coverage_rate: null,
       coverage_rate_reason: 'NO_RATE_DENOMINATOR',
-      mathcalc_receipt: { called: false, reason: 'NO_RATE_DENOMINATOR' },
-    }, `${name}: zero denominator records a no-call receipt`)
+    }, `${name}: zero denominator remains a pending candidate without a ratio`)
   }
 })
