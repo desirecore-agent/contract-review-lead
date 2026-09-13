@@ -153,7 +153,7 @@
       "items": {
         "$ref": "#/definitions/referenceMaterial"
       },
-      "description": "Reference-only material such as prior reviews; it cannot approve or replace current-contract evidence."
+      "description": "Frozen reference-only material such as prior reviews or an expressly incorporated business-context file; it cannot approve, replace current-contract evidence, or establish legal applicability."
     },
     "operator_inputs": {
       "type": "array",
@@ -161,7 +161,7 @@
       "items": {
         "$ref": "#/definitions/operatorInput"
       },
-      "description": "User operating instructions, never files, Human Gate decisions, or runtime identities."
+      "description": "Non-file user operating instructions, never submitted files, Human Gate decisions, or runtime identities. An expressly incorporated business-context file is frozen once under reference_materials instead."
     },
     "commercial_rule_sets": {
       "type": "array",
@@ -603,7 +603,7 @@
         "reference_kind",
         "use"
       ],
-      "description": "Closed frozen reference-material record.",
+      "description": "Closed frozen reference-material record. A reference_kind=clarification row may identify an expressly incorporated business-context file, but its bounded fields are usable only through the separately checked review-context source contract.",
       "properties": {
         "object_id": {
           "type": "string",
@@ -696,7 +696,7 @@
         },
         "use": {
           "const": "reference_only",
-          "description": "Prevents this material from becoming a current contract part, approval, or conclusive evidence."
+          "description": "Prevents this material from becoming a current contract part, approval, or conclusive legal evidence. An expressly incorporated clarification may supply bounded user-declared review parameters after exact Read/hash/pointer/value checks."
         }
       }
     },

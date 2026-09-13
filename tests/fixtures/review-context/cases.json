@@ -73,6 +73,42 @@
       }
     },
     {
+      "id": "expressly-incorporated-business-context-supplies-bounded-review-parameters",
+      "current_request_statement": "I have supplied the business background in intake.json for this review.",
+      "declared_reference_material": {
+        "object_id": "ref-business-context-001",
+        "version_label": "intake-v1",
+        "canonical_path": "/synthetic/case-business-context/intake.json",
+        "content_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+        "size_bytes": 256,
+        "digest_binding": {
+          "case_id": "case-business-context",
+          "object_id": "ref-business-context-001",
+          "version_label": "intake-v1",
+          "canonical_path": "/synthetic/case-business-context/intake.json",
+          "content_digest": "6666666666666666666666666666666666666666666666666666666666666666"
+        },
+        "classification_basis": "user_submission_context",
+        "reference_id": "business-context-001",
+        "reference_kind": "clarification",
+        "use": "reference_only"
+      },
+      "read_document": {
+        "our_party": "Buyer",
+        "jurisdiction": "Mainland China",
+        "confirmed_by": "synthetic-fixture-label"
+      },
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-business-context", "current_contract_manifest": {"status": "available", "digest": "5555555555555555555555555555555555555555555555555555555555555555"}},
+        "revision": 1,
+        "review_stance": {"status": "user_stated", "review_subject_label": "Buyer", "source": {"kind": "submitted_business_context", "inventory_group": "reference_materials", "object_id": "ref-business-context-001", "canonical_path": "/synthetic/case-business-context/intake.json", "content_digest": "6666666666666666666666666666666666666666666666666666666666666666", "field_pointer": "/our_party", "quoted_value": "Buyer", "current_request_inclusion_statement": "I have supplied the business background in intake.json for this review."}},
+        "jurisdiction": {"status": "candidate_basis", "candidate_basis": {"jurisdiction_code": "cn", "source": {"kind": "submitted_business_context", "inventory_group": "reference_materials", "object_id": "ref-business-context-001", "canonical_path": "/synthetic/case-business-context/intake.json", "content_digest": "6666666666666666666666666666666666666666666666666666666666666666", "field_pointer": "/jurisdiction", "quoted_value": "Mainland China", "current_request_inclusion_statement": "I have supplied the business background in intake.json for this review."}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "cn", "pack_version": "cn-v3", "pack_path": "/shared/jurisdiction-packs/cn/pack.yaml", "rules_path": "/shared/jurisdiction-packs/cn/rules.yaml", "pack_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "rules_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "service_scope": "supported"}}},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "allowed"},
+        "pending": []
+      }
+    },
+    {
       "id": "unique-current-part-clue-is-candidate-not-final-law",
       "declared_current_parts": [{"part_id": "body", "content_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}],
       "context": {

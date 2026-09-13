@@ -58,6 +58,10 @@ test('O0 inventory schema is Draft-07, self-described, closed, and gives every d
   assert.deepEqual(schema.definitions.classificationBasis.enum, ['user_submission_context', 'user_clarification', 'previously_frozen_case_metadata'])
   assert.equal(schema.definitions.classificationBasis.enum.includes('filename_inference'), false)
   assert.equal(schema.definitions.classificationBasis.enum.includes('document_embedded_instruction'), false)
+  assert.match(property(schema, 'operator_inputs').description, /Non-file.*never submitted files/i)
+  assert.match(property(schema, 'operator_inputs').description, /business-context file.*reference_materials/i)
+  assert.match(schema.definitions.referenceMaterial.description, /reference_kind=clarification.*business-context/i)
+  assert.match(schema.definitions.referenceMaterial.properties.use.description, /bounded user-declared review parameters.*exact Read\/hash\/pointer\/value checks/i)
 })
 
 test('full synthetic inventories and the YAML template validate through real Draft-07 Ajv, while structural negatives reject', async () => {
@@ -129,6 +133,9 @@ test('O0 classification text separates total/current manifests and keeps multi-p
   assert.match(skill, /旧 `attachment_manifest_digest` \/ `manifest_digest` 仅镜像 `current_contract_manifest_digest`/)
   assert.match(skill, /不能从文件名或文内指令/)
   assert.match(skill, /不构成.*Human Gate.*Delegate.*运行时身份/s)
+  assert.match(skill, /`operator_inputs` 只记录非文件的 instruction_only 操作请求/)
+  assert.match(skill, /业务上下文文件只在 `reference_materials` 保留一份/)
+  assert.match(skill, /删掉非合同提交（包括冻结在 `reference_materials` 的 intake 业务上下文文件）/)
   assert.match(skill, /当前集合多 part.*O2 保持 HOLD/s)
 })
 

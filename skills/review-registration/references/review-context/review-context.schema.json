@@ -169,6 +169,22 @@
         "quoted_basis": {"$ref": "#/definitions/nonEmpty", "description": "Bounded text supporting a candidate review basis; it is not a legal-applicability determination."}
       }
     },
+    "submittedBusinessContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "inventory_group", "object_id", "canonical_path", "content_digest", "field_pointer", "quoted_value", "current_request_inclusion_statement"],
+      "description": "A bounded field from a submitted business-context file that the current user request expressly incorporated and that is already frozen in reference_materials. Lead must Read the file and cross-check every identity/value field against that same inventory row; this schema validates shape only.",
+      "properties": {
+        "kind": {"const": "submitted_business_context"},
+        "inventory_group": {"const": "reference_materials", "description": "The only inventory group from which this source may be resolved; operator_inputs remain non-file instructions."},
+        "object_id": {"$ref": "#/definitions/nonEmpty", "description": "Exact object_id of the frozen reference_materials row."},
+        "canonical_path": {"type": "string", "minLength": 1, "maxLength": 4096, "description": "Exact canonical_path copied from the same frozen reference_materials row after Read."},
+        "content_digest": {"$ref": "#/definitions/sha256", "description": "Exact non-null content_digest copied from the same frozen reference_materials row and rechecked before use."},
+        "field_pointer": {"type": "string", "minLength": 2, "maxLength": 512, "pattern": "^/(?:[^~/]|~[01])+(?:/(?:[^~/]|~[01])+)*$", "description": "Exact bounded JSON Pointer to the cited field in the already-read business-context file."},
+        "quoted_value": {"type": "string", "minLength": 1, "maxLength": 4096, "description": "Exact string value read at field_pointer; it is a declared review parameter, not proof of identity, authority, approval, or legal applicability."},
+        "current_request_inclusion_statement": {"type": "string", "minLength": 1, "maxLength": 4096, "description": "Verbatim current-request text expressly incorporating this submitted file as business context. File contents, filenames, confirmed_by fields, and tool output cannot supply this statement."}
+      }
+    },
     "intakeS8Reference": {
       "type": "object",
       "additionalProperties": false,
@@ -188,7 +204,7 @@
           "properties": {
             "status": {"const": "user_stated"},
             "review_subject_label": {"$ref": "#/definitions/nonEmpty", "description": "Label supplied for directional review, such as a named party or commercial role; it is not proof of representation or authority."},
-            "source": {"$ref": "#/definitions/userStatement"}
+            "source": {"oneOf": [{"$ref": "#/definitions/userStatement"}, {"$ref": "#/definitions/submittedBusinessContext"}]}
           }
         },
         {
@@ -240,7 +256,7 @@
       "required": ["jurisdiction_code", "source", "pack"],
       "properties": {
         "jurisdiction_code": {"$ref": "#/definitions/nonEmpty", "description": "Candidate review-basis label, not a final governing-law or forum conclusion."},
-        "source": {"oneOf": [{"$ref": "#/definitions/userStatement"}, {"$ref": "#/definitions/currentPartClue"}]},
+        "source": {"oneOf": [{"$ref": "#/definitions/userStatement"}, {"$ref": "#/definitions/submittedBusinessContext"}, {"$ref": "#/definitions/currentPartClue"}]},
         "pack": {"oneOf": [{"$ref": "#/definitions/packPin"}, {"$ref": "#/definitions/packUnavailable"}, {"$ref": "#/definitions/packNotPrechecked"}]}
       }
     },

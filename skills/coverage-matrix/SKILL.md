@@ -4,7 +4,7 @@ description: >-
   合同审查覆盖矩阵的唯一生成、更新和交付控制协议。它从已解析的规则清单生成唯一 rows，
   保存欠账状态与可复算汇总；不把规则源或配置问题伪装为用户材料缺失。用户提到覆盖矩阵、
   欠账表、检查项、漏检、通过率或审查进度时使用。
-version: 1.0.6
+version: 1.0.7
 type: procedural
 risk_level: low
 status: enabled
@@ -13,7 +13,7 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, GenerateUUID, FileDigest, MathCalc, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.0.6
+  version: 1.0.7
   updated_at: '2026-09-13'
 ---
 
@@ -23,7 +23,7 @@ metadata:
 
 本技能是矩阵行、状态和汇总的唯一来源。`review-orchestration` 只在用户已明确要求开始完整审查的 O0 按本协议建立矩阵，之后只在成员回执先通过 RC-1..RC-6 后按本协议更新同一份 `rows`；不得另造摘要表、临时行或另一套状态规则。用户自然语言仅限登记或上下文待补时，`review-registration` 是唯一流程，本技能不得被调用：该范围不授权规则预检、矩阵、冻结或派发。没有本轮合同材料或明确文件指向时仍是零工具咨询。矩阵记录覆盖事实，不判断合同、规则结论或材料的法律效力。
 
-先完成规则源预检，才可以生成矩阵：对 `review-context` 中唯一、合法的 `candidate_basis`，读取其匹配法域 `pack.yaml` 与 `rules.yaml`，并确定 custom 层是已加载、显式 optional-absent，还是被团队配置声明为 required。`pack.status: not_prechecked` 只能由已获完整审查授权的 O0 调用本技能时转入这次实际预检；它本身不授权本技能、读取或矩阵。成功才更新为 `read_and_pinned` 后继续生成矩阵；找不到、读不到或不能定位**已选择候选**所应存在的法域规则包时，才更新为 `unavailable`，在编排账本记录 `RULE_SOURCE_UNAVAILABLE`、来源路径和可核验读取失败原因，停止在 H，**不要生成“全 blank”的矩阵，也不要写 `deferred`**。候选基准必须来自用户明确陈述，或唯一且绑定当前 O0 `part_id`、SHA-256 与定位信息的合同线索；它只是审查基准，不是最终法律适用结论。custom 层是 optional-absent 时可生成一项 `not_applicable` 行；若配置把 custom 声明为 required 而它缺席，同样以 `CUSTOM_RULE_SOURCE_REQUIRED` 停在 H。二者都不是用户未提交 `SCOPE-*` 材料。
+先完成规则源预检，才可以生成矩阵：对 `review-context` 中唯一、合法的 `candidate_basis`，读取其匹配法域 `pack.yaml` 与 `rules.yaml`，并确定 custom 层是已加载、显式 optional-absent，还是被团队配置声明为 required。`pack.status: not_prechecked` 只能由已获完整审查授权的 O0 调用本技能时转入这次实际预检；它本身不授权本技能、读取或矩阵。成功才更新为 `read_and_pinned` 后继续生成矩阵；找不到、读不到或不能定位**已选择候选**所应存在的法域规则包时，才更新为 `unavailable`，在编排账本记录 `RULE_SOURCE_UNAVAILABLE`、来源路径和可核验读取失败原因，停止在 H，**不要生成“全 blank”的矩阵，也不要写 `deferred`**。候选基准必须来自用户明确陈述、已由 Lead 按 review-context 契约逐项核验的 `submitted_business_context`，或唯一且绑定当前 O0 `part_id`、SHA-256 与定位信息的合同线索；它只是审查基准，不是最终法律适用结论。`submitted_business_context` 的 schema/SFV 只证明形状，本技能不得替代 Lead 的 reference_materials 路径/摘要/指针/值/当前请求纳入原文核验，也不得把 `confirmed_by` 当作 Human Gate 或授权。custom 层是 optional-absent 时可生成一项 `not_applicable` 行；若配置把 custom 声明为 required 而它缺席，同样以 `CUSTOM_RULE_SOURCE_REQUIRED` 停在 H。二者都不是用户未提交 `SCOPE-*` 材料。
 
 `review-context.jurisdiction.status: undetermined` 或 `conflicting` 与规则源失败不同：尚未选择候选包时，仍生成基础、Intake、custom 与 closure 行，`rule_sources.jurisdiction` 写为 `clarification_required`，且**不生成任何法域规则行**、不伪造路径或版本、不写 `RULE_SOURCE_UNAVAILABLE`。对应 typed pending 必须保留；未决时只能进行事实提取，法域实体结论不得写出。`conflicting` 还必须保留 `HG-02`，不得默认择一。只有已选择候选之后的包缺失、读失败、pin 不匹配或服务范围不支持才是预检 H。
 
