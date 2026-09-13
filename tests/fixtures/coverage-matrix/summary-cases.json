@@ -1,0 +1,5 @@
+{
+  "valid_mixed": {"rows":["covered","blank","blocked","deferred","not_applicable"],"summary":{"total":5,"covered":1,"blank":1,"blocked":1,"deferred":1,"not_applicable":1},"denominator":4},
+  "zero_denominator": {"rows":["not_applicable"],"summary":{"total":1,"covered":0,"blank":0,"blocked":0,"deferred":0,"not_applicable":1},"denominator":0,"expected_zero_denominator":{"status":"pending_trusted_delegate_proof","branch":"zero_denominator","denominator":0,"coverage_rate":null,"coverage_rate_reason":"NO_RATE_DENOMINATOR"}},
+  "forbidden_inventory_row": {"rows":[{"check_id":"INV-001-MAIN-CONTRACT","check_source":"contract.yaml#INV-001"}],"expected_invalid":true}
+}

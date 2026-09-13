@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lead coverage-matrix delegated-summary candidate",
+  "description": "Static shape for one Lead coverage-matrix snapshot. It constrains row-derived counts and one internal calculation candidate; it does not prove catalog membership, a historical MathCalc call, a successful Delegate, Human Gate completion, or any legal conclusion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["coverage_matrix"],
+  "properties": {
+    "coverage_matrix": {
+      "type": "object",
+      "required": ["summary", "rows"],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "covered", "blank", "blocked", "deferred", "not_applicable", "calculation_candidate"],
+          "properties": {
+            "total": {"$ref": "#/definitions/count"},
+            "covered": {"$ref": "#/definitions/count"},
+            "blank": {"$ref": "#/definitions/count"},
+            "blocked": {"$ref": "#/definitions/count"},
+            "deferred": {"$ref": "#/definitions/count"},
+            "not_applicable": {"$ref": "#/definitions/count"},
+            "calculation_candidate": {
+              "description": "Internal pending candidate. Its values are not trusted provenance and must never be cited as a verified coverage result before the current successful Delegate returns its platform proof.",
+              "oneOf": [
+                {"$ref": "#/definitions/positiveCandidate"},
+                {"$ref": "#/definitions/zeroCandidate"}
+              ]
+            }
+          }
+        },
+        "rows": {
+          "type": "array",
+          "maxItems": 8000,
+          "items": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {"enum": ["covered", "blank", "blocked", "deferred", "not_applicable"]}
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "count": {"type": "integer", "minimum": 0, "maximum": 8000},
+    "positiveCount": {"type": "integer", "minimum": 1, "maximum": 8000},
+    "percent": {"type": "string", "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,2})?%$", "maxLength": 64},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered", "blank", "blocked", "deferred"],
+      "properties": {
+        "covered": {"$ref": "#/definitions/count"},
+        "blank": {"$ref": "#/definitions/count"},
+        "blocked": {"$ref": "#/definitions/count"},
+        "deferred": {"$ref": "#/definitions/count"}
+      }
+    },
+    "positiveCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "branch", "expression", "scope", "denominator", "expected_coverage_rate"],
+      "properties": {
+        "status": {"const": "pending_trusted_delegate_proof"},
+        "branch": {"const": "positive_denominator"},
+        "expression": {"const": "covered / (covered + blank + blocked + deferred) * 100"},
+        "scope": {"$ref": "#/definitions/scope"},
+        "denominator": {"$ref": "#/definitions/positiveCount"},
+        "expected_coverage_rate": {"$ref": "#/definitions/percent", "description": "Untrusted expected value used only as the worker comparison operand; only the successful Delegate proof assertion actual is a verified numeric result."}
+      }
+    },
+    "zeroCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "branch", "denominator", "coverage_rate", "coverage_rate_reason"],
+      "properties": {
+        "status": {"const": "pending_trusted_delegate_proof"},
+        "branch": {"const": "zero_denominator"},
+        "denominator": {"const": 0},
+        "coverage_rate": {"type": "null"},
+        "coverage_rate_reason": {"const": "NO_RATE_DENOMINATOR"}
+      }
+    }
+  }
+}

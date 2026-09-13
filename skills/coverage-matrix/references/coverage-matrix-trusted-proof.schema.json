@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lead coverage-matrix Delegate precondition observation",
+  "description": "A bounded Lead-authored transcription of verified_preconditions from the current successful Delegate result plus that result's child run binding. The nested shape mirrors the platform's deduplicated preconditions/proofs projection. This copy is audit provenance only: validating it does not authenticate its origin, authorize a later run, or replace the original public tool result.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "child_run_id", "verified_preconditions"],
+  "properties": {
+    "schema_version": {"const": 1, "description": "Sidecar schema version."},
+    "status": {"const": "copied_from_current_successful_delegate_result", "description": "Audit classification, not an authentication claim."},
+    "child_run_id": {"type": "string", "minLength": 1, "maxLength": 256, "description": "Exact child run ID exposed by the same successful Delegate result."},
+    "verified_preconditions": {"$ref": "#/definitions/projection", "description": "Exact object from the successful result's verified_preconditions JSON, without flattening proofIndexes or duplicating proofs per target."}
+  },
+  "definitions": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "count": {"type": "integer", "minimum": 0, "maximum": 8000},
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "actual", "expected"],
+      "properties": {
+        "kind": {"enum": ["total", "count", "ratio"]},
+        "actual": {"type": "number", "minimum": 0, "maximum": 800000000000},
+        "expected": {"type": "number", "minimum": 0, "maximum": 800000000000}
+      }
+    },
+    "bucket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "count"],
+      "properties": {
+        "label": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"},
+        "count": {"$ref": "#/definitions/count"}
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "document_sha256", "schema_sha256", "contract_sha256", "report_sha256", "format", "rows", "buckets", "assertions", "matched_group"],
+      "properties": {
+        "profile": {"const": "bucket-summary-v1"},
+        "document_sha256": {"$ref": "#/definitions/sha256"},
+        "schema_sha256": {"$ref": "#/definitions/sha256"},
+        "contract_sha256": {"$ref": "#/definitions/sha256"},
+        "report_sha256": {"$ref": "#/definitions/sha256"},
+        "format": {"enum": ["json", "yaml"]},
+        "rows": {"$ref": "#/definitions/count"},
+        "buckets": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/definitions/bucket"}},
+        "assertions": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/definitions/assertion"}},
+        "matched_group": {"type": ["integer", "null"], "minimum": 0, "maximum": 31}
+      }
+    },
+    "precondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetAgentId", "configSha256", "proofIndexes"],
+      "properties": {
+        "targetAgentId": {"type": "string", "minLength": 1, "maxLength": 256},
+        "configSha256": {"$ref": "#/definitions/sha256"},
+        "proofIndexes": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"type": "integer", "minimum": 0, "maximum": 15}}
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preconditions", "proofs"],
+      "properties": {
+        "preconditions": {"type": "array", "minItems": 1, "maxItems": 1024, "items": {"$ref": "#/definitions/precondition"}},
+        "proofs": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/definitions/proof"}}
+      }
+    }
+  }
+}

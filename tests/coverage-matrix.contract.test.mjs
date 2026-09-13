@@ -1,0 +1,163 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import test from 'node:test'
+
+const root = new URL('..', import.meta.url)
+const policyFile = 'skills/coverage-matrix/SKILL.md'
+
+async function source(path) {
+  return readFile(new URL(path, root), 'utf8')
+}
+
+function policyFrom(markdown) {
+  const match = markdown.match(/```json\n(\{[\s\S]*?\})\n```/)
+  assert.ok(match, 'coverage skill must contain one machine-readable policy JSON block')
+  return JSON.parse(match[1])
+}
+
+function expectedStatus(facts) {
+  // This checks the published deterministic policy contract, not an LLM implementation.
+  if (facts.rule_source_unavailable) return 'pre_dispatch_failure'
+  if (facts.contract_inapplicable) return 'not_applicable'
+  if (facts.scope_missing_material) return 'deferred'
+  if (facts.owner_terminal_failure) return 'blocked'
+  if (facts.receipt !== 'valid' || !facts.quadruplet || !facts.evidence || facts.human_gate_pending) return 'blank'
+  return 'covered'
+}
+
+function projectJurisdictionRows(pack, rulesPath) {
+  if (!Array.isArray(pack.rules) || !Array.isArray(pack.conflicts)) {
+    throw new Error('JURISDICTION_CATALOG_INVALID')
+  }
+  const seen = new Set()
+  const rows = []
+  for (const [section, ruleKind] of [['rules', 'jurisdiction_rule'], ['conflicts', 'jurisdiction_conflict']]) {
+    for (const entry of pack[section]) {
+      if (!entry || typeof entry.id !== 'string' || entry.id.length === 0 || typeof entry.title !== 'string' || entry.title.length === 0 || seen.has(entry.id)) {
+        throw new Error('JURISDICTION_CATALOG_INVALID')
+      }
+      seen.add(entry.id)
+      rows.push({
+        check_id: entry.id,
+        check_title: entry.title,
+        check_source: `${rulesPath}#${section}/${entry.id}`,
+        rule_kind: ruleKind,
+        stage: 4,
+        owner_agent: 'jurisdiction-auditor',
+        status: 'blank',
+        not_covered_reason: 'awaiting jurisdiction-auditor receipt',
+        updated_at: '<runtime timestamp>',
+      })
+    }
+  }
+  return rows
+}
+
+test('coverage policy publishes every fixed catalog ID with its authoritative source, correct precedence, and no INV-001 row', async () => {
+  const [skill, registration] = await Promise.all([
+    source(policyFile),
+    source('skills/review-registration/SKILL.md'),
+  ])
+  const policy = policyFrom(skill)
+  const fixedCatalog = Object.fromEntries(Object.entries(policy.catalog)
+    .filter(([, entry]) => Array.isArray(entry.ids))
+    .map(([name, entry]) => [name, { source: entry.source, ids: entry.ids }]))
+  assert.deepEqual(policy.allowed_statuses, ['covered', 'blank', 'blocked', 'deferred', 'not_applicable'])
+  assert.deepEqual(policy.status_precedence, ['not_applicable', 'deferred', 'blocked', 'blank', 'covered'])
+  assert.deepEqual(policy.row_identity, ['check_id', 'check_source'])
+  assert.deepEqual(fixedCatalog, {
+    intake: { source: 'review-orchestration#O1 intake_gate_coverage', ids: ['CHK-INTAKE-S1-SCOPE', 'CHK-INTAKE-S2-MASTER-VERSION', 'CHK-INTAKE-S3-PAGE-RANGE', 'CHK-INTAKE-S4-ATTACHMENT-MANIFEST', 'CHK-INTAKE-S5-EXECUTION-STATUS', 'CHK-INTAKE-S6-PLACEHOLDER', 'CHK-INTAKE-S7-PARTY-AND-AMOUNT', 'CHK-INTAKE-S8-VERSION-MATRIX'] },
+    missing_clauses: { source: 'base/missing-clauses.yaml', ids: ['liability-cap', 'breach-remedy', 'grace-period', 'termination-convenience', 'subcontracting', 'audit-right', 'dispute-resolution', 'force-majeure', 'data-export'] },
+    market_benchmarks: { source: 'base/market-benchmarks.yaml', ids: ['liability-cap-months', 'renewal-notice-days', 'non-compete-years', 'data-export-window-days'] },
+    closure: { source: 'blueprint#section-15', ids: ['CLOSURE-COMPLETENESS', 'CLOSURE-CONSISTENCY', 'CLOSURE-BLOCKING-RISK', 'CLOSURE-SUBSTANTIVE-TERMS', 'CLOSURE-DOCUMENT'] },
+  })
+  const fixedIds = Object.values(fixedCatalog).flatMap(({ ids }) => ids)
+  assert.equal(new Set(fixedIds).size, 26, 'all 26 fixed IDs must be unique')
+  assert.deepEqual(policy.jurisdiction_context, {
+    resolved: 'one candidate_basis with an already-read pinned supported pack; enumerate every rules[] and conflicts[] entry before dispatch, then wait for jurisdiction receipt disposition',
+    clarification_required: 'undetermined or conflicting review-context; generate no jurisdiction rule row, preserve typed pending, and do not treat it as a source failure',
+  })
+  assert.deepEqual(policy.catalog.jurisdiction, {
+    source: '<resolved-jurisdiction>/rules.yaml',
+    sections: ['rules', 'conflicts'],
+    ids: 'every unique entry id from both arrays after successful resolved preflight; none in clarification_required mode',
+    stage: 4,
+    owner_agent: 'jurisdiction-auditor',
+    initial_status: 'blank',
+  })
+  assert.deepEqual(policy.catalog.custom, { source: 'custom/rules.yaml', ids: 'each loaded rule id; optional-absent emits only CUSTOM-LAYER-ABSENT' })
+  assert.deepEqual(policy.forbidden_row_ids, ['INV-001-MAIN-CONTRACT'])
+  assert.match(policy.deferred_requires, /contract-intake receipt SCOPE-\*/) 
+  assert.ok(policy.pre_dispatch_failures.includes('RULE_SOURCE_UNAVAILABLE'))
+  assert.ok(policy.pre_dispatch_failures.includes('CUSTOM_RULE_SOURCE_REQUIRED'))
+  assert.deepEqual(policy.calculation_candidate, {
+    status: 'pending_trusted_delegate_proof',
+    expression: 'covered / (covered + blank + blocked + deferred) * 100',
+    scope_keys: ['covered', 'blank', 'blocked', 'deferred'],
+    zero_denominator: { branch: 'zero_denominator', denominator: 0, coverage_rate: null, coverage_rate_reason: 'NO_RATE_DENOMINATOR' },
+  })
+  assert.match(skill.match(/^---\n([\s\S]*?)\n---/)[1], /tools:.*MathCalc/)
+  assert.doesNotMatch(registration.match(/^---\n([\s\S]*?)\n---/)[1], /MathCalc/)
+  assert.match(skill, /O0 does not call MathCalc for this coverage candidate/)
+  assert.match(skill, /O1 之后只要\s*矩阵发生过一次编辑.*post-dispatch\/current-read\s*真实 MathCalc/s)
+  assert.match(skill, /不得重派 Intake 来刷新覆盖率/)
+})
+
+test('resolved jurisdiction catalog maps every rules and conflicts entry to one initial blank stage-4 row', async () => {
+  const [fixture, skill] = await Promise.all([
+    source('tests/fixtures/coverage-matrix/jurisdiction-catalog-cases.json').then(JSON.parse),
+    source(policyFile),
+  ])
+  const actualRows = projectJurisdictionRows(fixture.resolved_pack, fixture.rules_path)
+  const discovered = [...fixture.resolved_pack.rules, ...fixture.resolved_pack.conflicts].map(entry => entry.id)
+  assert.deepEqual(actualRows, fixture.expected_initial_stage4_rows)
+  assert.deepEqual(new Set(actualRows.map(row => row.check_id)), new Set(discovered))
+  assert.equal(actualRows.length, discovered.length)
+  assert.ok(actualRows.every(row => row.stage === 4 && row.owner_agent === 'jurisdiction-auditor' && row.status === 'blank'))
+  assert.ok(actualRows.filter(row => row.rule_kind === 'jurisdiction_rule').every(row => row.check_source.includes('#rules/')))
+  assert.ok(actualRows.filter(row => row.rule_kind === 'jurisdiction_conflict').every(row => row.check_source.includes('#conflicts/')))
+  assert.match(skill, /发现集合与 stage 4\s*法域行的 `\(check_id, check_source\)` 集合，必须双向完全相等/s)
+  assert.match(skill, /不能按合同类型、\s*`mandatory`、`category`、`detection`、`trigger`、关键词或 Lead 对合同事实的理解提前筛选/s)
+  assert.match(skill, /触发未知、事实不足或 Human\s*Gate 未确认时保持 `blank`，不得\s*默认改为 `not_applicable`/s)
+  assert.match(skill, /未被回执逐 ID 处置的行继续 `blank`/)
+  assert.match(skill, /汇总 `rules_evaluated`、finding\/gap\s*数量.*不能替代逐行证据/s)
+})
+
+test('resolved jurisdiction catalog rejects duplicate or malformed source sections and entries', async () => {
+  const fixture = JSON.parse(await source('tests/fixtures/coverage-matrix/jurisdiction-catalog-cases.json'))
+  for (const item of fixture.invalid_duplicate_packs) {
+    assert.throws(
+      () => projectJurisdictionRows(item.pack, fixture.rules_path),
+      error => error instanceof Error && error.message === item.expected_error,
+      item.name,
+    )
+  }
+})
+
+test('authoritative status fixtures protect precedence over a missing receipt', async () => {
+  const fixture = JSON.parse(await source('tests/fixtures/coverage-matrix/status-precedence.json'))
+  for (const item of fixture.cases) {
+    assert.equal(expectedStatus(item.facts), item.expected, item.name)
+  }
+})
+
+test('authoritative summary fixtures preserve rows, all five counts, denominator, and zero handling', async () => {
+  const fixture = JSON.parse(await source('tests/fixtures/coverage-matrix/summary-cases.json'))
+  for (const [name, item] of Object.entries(fixture)) {
+    if (item.expected_invalid) {
+      assert.ok(item.rows.some((row) => row.check_id === 'INV-001-MAIN-CONTRACT'), `${name}: fixture must exercise forbidden inventory row`)
+      continue
+    }
+    const counts = Object.fromEntries(['covered', 'blank', 'blocked', 'deferred', 'not_applicable'].map((status) => [status, item.rows.filter((value) => value === status).length]))
+    assert.equal(item.summary.total, item.rows.length, `${name}: total is rows.length`)
+    assert.deepEqual(item.summary, { total: item.rows.length, ...counts }, `${name}: all status counts are retained`)
+    assert.equal(item.denominator, counts.covered + counts.blank + counts.blocked + counts.deferred, `${name}: denominator excludes only not_applicable`)
+    if (item.denominator === 0) assert.deepEqual(item.expected_zero_denominator, {
+      status: 'pending_trusted_delegate_proof',
+      branch: 'zero_denominator',
+      denominator: 0,
+      coverage_rate: null,
+      coverage_rate_reason: 'NO_RATE_DENOMINATOR',
+    }, `${name}: zero denominator remains a pending candidate without a ratio`)
+  }
+})

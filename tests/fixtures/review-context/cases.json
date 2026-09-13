@@ -1,0 +1,195 @@
+{
+  "description": "Synthetic review-context declarations. These are schema and source-contract fixtures, not legal conclusions, Agent output simulations, platform identities, or approval records.",
+  "valid_instances": [
+    {
+      "id": "missing-stance-and-jurisdiction-with-unavailable-manifest",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-missing", "current_contract_manifest": {"status": "unavailable", "reason": "FILE_DIGEST_DENIED"}},
+        "revision": 1,
+        "review_stance": {"status": "missing", "clarification_code": "PEND-REVIEW-STANCE-REQUIRED"},
+        "jurisdiction": {"status": "undetermined", "clarification_code": "PEND-JURISDICTION-BASIS-REQUIRED", "intake_s8": {"receipt_path": "/synthetic/case-missing/intake.yaml", "check_id": "S8", "observation": "jurisdiction_undetermined"}},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "not_issued_missing_review_stance", "redline_or_negotiation_advice": "not_issued_missing_review_stance", "jurisdiction_substantive_conclusion": "not_issued_missing_jurisdiction"},
+        "pending": [{"code": "PEND-REVIEW-STANCE-REQUIRED", "required_from": "user"}, {"code": "PEND-JURISDICTION-BASIS-REQUIRED", "required_from": "user"}]
+      }
+    },
+    {
+      "id": "user-stated-stance-and-review-basis",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-user", "current_contract_manifest": {"status": "available", "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+        "revision": 2,
+        "review_stance": {"status": "user_stated", "review_subject_label": "Supplier", "source": {"kind": "user_statement", "statement": "Please assess the draft from Supplier's commercial perspective."}},
+        "jurisdiction": {"status": "candidate_basis", "candidate_basis": {"jurisdiction_code": "cn", "source": {"kind": "user_statement", "statement": "Use the mainland China pack as the requested review basis."}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "cn", "pack_version": "cn-v3", "pack_path": "/shared/jurisdiction-packs/cn/pack.yaml", "rules_path": "/shared/jurisdiction-packs/cn/rules.yaml", "pack_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "rules_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "service_scope": "supported"}}},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "allowed"},
+        "pending": []
+      }
+    },
+    {
+      "id": "limited-o0-declared-candidate-is-not-prechecked",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {
+          "case_id": "case-limited-candidate",
+          "current_contract_manifest": {
+            "status": "unavailable",
+            "reason": "LIMITED_O0_NO_COMPLETE_CURRENT_SET"
+          }
+        },
+        "revision": 1,
+        "review_stance": {
+          "status": "user_stated",
+          "review_subject_label": "Customer",
+          "source": {
+            "kind": "user_statement",
+            "statement": "Review from the customer's commercial perspective."
+          }
+        },
+        "jurisdiction": {
+          "status": "candidate_basis",
+          "candidate_basis": {
+            "jurisdiction_code": "cn",
+            "source": {
+              "kind": "user_statement",
+              "statement": "Use the mainland China review basis."
+            },
+            "pack": {
+              "status": "not_prechecked"
+            }
+          }
+        },
+        "output_constraints": {
+          "factual_extraction": "allowed",
+          "directional_risk_advice": "allowed",
+          "redline_or_negotiation_advice": "allowed",
+          "jurisdiction_substantive_conclusion": "not_issued_pack_preflight_pending"
+        },
+        "pending": [
+          {
+            "code": "PEND-JURISDICTION-PACK-PREFLIGHT",
+            "required_from": "lead"
+          }
+        ]
+      }
+    },
+    {
+      "id": "expressly-incorporated-business-context-supplies-bounded-review-parameters",
+      "current_request_statement": "I have supplied the business background in intake.json for this review.",
+      "declared_reference_material": {
+        "object_id": "ref-business-context-001",
+        "version_label": "intake-v1",
+        "canonical_path": "/synthetic/case-business-context/intake.json",
+        "content_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+        "size_bytes": 256,
+        "digest_binding": {
+          "case_id": "case-business-context",
+          "object_id": "ref-business-context-001",
+          "version_label": "intake-v1",
+          "canonical_path": "/synthetic/case-business-context/intake.json",
+          "content_digest": "6666666666666666666666666666666666666666666666666666666666666666"
+        },
+        "classification_basis": "user_submission_context",
+        "reference_id": "business-context-001",
+        "reference_kind": "clarification",
+        "use": "reference_only"
+      },
+      "read_document": {
+        "our_party": "Buyer",
+        "jurisdiction": "Mainland China",
+        "confirmed_by": "synthetic-fixture-label"
+      },
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-business-context", "current_contract_manifest": {"status": "available", "digest": "5555555555555555555555555555555555555555555555555555555555555555"}},
+        "revision": 1,
+        "review_stance": {"status": "user_stated", "review_subject_label": "Buyer", "source": {"kind": "submitted_business_context", "inventory_group": "reference_materials", "object_id": "ref-business-context-001", "canonical_path": "/synthetic/case-business-context/intake.json", "content_digest": "6666666666666666666666666666666666666666666666666666666666666666", "field_pointer": "/our_party", "quoted_value": "Buyer", "current_request_inclusion_statement": "I have supplied the business background in intake.json for this review."}},
+        "jurisdiction": {"status": "candidate_basis", "candidate_basis": {"jurisdiction_code": "cn", "source": {"kind": "submitted_business_context", "inventory_group": "reference_materials", "object_id": "ref-business-context-001", "canonical_path": "/synthetic/case-business-context/intake.json", "content_digest": "6666666666666666666666666666666666666666666666666666666666666666", "field_pointer": "/jurisdiction", "quoted_value": "Mainland China", "current_request_inclusion_statement": "I have supplied the business background in intake.json for this review."}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "cn", "pack_version": "cn-v3", "pack_path": "/shared/jurisdiction-packs/cn/pack.yaml", "rules_path": "/shared/jurisdiction-packs/cn/rules.yaml", "pack_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "rules_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "service_scope": "supported"}}},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "allowed"},
+        "pending": []
+      }
+    },
+    {
+      "id": "unique-current-part-clue-is-candidate-not-final-law",
+      "declared_current_parts": [{"part_id": "body", "content_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}],
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-clue", "current_contract_manifest": {"status": "available", "digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}},
+        "revision": 1,
+        "review_stance": {"status": "missing", "clarification_code": "PEND-REVIEW-STANCE-REQUIRED"},
+        "jurisdiction": {"status": "candidate_basis", "candidate_basis": {"jurisdiction_code": "cn", "source": {"kind": "current_part_clue", "part_id": "body", "content_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "locator": "clause 18", "quoted_basis": "This agreement is governed by the laws of the People's Republic of China."}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "cn", "pack_version": "cn-v3", "pack_path": "/shared/jurisdiction-packs/cn/pack.yaml", "rules_path": "/shared/jurisdiction-packs/cn/rules.yaml", "pack_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "rules_sha256": "1111111111111111111111111111111111111111111111111111111111111111", "service_scope": "supported"}}, "intake_s8": {"receipt_path": "/synthetic/case-clue/intake.yaml", "check_id": "S8", "observation": "aligned_candidate_observed"}},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "not_issued_missing_review_stance", "redline_or_negotiation_advice": "not_issued_missing_review_stance", "jurisdiction_substantive_conclusion": "allowed"},
+        "pending": [{"code": "PEND-REVIEW-STANCE-REQUIRED", "required_from": "user"}]
+      }
+    },
+    {
+      "id": "conflicting-candidates-preserve-hg-02",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-conflict", "current_contract_manifest": {"status": "available", "digest": "2222222222222222222222222222222222222222222222222222222222222222"}},
+        "revision": 1,
+        "review_stance": {"status": "user_stated", "review_subject_label": "Customer", "source": {"kind": "user_statement", "statement": "Review from the customer's commercial perspective."}},
+        "jurisdiction": {"status": "conflicting", "candidate_bases": [
+          {"jurisdiction_code": "cn", "source": {"kind": "user_statement", "statement": "Use China law."}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "cn", "pack_version": "cn-v3", "pack_path": "/shared/jurisdiction-packs/cn/pack.yaml", "rules_path": "/shared/jurisdiction-packs/cn/rules.yaml", "pack_sha256": "3333333333333333333333333333333333333333333333333333333333333333", "rules_sha256": "4444444444444444444444444444444444444444444444444444444444444444", "service_scope": "supported"}},
+          {"jurisdiction_code": "us", "source": {"kind": "user_statement", "statement": "Use US law."}, "pack": {"status": "not_prechecked"}}
+        ], "human_gate": "HG-02"},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "not_issued_hg_02_conflict"},
+        "pending": [{"code": "HG-02", "required_from": "user"}]
+      }
+    },
+    {
+      "id": "identified-candidate-with-missing-pack-records-failure-without-default",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-no-pack", "current_contract_manifest": {"status": "available", "digest": "7777777777777777777777777777777777777777777777777777777777777777"}},
+        "revision": 1,
+        "review_stance": {"status": "user_stated", "review_subject_label": "Buyer", "source": {"kind": "user_statement", "statement": "Review this from the buyer's perspective."}},
+        "jurisdiction": {"status": "candidate_basis", "candidate_basis": {"jurisdiction_code": "unavailable-pack", "source": {"kind": "user_statement", "statement": "Use the requested jurisdiction review basis."}, "pack": {"status": "unavailable", "reason": "RULE_SOURCE_UNAVAILABLE"}}},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "not_issued_rule_source_unavailable"},
+        "pending": [{"code": "RULE_SOURCE_UNAVAILABLE", "required_from": "lead"}]
+      }
+    }
+  ],
+  "invalid_schema_instances": [
+    {
+      "id": "single-mutation-current-clue-without-sha",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-invalid", "current_contract_manifest": {"status": "available", "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+        "revision": 1,
+        "review_stance": {"status": "missing", "clarification_code": "PEND-REVIEW-STANCE-REQUIRED"},
+        "jurisdiction": {"status": "candidate_basis", "candidate_basis": {"jurisdiction_code": "cn", "source": {"kind": "current_part_clue", "part_id": "body", "locator": "clause 18", "quoted_basis": "governed by law"}, "pack": {"status": "read_and_pinned", "jurisdiction_code": "cn", "pack_version": "cn-v3", "pack_path": "/shared/jurisdiction-packs/cn/pack.yaml", "rules_path": "/shared/jurisdiction-packs/cn/rules.yaml", "pack_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "rules_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "service_scope": "supported"}}},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "not_issued_missing_review_stance", "redline_or_negotiation_advice": "not_issued_missing_review_stance", "jurisdiction_substantive_conclusion": "allowed"},
+        "pending": [{"code": "PEND-REVIEW-STANCE-REQUIRED", "required_from": "user"}]
+      }
+    },
+    {
+      "id": "single-mutation-party-object-id-is-not-an-allowed-stance-field",
+      "context": {
+        "schema_version": 1,
+        "case_binding": {"case_id": "case-invalid-party", "current_contract_manifest": {"status": "available", "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+        "revision": 1,
+        "review_stance": {"status": "user_stated", "review_subject_label": "Supplier", "party_object_id": "party-001", "source": {"kind": "user_statement", "statement": "Review for Supplier."}},
+        "jurisdiction": {"status": "undetermined", "clarification_code": "PEND-JURISDICTION-BASIS-REQUIRED"},
+        "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "not_issued_missing_jurisdiction"},
+        "pending": [{"code": "PEND-JURISDICTION-BASIS-REQUIRED", "required_from": "user"}]
+      }
+    }
+  ],
+  "stale_receipt_fixture": {
+    "current_context": {
+      "case_id": "case-user",
+      "revision": 2,
+      "current_contract_manifest": {"status": "available", "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+      "output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "allowed", "redline_or_negotiation_advice": "allowed", "jurisdiction_substantive_conclusion": "allowed"}
+    },
+    "late_o3_receipt_echo": {
+      "review_context_echo": {
+        "case_id": "case-user",
+        "revision": 1,
+        "current_manifest": {"status": "available", "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+        "actual_output_constraints": {"factual_extraction": "allowed", "directional_risk_advice": "not_issued_missing_review_stance", "redline_or_negotiation_advice": "not_issued_missing_review_stance", "jurisdiction_substantive_conclusion": "allowed"}
+      }
+    },
+    "expected_rejection": "REJECT-STALE-REVIEW-CONTEXT"
+  }
+}

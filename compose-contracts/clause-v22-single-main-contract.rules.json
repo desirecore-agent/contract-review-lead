@@ -1,0 +1,771 @@
+{
+  "assertions": [
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/contract_schema/sha256"
+      },
+      "right": {
+        "kind": "snapshot",
+        "file": "pinned_schema",
+        "field": "sha256"
+      }
+    },
+    {
+      "type": "array_length_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/parts",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/part_count"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/source"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/canonical_path"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/sha256"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/content_digest"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/sha256"
+      },
+      "right": {
+        "kind": "snapshot",
+        "file": "part_0",
+        "field": "sha256"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/size_bytes"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/size_bytes"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/size_bytes"
+      },
+      "right": {
+        "kind": "snapshot",
+        "file": "part_0",
+        "field": "size_bytes"
+      }
+    },
+    {
+      "type": "count_where_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/parts",
+      "member": "delivered",
+      "value": true,
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/part_count"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/frozen_baseline/parts/0/source"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/canonical_path"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/frozen_baseline/parts/0/sha256"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/content_digest"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/frozen_baseline/parts/0/size_bytes"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/size_bytes"
+      }
+    },
+    {
+      "type": "count_where_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/frozen_baseline/parts",
+      "member": "delivered",
+      "value": true,
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/part_count"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/upstream/frozen_baseline/attachment_manifest_digest"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/manifest_digest"
+      }
+    },
+    {
+      "type": "unique_keys",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/parts",
+      "keys": [
+        "id"
+      ]
+    },
+    {
+      "type": "unique_keys",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/coverage",
+      "keys": [
+        "field_group"
+      ]
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/coverage",
+      "member": "field_group",
+      "values": [
+        "parties",
+        "definitions",
+        "clause_tree",
+        "monetary_terms",
+        "payment_terms",
+        "temporal_terms",
+        "termination_grounds",
+        "dispute_resolution",
+        "governing_law",
+        "liability_cap",
+        "indirect_damages_excluded",
+        "breach_remedies",
+        "grace_period",
+        "subcontracting",
+        "audit_right",
+        "force_majeure",
+        "data_export",
+        "attachment_manifest",
+        "attachment_references"
+      ],
+      "exact": true
+    },
+    {
+      "type": "count_where_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/coverage",
+      "member": "status",
+      "value": "covered",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/stats/coverage_covered"
+      }
+    },
+    {
+      "type": "count_where_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/coverage",
+      "member": "status",
+      "value": "not_present",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/stats/coverage_not_present"
+      }
+    },
+    {
+      "type": "count_where_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/coverage",
+      "member": "status",
+      "value": "blank",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/stats/coverage_blank"
+      }
+    },
+    {
+      "type": "count_where_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/coverage",
+      "member": "status",
+      "value": "blocked",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/stats/coverage_blocked"
+      }
+    },
+    {
+      "type": "array_length_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/frozen_baseline/parts",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/part_count"
+      }
+    },
+    {
+      "type": "unique_keys",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/frozen_baseline/parts",
+      "keys": [
+        "id"
+      ]
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/object/content_digest"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/content_digest"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/id"
+      },
+      "right": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/frozen_baseline/parts/0/id"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/source"
+      },
+      "right": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/frozen_baseline/parts/0/source"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/sha256"
+      },
+      "right": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/frozen_baseline/parts/0/sha256"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/size_bytes"
+      },
+      "right": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/frozen_baseline/parts/0/size_bytes"
+      }
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/parts",
+      "member": "id",
+      "values": [
+        "body"
+      ],
+      "exact": true
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/frozen_baseline/parts",
+      "member": "id",
+      "values": [
+        "body"
+      ],
+      "exact": true
+    },
+    {
+      "type": "count_where_equals",
+      "file": "baseline",
+      "arrayPointer": "/orchestration_ledger/objects",
+      "member": "kind",
+      "value": "main_contract",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/part_count"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/object/contract_object_id"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/object_id"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/object/version_label"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/version_label"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/digest_binding/case_id"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/case_id"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/digest_binding/object_id"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/object_id"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/digest_binding/version_label"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/version_label"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/digest_binding/normalized_path"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/canonical_path"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/digest_binding/content_digest"
+      },
+      "right": {
+        "kind": "value",
+        "file": "baseline",
+        "pointer": "/orchestration_ledger/objects/0/content_digest"
+      }
+    },
+    {
+      "type": "required_set",
+      "file": "baseline",
+      "arrayPointer": "/orchestration_ledger/objects",
+      "member": "kind",
+      "values": [
+        "main_contract"
+      ],
+      "exact": true
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/parts",
+      "member": "source_name",
+      "values": [
+        "part_0"
+      ],
+      "exact": true
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/frozen_baseline/parts",
+      "member": "source_name",
+      "values": [
+        "part_0"
+      ],
+      "exact": true
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/parts",
+      "member": "format",
+      "values": [
+        "docx"
+      ],
+      "exact": true
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/frozen_baseline/parts",
+      "member": "format",
+      "values": [
+        "docx"
+      ],
+      "exact": true
+    },
+    {
+      "type": "array_length_equals",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/source_representations",
+      "expected": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/part_count"
+      }
+    },
+    {
+      "type": "unique_keys",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/source_representations",
+      "keys": [
+        "part_id"
+      ]
+    },
+    {
+      "type": "unique_keys",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/source_representations",
+      "keys": [
+        "source_name"
+      ]
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/source_representations",
+      "member": "part_id",
+      "values": [
+        "body"
+      ],
+      "exact": true
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/source_representations",
+      "member": "source_name",
+      "values": [
+        "part_0"
+      ],
+      "exact": true
+    },
+    {
+      "type": "required_set",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/source_representations",
+      "member": "format",
+      "values": [
+        "docx"
+      ],
+      "exact": true
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/part_id"
+      },
+      "right": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/id"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/source_name"
+      },
+      "right": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/parts/0/source_name"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/source_sha256"
+      },
+      "right": {
+        "kind": "snapshot",
+        "file": "part_0",
+        "field": "sha256"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/source_size_bytes"
+      },
+      "right": {
+        "kind": "snapshot",
+        "file": "part_0",
+        "field": "size_bytes"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/format"
+      },
+      "right": {
+        "kind": "snapshot",
+        "file": "part_0",
+        "field": "format"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/source_sha256"
+      },
+      "right": {
+        "kind": "derived_source",
+        "sourceName": "part_0",
+        "field": "source_sha256"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/source_size_bytes"
+      },
+      "right": {
+        "kind": "derived_source",
+        "sourceName": "part_0",
+        "field": "source_size_bytes"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/representation/derived_text_sha256"
+      },
+      "right": {
+        "kind": "derived_source",
+        "sourceName": "part_0",
+        "field": "derived_text_sha256"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/representation/text_offset_codec"
+      },
+      "right": {
+        "kind": "derived_source",
+        "sourceName": "part_0",
+        "field": "text_offset_codec"
+      }
+    },
+    {
+      "type": "equals",
+      "left": {
+        "kind": "value",
+        "file": "artifact",
+        "pointer": "/clause_extraction/source_representations/0/representation/derived_text_utf16_code_units"
+      },
+      "right": {
+        "kind": "derived_source",
+        "sourceName": "part_0",
+        "field": "derived_text_utf16_code_units"
+      }
+    }
+  ],
+  "literalSelectors": [
+    {
+      "id": "payloadEvidence",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/payloads",
+      "childArrayPointers": [
+        "/records",
+        "/evidence"
+      ],
+      "literalMember": "exact_quote",
+      "sourceNameMember": "part",
+      "expectedShaMember": "source_sha256",
+      "positionMember": "utf16_offsets",
+      "sourceBindings": [
+        {
+          "value": "body",
+          "sourceName": "part_0"
+        }
+      ],
+      "positionMode": "claimed_array",
+      "skipNullLiteral": true,
+      "requiredSourceNames": [],
+      "exhaustiveNegative": false
+    },
+    {
+      "id": "coverageEvidence",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/coverage",
+      "childArrayPointers": [
+        "/evidence"
+      ],
+      "literalMember": "exact_quote",
+      "sourceNameMember": "part",
+      "expectedShaMember": "source_sha256",
+      "positionMember": "utf16_offsets",
+      "sourceBindings": [
+        {
+          "value": "body",
+          "sourceName": "part_0"
+        }
+      ],
+      "positionMode": "claimed_array",
+      "skipNullLiteral": true,
+      "requiredSourceNames": [],
+      "exhaustiveNegative": false
+    },
+    {
+      "id": "ambiguityEv",
+      "file": "artifact",
+      "arrayPointer": "/clause_extraction/ambiguities",
+      "childArrayPointers": [
+        "/candidate_evidence"
+      ],
+      "literalMember": "exact_quote",
+      "sourceNameMember": "part",
+      "expectedShaMember": "source_sha256",
+      "positionMember": "utf16_offsets",
+      "sourceBindings": [
+        {
+          "value": "body",
+          "sourceName": "part_0"
+        }
+      ],
+      "positionMode": "claimed_array",
+      "skipNullLiteral": false,
+      "requiredSourceNames": [],
+      "exhaustiveNegative": false
+    }
+  ]
+}

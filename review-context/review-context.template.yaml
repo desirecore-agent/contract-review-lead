@@ -1,0 +1,33 @@
+# Synthetic authoring template. This is a Lead-owned declaration record, not a platform identity,
+# authority, approval, legal-applicability conclusion, Delegate continuation binding, or tool grant.
+schema_version: 1
+case_binding:
+  case_id: case-template-001
+  current_contract_manifest:
+    status: available
+    digest: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+revision: 1
+review_stance:
+  status: missing
+  clarification_code: PEND-REVIEW-STANCE-REQUIRED
+jurisdiction:
+  status: undetermined
+  clarification_code: PEND-JURISDICTION-BASIS-REQUIRED
+# For one declared candidate during limited O0, retain the source as candidate_basis with
+# pack: {status: not_prechecked}, jurisdiction_substantive_conclusion:
+# not_issued_pack_preflight_pending, and PEND-JURISDICTION-PACK-PREFLIGHT from lead.
+# That records the scope boundary only: it is neither a pin nor a failed preflight.
+# A submitted_business_context source is allowed only after the current request expressly
+# incorporates the file and Lead checks its frozen reference_materials row, exact Read,
+# digest, JSON Pointer, quoted value, and inclusion statement. Schema validity alone is
+# not that cross-file check; confirmed_by never supplies authority or a Human Gate.
+output_constraints:
+  factual_extraction: allowed
+  directional_risk_advice: not_issued_missing_review_stance
+  redline_or_negotiation_advice: not_issued_missing_review_stance
+  jurisdiction_substantive_conclusion: not_issued_missing_jurisdiction
+pending:
+  - code: PEND-REVIEW-STANCE-REQUIRED
+    required_from: user
+  - code: PEND-JURISDICTION-BASIS-REQUIRED
+    required_from: user

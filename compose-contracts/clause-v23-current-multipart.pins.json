@@ -1,0 +1,44 @@
+{
+  "format_version": 1,
+  "description": "Lead-owned fixed candidate for current multipart Clause v2.2 artifacts. It binds only the O0 current-contract chain and is not platform authorization.",
+  "captures": {
+    "schema_source": "pinned_schema",
+    "schema_target": "artifact",
+    "rules_source": "rules",
+    "baseline": "baseline",
+    "delivered_sources": "dynamic_from_o0_current_contract"
+  },
+  "schema": {
+    "source_name": "pinned_schema",
+    "relative_source": "clause-extractor/schemas/clause-extraction-artifact-v22.schema.json",
+    "sha256": "fc5355dfc349bde3ff52e0b05171010f7b6d8db0d5d3811576baf02ae7090d3d"
+  },
+  "baseline": {
+    "file": "baseline",
+    "relative_source": "review-orchestration/inventory/o0-input-inventory.json",
+    "current_parts_pointer": "/current_contract/parts",
+    "main_count_pointer": "/current_contract/main_contract_count",
+    "note": "The full O0 schema is validated by Lead before this same frozen baseline capture; Compose only binds its declared current-contract tuple chain."
+  },
+  "c01_limits": {
+    "max_captured_files": 32,
+    "max_total_bytes": 67108864,
+    "max_delivered_sources": 28,
+    "max_assertions": 128,
+    "max_selectors": 8,
+    "call_deadline_ms": 15000
+  },
+  "rules": {
+    "source_name": "rules",
+    "relative_source": "review-orchestration/compose-contracts/clause-v23-current-multipart.rules.json",
+    "sha256": "161a1eeb124db1f69320930d81c3076d2f8a8940bb63627490bacd4da040b82f",
+    "format": "json",
+    "line_endings": "LF"
+  },
+  "non_goals": [
+    "O0 classification semantic truth",
+    "semantic absence proof",
+    "Delegate work-context validation",
+    "Human Gate or legal conclusions"
+  ]
+}

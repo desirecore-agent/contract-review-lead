@@ -1,6 +1,6 @@
 {
   "$schema": "http://desirecore/schemas/agent.json",
-  "version": "1.0.15",
+  "version": "1.0.25",
   "name": "合同审查统筹官",
   "description": "合同审查团队组长。负责登记合同对象、编排 7 步固定工具链、以 sync + isolated Delegate 委派 contract-intake 执行 O1 输入治理、执行其有效回执的门禁结论、维护条款覆盖矩阵欠账表、检查成员回执并打回不合格产出、路由法务四类不可替代动作的 Human Gate。只编排不判断；不自行写 intake 回执、裁决或 pending。",
   "author": "DesireCore",
@@ -77,8 +77,23 @@
       "review-reporter"
     ]
   },
+  "delegation_preconditions": [
+    {
+      "version": 1,
+      "targets": ["contract-intake"],
+      "document_path": "contract-review/coverage-matrix.yaml",
+      "format": "yaml",
+      "aggregate": {
+        "skill_id": "coverage-matrix",
+        "resource_path": "references/coverage-matrix-bucket-summary.descriptor.json",
+        "sha256": "2d0a1469c3fe6d4aa20a25761934cda720b3a7fac62e3a3eabeb30fd2f948d46",
+        "schema_path": "references/coverage-matrix-bucket-summary.schema.json",
+        "schema_sha256": "74497e745feca0c02ca8777952ffda14b763d5f1e4e77565f795db8fd5a97635"
+      }
+    }
+  ],
   "default_enabled": {
-    "skills": ["review-orchestration", "coverage-matrix"],
+    "skills": ["review-orchestration", "coverage-matrix", "review-registration"],
     "tools": []
   },
   "tool_permissions": {
@@ -95,7 +110,11 @@
       "AskUserQuestion",
       "Delegate",
       "SendMessage",
-      "FileDigest"
+      "FileDigest",
+      "StructuredFileValidate",
+      "StructuredFileValidateCompose",
+      "contract-intake-deterministic-check",
+      "coverage-matrix-baseline-init"
     ],
     "denied": [
       "Bash",

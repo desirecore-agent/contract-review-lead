@@ -1,0 +1,293 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lead final coverage calculation observation",
+  "description": "A bounded Lead-authored audit sidecar containing the exact current matrix digests, row-to-flag transcription, actual MathCalc inputs, and raw successful outputs used for final coverage counts and rate. Schema validity makes the arithmetic replayable but does not authenticate the transcription, approve row semantics, or modify the hashed matrix.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "matrix", "row_transcription", "mathcalc"],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Sidecar schema version."
+    },
+    "status": {
+      "const": "verified_current_matrix_mathcalc",
+      "description": "The recorded calls completed against one unchanged matrix digest; this is not a business or source-authentication verdict."
+    },
+    "matrix": {
+      "$ref": "#/definitions/matrixBinding",
+      "description": "Exact matrix path and the three equal FileDigest observations bracketing Read and MathCalc."
+    },
+    "row_transcription": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8000,
+      "description": "Rows in the exact Read order. Flags are explicit MathCalc operands and remain auditable Lead transcription rather than platform proof of row semantics.",
+      "items": {"$ref": "#/definitions/rowTranscription"}
+    },
+    "mathcalc": {
+      "$ref": "#/definitions/calculationSet",
+      "description": "Actual MathCalc inputs and raw successful text outputs for five counts, denominator, and the positive or zero-denominator branch."
+    }
+  },
+  "definitions": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "countText": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,3})$"
+    },
+    "flag": {
+      "type": "integer",
+      "enum": [0, 1]
+    },
+    "flagArray": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8000,
+      "items": {"$ref": "#/definitions/flag"}
+    },
+    "matrixBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["absolute_path", "digest_before_read", "digest_after_read", "digest_after_calculation", "row_count"],
+      "properties": {
+        "absolute_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "description": "Absolute path passed to the exact Read and FileDigest calls; normal path authorization still applies."
+        },
+        "digest_before_read": {"$ref": "#/definitions/sha256"},
+        "digest_after_read": {"$ref": "#/definitions/sha256"},
+        "digest_after_calculation": {"$ref": "#/definitions/sha256"},
+        "row_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8000,
+          "description": "Number of rows in the complete exact Read."
+        }
+      }
+    },
+    "rowFlags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered", "blank", "blocked", "deferred", "not_applicable"],
+      "properties": {
+        "covered": {"$ref": "#/definitions/flag"},
+        "blank": {"$ref": "#/definitions/flag"},
+        "blocked": {"$ref": "#/definitions/flag"},
+        "deferred": {"$ref": "#/definitions/flag"},
+        "not_applicable": {"$ref": "#/definitions/flag"}
+      }
+    },
+    "rowTranscription": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ordinal", "check_id", "check_source", "status", "flags"],
+      "properties": {
+        "ordinal": {"type": "integer", "minimum": 0, "maximum": 7999},
+        "check_id": {"type": "string", "minLength": 1, "maxLength": 256},
+        "check_source": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "status": {"enum": ["covered", "blank", "blocked", "deferred", "not_applicable"]},
+        "flags": {"$ref": "#/definitions/rowFlags"}
+      }
+    },
+    "countInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expression", "precision", "mode", "scope", "format"],
+      "properties": {
+        "expression": {"const": "sum(flags)"},
+        "precision": {"const": 64},
+        "mode": {"const": "bignumber"},
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["flags"],
+          "properties": {"flags": {"$ref": "#/definitions/flagArray"}}
+        },
+        "format": {"const": "auto"}
+      }
+    },
+    "successOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["success", "text"],
+      "properties": {
+        "success": {"const": true},
+        "text": {
+          "$ref": "#/definitions/countText",
+          "description": "Exact visible text returned by the successful MathCalc call."
+        }
+      }
+    },
+    "countCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output"],
+      "properties": {
+        "input": {"$ref": "#/definitions/countInput"},
+        "output": {"$ref": "#/definitions/successOutput"}
+      }
+    },
+    "countCalls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered", "blank", "blocked", "deferred", "not_applicable"],
+      "properties": {
+        "covered": {"$ref": "#/definitions/countCall"},
+        "blank": {"$ref": "#/definitions/countCall"},
+        "blocked": {"$ref": "#/definitions/countCall"},
+        "deferred": {"$ref": "#/definitions/countCall"},
+        "not_applicable": {"$ref": "#/definitions/countCall"}
+      }
+    },
+    "denominatorInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expression", "precision", "mode", "scope", "format"],
+      "properties": {
+        "expression": {"const": "covered + blank + blocked + deferred"},
+        "precision": {"const": 64},
+        "mode": {"const": "bignumber"},
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["covered", "blank", "blocked", "deferred"],
+          "properties": {
+            "covered": {"$ref": "#/definitions/countText"},
+            "blank": {"$ref": "#/definitions/countText"},
+            "blocked": {"$ref": "#/definitions/countText"},
+            "deferred": {"$ref": "#/definitions/countText"}
+          }
+        },
+        "format": {"const": "auto"}
+      }
+    },
+    "denominatorCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output"],
+      "properties": {
+        "input": {"$ref": "#/definitions/denominatorInput"},
+        "output": {"$ref": "#/definitions/successOutput"}
+      }
+    },
+    "positiveDenominatorCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output"],
+      "properties": {
+        "input": {"$ref": "#/definitions/denominatorInput"},
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["success", "text"],
+          "properties": {
+            "success": {"const": true},
+            "text": {"type": "string", "pattern": "^[1-9][0-9]{0,3}$"}
+          }
+        }
+      }
+    },
+    "zeroDenominatorCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output"],
+      "properties": {
+        "input": {"$ref": "#/definitions/denominatorInput"},
+        "output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["success", "text"],
+          "properties": {
+            "success": {"const": true},
+            "text": {"const": "0"}
+          }
+        }
+      }
+    },
+    "ratioInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expression", "precision", "mode", "scope", "format", "format_decimals"],
+      "properties": {
+        "expression": {"const": "covered / denominator * 100"},
+        "precision": {"const": 64},
+        "mode": {"const": "bignumber"},
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["covered", "denominator"],
+          "properties": {
+            "covered": {"$ref": "#/definitions/countText"},
+            "denominator": {"type": "string", "pattern": "^[1-9][0-9]{0,3}$"}
+          }
+        },
+        "format": {"const": "fixed"},
+        "format_decimals": {"const": 2}
+      }
+    },
+    "ratioOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["success", "text"],
+      "properties": {
+        "success": {"const": true},
+        "text": {
+          "type": "string",
+          "pattern": "^(100|[0-9]{1,2})\\.[0-9]{2}$",
+          "description": "Exact two-decimal visible text returned by the successful ratio call."
+        }
+      }
+    },
+    "positiveRatio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "input", "output"],
+      "properties": {
+        "branch": {"const": "positive_denominator"},
+        "input": {"$ref": "#/definitions/ratioInput"},
+        "output": {"$ref": "#/definitions/ratioOutput"}
+      }
+    },
+    "zeroRatio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "ratio_call", "coverage_rate", "coverage_rate_reason"],
+      "properties": {
+        "branch": {"const": "zero_denominator"},
+        "ratio_call": {"type": "null"},
+        "coverage_rate": {"type": "null"},
+        "coverage_rate_reason": {"const": "NO_RATE_DENOMINATOR"}
+      }
+    },
+    "calculationSet": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count_calls", "denominator_call", "ratio"],
+          "properties": {
+            "count_calls": {"$ref": "#/definitions/countCalls"},
+            "denominator_call": {"$ref": "#/definitions/positiveDenominatorCall"},
+            "ratio": {"$ref": "#/definitions/positiveRatio"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count_calls", "denominator_call", "ratio"],
+          "properties": {
+            "count_calls": {"$ref": "#/definitions/countCalls"},
+            "denominator_call": {"$ref": "#/definitions/zeroDenominatorCall"},
+            "ratio": {"$ref": "#/definitions/zeroRatio"}
+          }
+        }
+      ]
+    }
+  }
+}

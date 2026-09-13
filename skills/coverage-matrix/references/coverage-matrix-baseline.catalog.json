@@ -1,0 +1,437 @@
+{
+  "format": "coverage-matrix-baseline-v1",
+  "source_commit": "8013a3a39aa20f6299f5007828e02facd95b257c",
+  "sources": {
+    "missing_clauses": {
+      "sha256": "8e644ed5adf6f8b3031b5979655d881ed59e5300b7e582ff01947fb4e558ba11",
+      "ids": [
+        "liability-cap",
+        "breach-remedy",
+        "grace-period",
+        "termination-convenience",
+        "subcontracting",
+        "audit-right",
+        "dispute-resolution",
+        "force-majeure",
+        "data-export"
+      ]
+    },
+    "market_benchmarks": {
+      "sha256": "bdb803acb41a01edb3834624040db01a757880b4d20e33bf351e2e66ac93778d",
+      "ids": [
+        "liability-cap-months",
+        "renewal-notice-days",
+        "non-compete-years",
+        "data-export-window-days"
+      ]
+    },
+    "custom_pack": {
+      "sha256": "c99cb4ed8a19f7b620bc88dfc4479c79231ee376acd4bf42c10e94138ffeccd6",
+      "ids": []
+    },
+    "custom_redlines": {
+      "sha256": "ee8f00b048ce54d6434111e019c42551d1906d1d8ba9cae928a406f29437468c",
+      "ids": []
+    }
+  },
+  "fixed_rows": [
+    {
+      "check_id": "CHK-INTAKE-S1-SCOPE",
+      "check_title": "受理范围清点",
+      "check_source": "contract-intake.receipt.checks#S1",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "CHK-INTAKE-S2-MASTER-VERSION",
+      "check_title": "主版本冻结",
+      "check_source": "contract-intake.receipt.checks#S2",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "CHK-INTAKE-S3-PAGE-RANGE",
+      "check_title": "页码连续性",
+      "check_source": "contract-intake.receipt.checks#S3",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "CHK-INTAKE-S4-ATTACHMENT-MANIFEST",
+      "check_title": "附件清单对账",
+      "check_source": "contract-intake.receipt.checks#S4",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "CHK-INTAKE-S5-EXECUTION-STATUS",
+      "check_title": "签署状态",
+      "check_source": "contract-intake.receipt.checks#S5",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "CHK-INTAKE-S6-PLACEHOLDER",
+      "check_title": "占位符检查",
+      "check_source": "contract-intake.receipt.checks#S6",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "CHK-INTAKE-S7-PARTY-AND-AMOUNT",
+      "check_title": "主体与金额一致性",
+      "check_source": "contract-intake.receipt.checks#S7",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "CHK-INTAKE-S8-VERSION-MATRIX",
+      "check_title": "版本矩阵对齐",
+      "check_source": "contract-intake.receipt.checks#S8",
+      "stage": 1,
+      "owner_agent": "contract-intake"
+    },
+    {
+      "check_id": "liability-cap",
+      "check_title": "限制责任与索赔上限",
+      "check_source": "base/missing-clauses.yaml#liability-cap",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "breach-remedy",
+      "check_title": "违约责任与赔偿机制",
+      "check_source": "base/missing-clauses.yaml#breach-remedy",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "grace-period",
+      "check_title": "宽限期与补救期",
+      "check_source": "base/missing-clauses.yaml#grace-period",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "termination-convenience",
+      "check_title": "终止便利性与过渡条款",
+      "check_source": "base/missing-clauses.yaml#termination-convenience",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "subcontracting",
+      "check_title": "分包与变更控制",
+      "check_source": "base/missing-clauses.yaml#subcontracting",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "audit-right",
+      "check_title": "审计权与数据操作流程",
+      "check_source": "base/missing-clauses.yaml#audit-right",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "dispute-resolution",
+      "check_title": "争议解决（管辖 / 仲裁）",
+      "check_source": "base/missing-clauses.yaml#dispute-resolution",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "force-majeure",
+      "check_title": "不可抗力",
+      "check_source": "base/missing-clauses.yaml#force-majeure",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "data-export",
+      "check_title": "数据导出与删除",
+      "check_source": "base/missing-clauses.yaml#data-export",
+      "stage": 2,
+      "owner_agent": "clause-extractor"
+    },
+    {
+      "check_id": "liability-cap-months",
+      "check_title": "责任上限",
+      "check_source": "base/market-benchmarks.yaml#liability-cap-months",
+      "stage": 3,
+      "owner_agent": "risk-scanner"
+    },
+    {
+      "check_id": "renewal-notice-days",
+      "check_title": "续约通知期",
+      "check_source": "base/market-benchmarks.yaml#renewal-notice-days",
+      "stage": 3,
+      "owner_agent": "risk-scanner"
+    },
+    {
+      "check_id": "non-compete-years",
+      "check_title": "竞业期限",
+      "check_source": "base/market-benchmarks.yaml#non-compete-years",
+      "stage": 3,
+      "owner_agent": "risk-scanner"
+    },
+    {
+      "check_id": "data-export-window-days",
+      "check_title": "数据导出窗口",
+      "check_source": "base/market-benchmarks.yaml#data-export-window-days",
+      "stage": 3,
+      "owner_agent": "risk-scanner"
+    },
+    {
+      "check_id": "CLOSURE-COMPLETENESS",
+      "check_title": "审查完整性",
+      "check_source": "blueprint#section-15/CLOSURE-COMPLETENESS",
+      "stage": 6,
+      "owner_agent": "review-reporter"
+    },
+    {
+      "check_id": "CLOSURE-CONSISTENCY",
+      "check_title": "审查一致性",
+      "check_source": "blueprint#section-15/CLOSURE-CONSISTENCY",
+      "stage": 6,
+      "owner_agent": "review-reporter"
+    },
+    {
+      "check_id": "CLOSURE-BLOCKING-RISK",
+      "check_title": "阻断风险闭合",
+      "check_source": "blueprint#section-15/CLOSURE-BLOCKING-RISK",
+      "stage": 6,
+      "owner_agent": "review-reporter"
+    },
+    {
+      "check_id": "CLOSURE-SUBSTANTIVE-TERMS",
+      "check_title": "实质条款闭合",
+      "check_source": "blueprint#section-15/CLOSURE-SUBSTANTIVE-TERMS",
+      "stage": 6,
+      "owner_agent": "review-reporter"
+    },
+    {
+      "check_id": "CLOSURE-DOCUMENT",
+      "check_title": "文档交付闭合",
+      "check_source": "blueprint#section-15/CLOSURE-DOCUMENT",
+      "stage": 6,
+      "owner_agent": "review-reporter"
+    }
+  ],
+  "jurisdiction_catalogs": [
+    {
+      "sha256": "c03cc65d76e059779ba05cf89a2b6b2bc202a63b40129c1622624fe11c7ad60e",
+      "rules": [
+        {
+          "id": "cn-labor-probation-cap",
+          "title": "试用期法定上限"
+        },
+        {
+          "id": "cn-labor-non-compete",
+          "title": "竞业限制的期限、人员范围与经济补偿"
+        },
+        {
+          "id": "cn-labor-employee-penalty-restriction",
+          "title": "劳动者违约金的限制"
+        },
+        {
+          "id": "cn-liquidated-damages-adjustment",
+          "title": "违约金过高可请求调减"
+        },
+        {
+          "id": "cn-deposit-cap",
+          "title": "定金数额上限"
+        },
+        {
+          "id": "cn-invalid-exemption-clause",
+          "title": "免责条款的法定无效范围"
+        },
+        {
+          "id": "cn-standard-terms-duty",
+          "title": "格式条款的提示说明义务与不利解释"
+        },
+        {
+          "id": "cn-contract-effectiveness",
+          "title": "合同生效与批准登记要件"
+        },
+        {
+          "id": "cn-authority-and-seal",
+          "title": "签署权限与印章效力"
+        },
+        {
+          "id": "cn-arbitration-agreement-validity",
+          "title": "仲裁协议的有效要件"
+        },
+        {
+          "id": "cn-arbitration-or-litigation-conflict",
+          "title": "「或裁或审」条款"
+        },
+        {
+          "id": "cn-forum-selection",
+          "title": "协议管辖的限制"
+        },
+        {
+          "id": "cn-force-majeure",
+          "title": "不可抗力的法定含义与通知义务"
+        },
+        {
+          "id": "cn-change-of-circumstances",
+          "title": "情势变更"
+        },
+        {
+          "id": "cn-limitation-period",
+          "title": "诉讼时效"
+        },
+        {
+          "id": "cn-personal-info-cross-border",
+          "title": "个人信息出境的合规路径"
+        },
+        {
+          "id": "cn-data-processing-agreement",
+          "title": "委托处理个人信息的约定要求"
+        },
+        {
+          "id": "cn-trade-secret-protection",
+          "title": "商业秘密的构成与保密条款"
+        },
+        {
+          "id": "cn-electronic-signature",
+          "title": "电子签名的效力与不适用情形"
+        }
+      ],
+      "conflicts": [
+        {
+          "id": "cn-conflict-dual-governing-law",
+          "title": "准据法双重声明"
+        },
+        {
+          "id": "cn-conflict-pipl-gdpr-parallel",
+          "title": "中国法与 GDPR 并列适用"
+        },
+        {
+          "id": "cn-conflict-arbitration-and-litigation",
+          "title": "仲裁与诉讼并存"
+        },
+        {
+          "id": "cn-conflict-foreign-law-with-domestic-mandatory",
+          "title": "选择外国法但涉及中国强制性规定"
+        },
+        {
+          "id": "cn-conflict-bilingual-no-prevailing",
+          "title": "中英文双语无优先语言约定"
+        }
+      ]
+    },
+    {
+      "sha256": "6d615bb4631db0471bdbf6a6c55e23e62f8dbe81aa29c571be9ae9ec99707ae1",
+      "rules": [
+        {
+          "id": "us-liability-cap-convention",
+          "title": "责任上限惯例与标准例外"
+        },
+        {
+          "id": "us-consequential-damages-exclusion",
+          "title": "间接与后果性损失排除"
+        },
+        {
+          "id": "us-warranty-disclaimer-conspicuous",
+          "title": "默示担保排除须显著"
+        },
+        {
+          "id": "us-conspicuousness",
+          "title": "显著性要求（跨条款通用）"
+        },
+        {
+          "id": "us-liquidated-damages-penalty",
+          "title": "约定损害赔偿不得构成罚则"
+        },
+        {
+          "id": "us-indemnification-scope",
+          "title": "赔偿（indemnification）条款的范围与触发"
+        },
+        {
+          "id": "us-attorneys-fees",
+          "title": "律师费承担（American Rule）"
+        },
+        {
+          "id": "us-perpetual-confidentiality",
+          "title": "永久保密义务的可执行性"
+        },
+        {
+          "id": "us-non-compete-landscape",
+          "title": "竞业限制的州际差异与监管动态"
+        },
+        {
+          "id": "us-arbitration-clause",
+          "title": "仲裁条款与联邦仲裁法"
+        },
+        {
+          "id": "us-jury-trial-waiver",
+          "title": "陪审团审理弃权"
+        },
+        {
+          "id": "us-choice-of-law-and-forum",
+          "title": "准据法与管辖法院的选择"
+        },
+        {
+          "id": "us-limitation-of-actions",
+          "title": "起诉期限的合同约定"
+        },
+        {
+          "id": "us-ccpa-service-provider-terms",
+          "title": "加州隐私法项下服务提供者合同条款"
+        },
+        {
+          "id": "us-sectoral-data-rules",
+          "title": "行业性数据规则触发检查"
+        },
+        {
+          "id": "us-export-control-sanctions",
+          "title": "出口管制与制裁合规条款"
+        },
+        {
+          "id": "us-statute-of-frauds",
+          "title": "书面形式要求（Statute of Frauds）"
+        },
+        {
+          "id": "us-assignment-and-change-of-control",
+          "title": "转让限制与控制权变更"
+        },
+        {
+          "id": "us-auto-renewal",
+          "title": "自动续约条款"
+        },
+        {
+          "id": "us-efforts-standards",
+          "title": "努力标准的措辞"
+        }
+      ],
+      "conflicts": [
+        {
+          "id": "us-conflict-law-forum-mismatch",
+          "title": "准据法州与管辖地不一致"
+        },
+        {
+          "id": "us-conflict-arbitration-and-jury-waiver",
+          "title": "仲裁条款与陪审团弃权并存"
+        },
+        {
+          "id": "us-conflict-noncompete-vs-state-ban",
+          "title": "竞业限制与禁止州法冲突"
+        },
+        {
+          "id": "us-conflict-us-law-with-gdpr",
+          "title": "美国法与 GDPR 并列"
+        },
+        {
+          "id": "us-conflict-multi-state-privacy",
+          "title": "多州隐私法并存"
+        },
+        {
+          "id": "us-conflict-ucc-vs-common-law",
+          "title": "混合合同的规则体系归属"
+        }
+      ]
+    }
+  ]
+}

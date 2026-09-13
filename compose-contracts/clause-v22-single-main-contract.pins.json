@@ -1,0 +1,67 @@
+{
+  "format_version": 1,
+  "description": "Lead-owned source-only pins for generic StructuredFileValidateCompose. This v2.2 sibling admits one delivered DOCX main-contract part only; it binds same-call derived provenance and is never platform authorization.",
+  "captures": {
+    "schema_source": "pinned_schema",
+    "schema_target": "artifact",
+    "rules_source": "rules",
+    "baseline": "baseline",
+    "delivered_sources": [
+      {
+        "name": "part_0",
+        "object_index": 0,
+        "part_id": "body",
+        "capture_format": "docx"
+      }
+    ]
+  },
+  "schema": {
+    "source_name": "pinned_schema",
+    "relative_source": "clause-extractor/schemas/clause-extraction-artifact-v22.schema.json",
+    "sha256": "fc5355dfc349bde3ff52e0b05171010f7b6d8db0d5d3811576baf02ae7090d3d"
+  },
+  "method_catalog": {
+    "relative_source": "clause-extractor/resources/absence-method-catalog/catalog.json",
+    "version": "v1",
+    "id": "controlled-field-taxonomy-v1",
+    "sha256": "858036a26dfce0f08048884f8580e0dd74b8ae180aff42371ccbc6d470b10b78",
+    "note": "Lead checks this published-data pin separately; it is not a sixth Compose capture in the v2.2 call."
+  },
+  "baseline": {
+    "file": "baseline",
+    "root_pointer": "/orchestration_ledger",
+    "object_index": 0,
+    "pointers": {
+      "object_id": "/orchestration_ledger/objects/0/object_id",
+      "kind": "/orchestration_ledger/objects/0/kind",
+      "canonical_path": "/orchestration_ledger/objects/0/canonical_path",
+      "content_digest": "/orchestration_ledger/objects/0/content_digest",
+      "size_bytes": "/orchestration_ledger/objects/0/size_bytes",
+      "digest_binding": "/orchestration_ledger/objects/0/digest_binding",
+      "manifest_digest": "/orchestration_ledger/manifest_digest"
+    }
+  },
+  "c01_limits": {
+    "max_captured_files": 32,
+    "max_total_bytes": 67108864,
+    "max_assertions": 128,
+    "max_selectors": 8,
+    "call_deadline_ms": 15000
+  },
+  "non_goals": [
+    "text representation admission under v2.2",
+    "dynamic multi-part joins",
+    "object identity from digest alone",
+    "semantic absence proof",
+    "Delegate work-context validation",
+    "Human Gate or legal conclusions"
+  ],
+  "rules": {
+    "source_name": "rules",
+    "relative_source": "review-orchestration/compose-contracts/clause-v22-single-main-contract.rules.json",
+    "sha256": "4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8",
+    "format": "json",
+    "line_endings": "LF",
+    "note": "The caller compares this release-owned pin with receipt.binding.rules_source.sha256 before relying on receipt.ok."
+  }
+}

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 
 const root = new URL('..', import.meta.url)
 
 async function source(path) {
+  if (path === 'skills/review-orchestration/SKILL.md') return readOrchestrationPolicy(root)
   return readFile(new URL(path, root), 'utf8')
 }
 
@@ -35,6 +37,17 @@ function o1Transitions(o1) {
   )
 }
 
+function intakeGateMappings(o1) {
+  const block = o1.match(/```yaml\nintake_gate_coverage:\n([\s\S]*?)```/)
+  assert.ok(block, 'O1 must publish a machine-readable intake gate mapping')
+  const requiredSteps = block[1].match(/required_steps: \[([^\]]+)\]/)?.[1].split(',').map((value) => value.trim())
+  const entries = [...block[1].matchAll(
+    /- coverage_id: (?<coverageId>CHK-INTAKE-[A-Z0-9-]+)\n\s+intake_gate_step: (?<step>S[1-8])\n\s+receipt_check_name: (?<name>.+)/g,
+  )].map(({ groups }) => ({ ...groups }))
+
+  return { requiredSteps, entries }
+}
+
 test('agent version is semantic and O1 has the required isolated sync Delegate contract', async () => {
   const [agentText, skill] = await Promise.all([source('agent.json'), source('skills/review-orchestration/SKILL.md')])
   const agent = JSON.parse(agentText)
@@ -43,13 +56,30 @@ test('agent version is semantic and O1 has the required isolated sync Delegate c
 
   assert.match(agent.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/)
   assert.ok(delegateYaml, 'O1 must contain Delegate parameters')
-  assert.deepEqual(yamlFields(delegateYaml[1]), {
+  const { task, context, ...delegateBinding } = yamlFields(delegateYaml[1])
+  assert.deepEqual(delegateBinding, {
     target: 'contract-intake',
     mode: 'sync',
     contextMode: 'isolated',
     intentId: '${case_id}:intake',
     contextReason: '合同案件输入治理与受理门禁。',
   })
+  assert.ok(task?.trim(), 'Delegate task must be a non-empty execution instruction')
+  assert.match(task, /context/)
+  assert.match(context, /完整 YAML/)
+  assert.match(o1, /`handoff` 不是 Delegate 的顶层参数/)
+
+  const handoffYaml = o1.match(/`context` 的值必须是以下[\s\S]*?```yaml\n(?<yaml>handoff:\n[\s\S]*?)```/)
+  assert.ok(handoffYaml?.groups?.yaml, 'Delegate context must carry a complete YAML handoff')
+  const handoff = handoffYaml.groups.yaml
+  assert.match(handoff, /^handoff:\n  case_id: \$\{case_id\}$/m)
+  assert.match(handoff, /^  to: contract-intake$/m)
+  assert.match(handoff, /^  from: contract-review-lead$/m)
+  assert.match(handoff, /^  intake_gate_steps_required: \[S1, S2, S3, S4, S5, S6, S7, S8\]$/m)
+  assert.match(handoff, /^  review_context_path: \/abs\/path\/to\/lead-workspace\/contract-review\/review-context\.yaml$/m)
+  assert.match(handoff, /^  submitted_file_paths:/m)
+  assert.match(handoff, /^  object:\n    manifest_digest: <current_contract_manifest_digest>[^\n]*\n    documents:/m)
+  assert.match(handoff, /^  input_inventory:\n    current_contract_manifest_digest: <64-lowercase-sha256-or-unknown>\n    submission_inventory_manifest_digest: <64-lowercase-sha256-or-unknown>$/m)
 })
 
 test('policy corpus contains no authorization for lead-authored intake artifacts', async () => {
@@ -93,9 +123,47 @@ test('O1 receipt transitions distinguish passed, conditional, blocked, and inval
   assert.ok(invalidRule, 'O1 must name the invalid-receipt state')
   assert.match(invalidRule, /停在 O1/)
   assert.match(invalidRule, /O2/)
-  assert.match(invalidRule, /work_context_id/)
+  assert.match(invalidRule, /可信续接绑定/)
   assert.match(invalidRule, /contextMode: continue/)
   assert.match(invalidRule, /HALTED_FOR_HUMAN/)
+  assert.match(invalidRule, /O1_WAITING_OR_UNKNOWN/)
+})
+
+test('O1 consumes all eight real Intake checks through distinct Lead coverage IDs', async () => {
+  const [skill, persona, principles, matrixSkill] = await Promise.all([
+    source('skills/review-orchestration/SKILL.md'),
+    source('persona.md'),
+    source('principles.md'),
+    source('skills/coverage-matrix/SKILL.md'),
+  ])
+  const o1 = section(skill, '### O1 输入治理（第 1-2 步）', '### O2 条款抽取（第 3 步）')
+  const { requiredSteps, entries } = intakeGateMappings(o1)
+  const expected = [
+    { coverageId: 'CHK-INTAKE-S1-SCOPE', step: 'S1', name: '受理范围清点' },
+    { coverageId: 'CHK-INTAKE-S2-MASTER-VERSION', step: 'S2', name: '主版本冻结' },
+    { coverageId: 'CHK-INTAKE-S3-PAGE-RANGE', step: 'S3', name: '页码连续性' },
+    { coverageId: 'CHK-INTAKE-S4-ATTACHMENT-MANIFEST', step: 'S4', name: '附件清单对账' },
+    { coverageId: 'CHK-INTAKE-S5-EXECUTION-STATUS', step: 'S5', name: '签章状态' },
+    { coverageId: 'CHK-INTAKE-S6-PLACEHOLDER', step: 'S6', name: '占位符扫描' },
+    { coverageId: 'CHK-INTAKE-S7-PARTY-AND-AMOUNT', step: 'S7', name: '一致性（主体身份 / 金额大小写）' },
+    { coverageId: 'CHK-INTAKE-S8-VERSION-MATRIX', step: 'S8', name: '版本矩阵对齐' },
+  ]
+
+  assert.deepEqual(requiredSteps, expected.map(({ step }) => step))
+  assert.deepEqual(entries, expected)
+  assert.equal(new Set(entries.map(({ coverageId }) => coverageId)).size, 8)
+  assert.equal(new Set(entries.map(({ step }) => step)).size, 8)
+  assert.match(o1, /intake_gate_steps_required: \[S1, S2, S3, S4, S5, S6, S7, S8\]/)
+  assert.match(o1, /O1_INTAKE_GATE_STEPS_INVALID/)
+  assert.match(o1, /缺任一步、步骤重复、未知步骤 ID、检查语义与映射不符/)
+  assert.match(o1, /可信续接绑定.*`contract-intake`.*补全或重做/)
+  assert.match(o1, /不能将 `S6` 解释为唯一主合同/)
+  assert.match(o1, /不能漏掉 `S8`/)
+
+  const corpus = [persona, principles, matrixSkill].join('\n')
+  assert.match(corpus, /`contract\.yaml#INV-001`.*Lead.*O0/)
+  assert.match(corpus, /不得与矩阵 `check_id` 混用/)
+  assert.doesNotMatch(o1, /coverage_id: S[1-8]/)
 })
 
 test('digest rules prefer FileDigest and bind a receipt to its registered input version', async () => {
@@ -111,9 +179,112 @@ test('digest rules prefer FileDigest and bind a receipt to its registered input 
   assert.ok(agent.tool_permissions.allowed.includes('FileDigest'))
   assert.ok(agent.tool_permissions.denied.includes('Bash'))
   assert.match(skill, /优先调用一次 `FileDigest`/)
-  assert.match(skill, /aggregate\.digest/)
+  assert.match(skill, /aggregate\.file_count/)
   assert.match(skill, /同一登记行/)
   assert.match(skill, /相同摘要不能替代其余字段/)
+  assert.match(skill, /仅一份文件时，`paths` 必须是该文件原样的裸字符串/)
+  assert.match(skill, /多份文件时，只有当前工具参数已明示 `paths_json` 兼容入口才可调用它/)
+  assert.match(skill, /完整、当前可读且已授权原始路径集合的 JSON 字符串数组（1–100 项、UTF-8 不超过 64 KiB）/)
+  assert.match(skill, /解码后的路径集合必须逐项等于该集合、不多不少，且不得同时传 `paths`、`file_path` 或 `path`/)
+  assert.match(skill, /若当前工具参数未提供它，记录能力不可用并停止摘要步骤/)
+  assert.match(skill, /不得改传 JSON 文本给 `paths`、遗漏文件、加入未授权路径或调用 shell/)
+  assert.match(skill, /只可在同一已登记、当前可读且已授权的完整文件集合内纠正一次为上述 `paths_json` 形态/)
+  assert.match(skill, /不得沿用旧任务的失败诊断将其记为工具不可用/)
+  assert.match(skill, /以单文件 aggregate 冒充完整清单/)
+  assert.match(skill, /不得把提示当成无限重试授权/)
+  assert.match(skill, /任何真实单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时/)
   assert.match(corpus, /不得用 `Bash`|不使用 `Bash`/)
   assert.doesNotMatch(corpus, /当前平台无可用哈希工具|平台也没有内置哈希工具/)
+})
+
+test('O2 preserves a single bound extraction and target-owned artifact', async () => {
+  const [persona, principles, skill] = await Promise.all([
+    source('persona.md'),
+    source('principles.md'),
+    source('skills/review-orchestration/SKILL.md'),
+  ])
+  const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
+  const delegateYaml = o2.match(/```yaml\ntarget: clause-extractor\n([\s\S]*?)```/)
+  const corpus = [persona, principles, skill].join('\n')
+
+  assert.ok(delegateYaml, 'O2 must contain Delegate parameters')
+  assert.deepEqual(yamlFields(`target: clause-extractor\n${delegateYaml[1]}`), {
+    target: 'clause-extractor',
+    mode: 'sync',
+    contextMode: 'isolated',
+    intentId: '${case_id}:extract',
+    contextReason: '合同案件条款结构化，供后续分析环节共同使用。',
+  })
+  assert.match(o2, /O2_WAITING_OR_UNKNOWN/)
+  assert.match(o2, /O2_BINDING_UNAVAILABLE/)
+  assert.match(o2, /不得对同一 `case_id:extract` 另发 `isolated`/)
+  assert.match(o2, /child run \/ Work Context 为 `active` 或状态未知/)
+  assert.match(o2, /v2 Compose\/contract 结果不合格/)
+  assert.match(o2, /`artifact_path`/)
+  assert.match(o2, /不得.*指定 `clauses\.yaml`/)
+  assert.match(corpus, /成员在各自确认的 workspace 创建唯一产物/)
+  assert.match(corpus, /不得以 `isolated` 重置计数/)
+  assert.match(corpus, /等待超时不等于成员终止/)
+})
+
+test('rework uses only the current Delegate trusted continuation binding and reads the exact artifact path', async () => {
+  const [persona, principles, skill] = await Promise.all([
+    source('persona.md'),
+    source('principles.md'),
+    source('skills/review-orchestration/SKILL.md'),
+  ])
+  const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
+  const o1 = section(skill, '### O1 输入治理（第 1-2 步）', '### O2 条款抽取（第 3 步）')
+  const corpus = [persona, principles, skill].join('\n')
+
+  assert.match(skill, /可信续接绑定是唯一 ID 来源/)
+  assert.match(skill, /本次平台 `Delegate` 返回的受信续接指引/)
+  assert.match(skill, /`target` 与 `child_run_id`/)
+  assert.match(skill, /业务回执、`artifact_path` 所指文件、成员最终文本、工具摘要或其自报 ID 都不是可信来源/)
+  assert.match(skill, /不是 action resume/)
+  assert.match(skill, /已可信绑定且 child 为 `active` 或状态未知时，保持当前步骤 `waiting_or_unknown`/)
+  assert.doesNotMatch(skill, /状态非终态一律 `HALTED_FOR_HUMAN`/)
+  assert.doesNotMatch(skill, /receipt\.work_context_id/)
+  assert.doesNotMatch(corpus, /最终回执中的.*work_context_id/)
+  assert.match(o2, /最终回执的 `artifact_path` 必须原样复制，不得删 UUID\/`agents` 路径段、猜测或重拼/)
+  assert.match(o2, /exact absolute-path `Read`/)
+  assert.match(o2, /Read 失败、摘要、中间文件或空骨架不得形成工具输入/)
+  assert.match(o2, /绝不以另一次 Read\/FileDigest\/Grep 补证/)
+  assert.match(o2, /只消费公共 envelope/)
+  assert.match(o2, /ToolExecutionResult\.success: true/)
+  assert.match(o2, /唯一 text `content` 能严格 JSON parse 为 receipt/)
+  assert.match(o2, /不得读取或引用 worker 内部 `source-bound-receipt`/)
+  assert.match(o2, /RC-1\.\.RC-6 不得形成替代自动放行路径/)
+  assert.match(corpus, /不得凭最终文本或摘要完成 RC 检查/)
+  assert.match(o1, /不删除 UUID 或 `agents` 路径段、不猜测或重拼/)
+  assert.match(o1, /任一读取失败时不得凭最终文本、工具摘要或中间文件完成 RC-1\.\.RC-6/)
+})
+
+test('Clause v2.3 multipart admission requires its current capture set and never lets RC or Read release O3', async () => {
+  const skill = await source('skills/review-orchestration/SKILL.md')
+  const o2 = section(skill, '### O2 条款抽取（第 3 步）', '### O3 法域注入 + 风险判读（第 4-5 步）')
+  const v23Start = o2.indexOf('#### Clause v2.3 current multipart 候选（未发布，必须显式选择）')
+  assert.notEqual(v23Start, -1, 'O2 must retain the explicit v2.3 candidate contract')
+  const v23 = o2.slice(v23Start)
+
+  assert.match(o2, /O2_CLAUSE_V2_COMPOSE_UNAVAILABLE/)
+  assert.match(o2, /保持 HOLD/)
+  assert.match(o2, /RC-1\.\.RC-6 不得形成替代自动放行路径/)
+  assert.doesNotMatch(o2, /RC-1\.\.RC-6 通过后，Lead 才可.*进入 O3/)
+  assert.match(v23, /未发布，必须显式选择/)
+  assert.match(v23, /恰有一份 `main_contract`、所有当前已交付 part 不超过 28 份/)
+  assert.match(v23, /`pinned_schema`、`artifact`、`rules`、同次完整 O0 `baseline` 四个 control captures，加上每个已交付 current part 的实际 capture/)
+  assert.match(v23, /历史合同、reference、operator、commercial、resume 和 unclassified 材料不得进入 Clause parts、frozen baseline、source representations 或 delivered captures/)
+  assert.match(v23, /固定 schema.*SHA-256/)
+  assert.match(v23, /固定 schema 与 rules.*SHA-256/)
+  assert.match(v23, /`binding\.schema_source`、`binding\.schema_target`、`binding\.rules_source` 必须分别是前三个 control/)
+  assert.match(v23, /`binding\.rule_manifest\.assertion_count` 必须为 24/)
+  assert.match(v23, /selector 按 `payloadEvidence`、`coverageEvidence`、`ambiguityEv` 的固定顺序/)
+  assert.match(v23, /闭合四字段\s+`?\{\s*id,\s*required_source_names,\s*exhaustive_negative,\s*source_requirement\s*\}`?/)
+  assert.match(v23, /`source_requirement` 必须为 `captured_representation_part`/)
+  assert.match(v23, /`exhaustive_negative:false`/)
+  assert.match(v23, /`required_source_names` 必须恰等于本次 delivered capture 名称集合/)
+  assert.match(v23, /required\/completed 名称集合也必须恰等于该集合、failed 为空且 `all_required_sources_completed:true`/)
+  assert.match(v23, /任一缺失、额外、重复、顺序\/哈希\/大小\/格式不匹配或三字段旧形状均 HOLD/)
+  assert.match(v23, /不得删件、降级为旧静态规则/)
 })

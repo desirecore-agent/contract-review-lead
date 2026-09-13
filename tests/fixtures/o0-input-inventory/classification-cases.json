@@ -1,0 +1,1011 @@
+{
+  "description": "Synthetic, complete classified inventories. They contain no private oracle text and validate only Agent-data shape and declared cross-row policies, not runtime, legal, or Compose behavior.",
+  "valid_instances": [
+    {
+      "id": "C01-current-body-and-attachment",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C01",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C01/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C01",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C01/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            },
+            {
+              "object_id": "annex-a",
+              "version_label": "annex-a-v1",
+              "canonical_path": "/synthetic/C01/annex-a.md",
+              "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C01",
+                "object_id": "annex-a",
+                "version_label": "annex-a-v1",
+                "canonical_path": "/synthetic/C01/annex-a.md",
+                "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "annex-a",
+              "kind": "exhibit"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "unavailable_multi_part_or_unclassified",
+          "objects": []
+        }
+      }
+    },
+    {
+      "id": "C03-historical-main-contract",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C03",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C03/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C03",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C03/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [
+          {
+            "source_set_id": "historical-C03-v0",
+            "relation": "prior_version",
+            "parts": [
+              {
+                "object_id": "historical-main",
+                "version_label": "historical-main-v1",
+                "canonical_path": "/synthetic/C03/historical-main.md",
+                "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "size_bytes": 100,
+                "digest_binding": {
+                  "case_id": "C03",
+                  "object_id": "historical-main",
+                  "version_label": "historical-main-v1",
+                  "canonical_path": "/synthetic/C03/historical-main.md",
+                  "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                "classification_basis": "user_submission_context",
+                "part_id": "historical-main",
+                "kind": "main_contract"
+              }
+            ],
+            "manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "manifest_digest_unavailable": false,
+            "comparison_scope": "declared_parts_only",
+            "completeness": "complete",
+            "comparison_conclusion_allowed": false,
+            "missing_part_reasons": []
+          }
+        ],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C03/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C03",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C03/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "C08-historical-incomplete-comparison",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C08",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C08/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C08",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C08/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [
+          {
+            "source_set_id": "historical-C08-v0",
+            "relation": "comparison_baseline",
+            "parts": [
+              {
+                "object_id": "historical-main",
+                "version_label": "historical-main-v1",
+                "canonical_path": "/synthetic/C08/historical-main.md",
+                "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "size_bytes": 100,
+                "digest_binding": {
+                  "case_id": "C08",
+                  "object_id": "historical-main",
+                  "version_label": "historical-main-v1",
+                  "canonical_path": "/synthetic/C08/historical-main.md",
+                  "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                "classification_basis": "user_submission_context",
+                "part_id": "historical-main",
+                "kind": "main_contract"
+              }
+            ],
+            "manifest_digest": null,
+            "manifest_digest_unavailable": true,
+            "comparison_scope": "declared_parts_only",
+            "completeness": "incomplete",
+            "comparison_conclusion_allowed": false,
+            "missing_part_reasons": [
+              "HISTORICAL-ATTACHMENT-MISSING"
+            ]
+          }
+        ],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C08/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C08",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C08/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "C10-prior-review-reference",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C10",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C10/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C10",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C10/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [
+          {
+            "object_id": "prior-review-001",
+            "version_label": "review-v1",
+            "canonical_path": "/synthetic/C10/prior-review.md",
+            "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "size_bytes": 100,
+            "digest_binding": {
+              "case_id": "C10",
+              "object_id": "prior-review-001",
+              "version_label": "review-v1",
+              "canonical_path": "/synthetic/C10/prior-review.md",
+              "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "classification_basis": "user_submission_context",
+            "reference_id": "prior-review-001",
+            "reference_kind": "prior_review",
+            "use": "reference_only"
+          }
+        ],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C10/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C10",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C10/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "C07-operator-request",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C07",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C07/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C07",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C07/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [
+          {
+            "input_id": "operator-request-001",
+            "kind": "operator_request",
+            "use": "instruction_only"
+          }
+        ],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C07/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C07",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C07/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "C12-commercial-rules-and-resume-reference",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C12",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C12/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C12",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C12/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [
+          {
+            "object_id": "biz-pay-001",
+            "version_label": "biz-pay-v2",
+            "canonical_path": "/synthetic/C12/business-rules.yaml",
+            "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "size_bytes": 100,
+            "digest_binding": {
+              "case_id": "C12",
+              "object_id": "biz-pay-001",
+              "version_label": "biz-pay-v2",
+              "canonical_path": "/synthetic/C12/business-rules.yaml",
+              "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "classification_basis": "user_submission_context",
+            "rule_set_id": "BIZ-PAY-02",
+            "rule_set_version": "v2",
+            "use": "commercial_policy_only"
+          }
+        ],
+        "resume_state_references": [
+          {
+            "object_id": "resume-state-001",
+            "version_label": "resume-v1",
+            "canonical_path": "/synthetic/C12/resume-state.json",
+            "content_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "size_bytes": 100,
+            "digest_binding": {
+              "case_id": "C12",
+              "object_id": "resume-state-001",
+              "version_label": "resume-v1",
+              "canonical_path": "/synthetic/C12/resume-state.json",
+              "content_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            "classification_basis": "user_submission_context",
+            "reference_id": "resume-state-001",
+            "use": "reference_only_not_execution_identity"
+          }
+        ],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C12/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C12",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C12/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "all-unclassified-hold",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "UNCLASSIFIED",
+        "submission_inventory": {
+          "manifest_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [],
+          "main_contract_count": 0,
+          "manifest_digest": null,
+          "manifest_digest_unavailable": true
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [
+          {
+            "material_id": "unknown-001",
+            "canonical_path": "/synthetic/UNCLASSIFIED/unknown.bin",
+            "content_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "size_bytes": 100,
+            "reason": "ROLE-AMBIGUOUS-ASK-USER",
+            "use": "unclassified_not_usable"
+          }
+        ],
+        "legacy_current_objects_projection": {
+          "status": "unavailable_multi_part_or_unclassified",
+          "objects": []
+        }
+      }
+    },
+    {
+      "id": "mixed-current-and-unclassified-hold",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "MIXED-UNCLASSIFIED",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C07/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "MIXED-UNCLASSIFIED",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C07/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [
+          {
+            "input_id": "operator-request-001",
+            "kind": "operator_request",
+            "use": "instruction_only"
+          }
+        ],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [
+          {
+            "material_id": "unknown-002",
+            "canonical_path": "/synthetic/MIXED-UNCLASSIFIED/ambiguous.bin",
+            "content_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "size_bytes": 100,
+            "reason": "ROLE-AMBIGUOUS-ASK-USER",
+            "use": "unclassified_not_usable"
+          }
+        ],
+        "legacy_current_objects_projection": {
+          "status": "unavailable_multi_part_or_unclassified",
+          "objects": []
+        }
+      }
+    }
+  ],
+  "invalid_schema_instances": [
+    {
+      "id": "current-digest-empty-but-available",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C03",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C03/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C03",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C03/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [
+          {
+            "source_set_id": "historical-C03-v0",
+            "relation": "prior_version",
+            "parts": [
+              {
+                "object_id": "historical-main",
+                "version_label": "historical-main-v1",
+                "canonical_path": "/synthetic/C03/historical-main.md",
+                "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "size_bytes": 100,
+                "digest_binding": {
+                  "case_id": "C03",
+                  "object_id": "historical-main",
+                  "version_label": "historical-main-v1",
+                  "canonical_path": "/synthetic/C03/historical-main.md",
+                  "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                "classification_basis": "user_submission_context",
+                "part_id": "historical-main",
+                "kind": "main_contract"
+              }
+            ],
+            "manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "manifest_digest_unavailable": false,
+            "comparison_scope": "declared_parts_only",
+            "completeness": "complete",
+            "comparison_conclusion_allowed": false,
+            "missing_part_reasons": []
+          }
+        ],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C03/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C03",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C03/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "historical-whole-package-claim",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C08",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C08/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C08",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C08/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [
+          {
+            "source_set_id": "historical-C08-v0",
+            "relation": "comparison_baseline",
+            "parts": [
+              {
+                "object_id": "historical-main",
+                "version_label": "historical-main-v1",
+                "canonical_path": "/synthetic/C08/historical-main.md",
+                "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                "size_bytes": 100,
+                "digest_binding": {
+                  "case_id": "C08",
+                  "object_id": "historical-main",
+                  "version_label": "historical-main-v1",
+                  "canonical_path": "/synthetic/C08/historical-main.md",
+                  "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                },
+                "classification_basis": "user_submission_context",
+                "part_id": "historical-main",
+                "kind": "main_contract"
+              }
+            ],
+            "manifest_digest": null,
+            "manifest_digest_unavailable": true,
+            "comparison_scope": "complete_package",
+            "completeness": "incomplete",
+            "comparison_conclusion_allowed": false,
+            "missing_part_reasons": [
+              "HISTORICAL-ATTACHMENT-MISSING"
+            ]
+          }
+        ],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C08/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C08",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C08/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mixed-unclassified-legacy-available",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "MIXED-UNCLASSIFIED",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C07/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "MIXED-UNCLASSIFIED",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C07/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 1,
+          "manifest_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [
+          {
+            "input_id": "operator-request-001",
+            "kind": "operator_request",
+            "use": "instruction_only"
+          }
+        ],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [
+          {
+            "material_id": "unknown-002",
+            "canonical_path": "/synthetic/MIXED-UNCLASSIFIED/ambiguous.bin",
+            "content_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "size_bytes": 100,
+            "reason": "ROLE-AMBIGUOUS-ASK-USER",
+            "use": "unclassified_not_usable"
+          }
+        ],
+        "legacy_current_objects_projection": {
+          "status": "available_single_part",
+          "objects": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C07/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "MIXED-UNCLASSIFIED",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C07/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "cross_row_policy_instances": [
+    {
+      "id": "two-current-main-contracts",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C01",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C01/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C01",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C01/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            },
+            {
+              "object_id": "annex-a",
+              "version_label": "annex-a-v1",
+              "canonical_path": "/synthetic/C01/annex-a.md",
+              "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C01",
+                "object_id": "annex-a",
+                "version_label": "annex-a-v1",
+                "canonical_path": "/synthetic/C01/annex-a.md",
+                "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "annex-a",
+              "kind": "main_contract"
+            }
+          ],
+          "main_contract_count": 2,
+          "manifest_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "unavailable_multi_part_or_unclassified",
+          "objects": []
+        }
+      },
+      "expected_lead_hold": "INV-001-MAIN-CONTRACT-COUNT"
+    },
+    {
+      "id": "declared-main-count-drift",
+      "inventory": {
+        "inventory_version": 2,
+        "case_id": "C01",
+        "submission_inventory": {
+          "manifest_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "manifest_digest_unavailable": false
+        },
+        "current_contract": {
+          "source_set_id": "current-contract",
+          "parts": [
+            {
+              "object_id": "doc-main-001",
+              "version_label": "doc-main-001-v1",
+              "canonical_path": "/synthetic/C01/doc-main-001.md",
+              "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C01",
+                "object_id": "doc-main-001",
+                "version_label": "doc-main-001-v1",
+                "canonical_path": "/synthetic/C01/doc-main-001.md",
+                "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "body",
+              "kind": "main_contract"
+            },
+            {
+              "object_id": "annex-a",
+              "version_label": "annex-a-v1",
+              "canonical_path": "/synthetic/C01/annex-a.md",
+              "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "size_bytes": 100,
+              "digest_binding": {
+                "case_id": "C01",
+                "object_id": "annex-a",
+                "version_label": "annex-a-v1",
+                "canonical_path": "/synthetic/C01/annex-a.md",
+                "content_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "classification_basis": "user_submission_context",
+              "part_id": "annex-a",
+              "kind": "exhibit"
+            }
+          ],
+          "main_contract_count": 0,
+          "manifest_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "manifest_digest_unavailable": false
+        },
+        "historical_contract_sets": [],
+        "reference_materials": [],
+        "operator_inputs": [],
+        "commercial_rule_sets": [],
+        "resume_state_references": [],
+        "unclassified_materials": [],
+        "legacy_current_objects_projection": {
+          "status": "unavailable_multi_part_or_unclassified",
+          "objects": []
+        }
+      },
+      "expected_lead_hold": "INV-001-MAIN-CONTRACT-COUNT"
+    }
+  ]
+}
