@@ -35,6 +35,7 @@ import { join } from 'node:path'
 import { parseFrontmatter } from '@desirecore/shared/utils/frontmatter'
 import { validateToolFrontmatter } from '@desirecore/schemas/agent'
 import { listAgentTools } from './packages/agent-service/src/agent/reader'
+import { buildTypeBoxParameters } from './packages/agent-service/src/runtime/tool-schema-normalizer'
 
 const records = JSON.parse(process.argv[2])
 const root = process.env.DESIRECORE_TEST_ROOT
@@ -60,6 +61,14 @@ for (const record of records) {
   assert.equal(entry.command, record.command)
   assert.equal(entry.script?.runtime, 'node')
 }
+const initializer = registered.find((tool) => tool.id === 'coverage-matrix-baseline-init')
+assert.ok(initializer)
+const projected = buildTypeBoxParameters(initializer) as unknown as { properties?: Record<string, unknown> }
+const jurisdiction = projected.properties?.jurisdiction as { type?: unknown, description?: unknown, oneOf?: unknown[] } | undefined
+assert.equal(jurisdiction?.type, 'object')
+assert.ok(String(jurisdiction?.description).includes('Native JSON object'))
+assert.ok(String(jurisdiction?.description).includes('never pass JSON-encoded text'))
+assert.equal(jurisdiction?.oneOf?.length, 2)
 `
 
 test('three snapshot-v1 tools pass actual platform frontmatter validation and reader registration', () => {

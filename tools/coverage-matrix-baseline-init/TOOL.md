@@ -41,6 +41,8 @@ input_schema:
       pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$'
       description: Declared UTC creation time for blank rows. It is not a trusted event or identity proof.
     jurisdiction:
+      type: object
+      description: Native JSON object selecting exactly one jurisdiction branch; never pass JSON-encoded text.
       oneOf:
         - type: object
           additionalProperties: false
@@ -66,7 +68,7 @@ input_schema:
         redlines_sha256: {type: string, pattern: '^[a-f0-9]{64}$'}
 metadata:
   author: DesireCore
-  version: '1.0.1'
+  version: '1.0.2'
   provider_type: script
 ---
 

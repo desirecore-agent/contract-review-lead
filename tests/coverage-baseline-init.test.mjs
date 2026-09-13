@@ -172,7 +172,11 @@ test('tool and controller keep snapshot-only, create-only and post-output gates 
   assert.match(tool, /runtime: node[\s\S]*protocol: snapshot-v1/)
   assert.match(tool, /catalog_paths[\s\S]*minItems: 5[\s\S]*maxItems: 6/)
   const frontmatter = parseDocument(tool.match(/^---\n([\s\S]*?)\n---/)[1], { schema: 'core', strict: true, uniqueKeys: true }).toJSON()
+  assert.equal(frontmatter.metadata.version, '1.0.2')
   const toolInputSchema = frontmatter.input_schema
+  assert.equal(toolInputSchema.properties.jurisdiction.type, 'object')
+  assert.match(toolInputSchema.properties.jurisdiction.description, /Native JSON object[\s\S]*never pass JSON-encoded text/)
+  assert.equal(toolInputSchema.properties.jurisdiction.oneOf.length, 2)
   assert.equal(new Ajv({ allErrors: true, strict: false }).compile(toolInputSchema)({
     catalog_paths: ['/a', '/b', '/c', '/d', '/e'], output_path: '/out', case_id: 'case-12345678-1234-4234-8234-123456789abc', generated_at: '2026-09-13T08:00:00Z', jurisdiction: { mode: 'clarification_required', pending_codes: ['PEND-JURISDICTION'] }, custom: { mode: 'loaded_zero_enabled', pack_sha256: 'a'.repeat(64), redlines_sha256: 'b'.repeat(64), },
   }), true)
@@ -180,7 +184,7 @@ test('tool and controller keep snapshot-only, create-only and post-output gates 
   assert.match(o0, /未知动态 catalog/)
   assert.match(o0, /\$\{SKILL_DIR\}\/references\/coverage-matrix-baseline\.catalog\.json/)
   assert.doesNotMatch(o0, /\$\{TOOL_DIR\}/)
-  assert.equal(JSON.parse(agent).version, '1.0.25')
+  assert.equal(JSON.parse(agent).version, '1.0.26')
   assert.match(coverageSkill, /^version: 1\.0\.8$/m)
   assert.match(orchestrationSkill, /^version: 1\.0\.18$/m)
   assert.deepEqual(JSON.parse(agent).tool_permissions.allowed.slice(-2), ['contract-intake-deterministic-check', 'coverage-matrix-baseline-init'])
