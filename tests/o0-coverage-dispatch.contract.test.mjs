@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 
 const root = new URL('..', import.meta.url)
 
 test('O0 loads the coverage policy and keeps the row-derived comparison candidate pending without MathCalc', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
 
   assert.match(skill, /实际调用 `Skill` 装载 `coverage-matrix`/)
   assert.match(skill, /首次矩阵 `Write` 前.*分别 `Read` `references\/coverage-matrix-bucket-summary\.schema\.json` 与 `references\/coverage-matrix-bucket-summary\.descriptor\.json`/s)
@@ -20,7 +21,7 @@ test('O0 loads the coverage policy and keeps the row-derived comparison candidat
 })
 
 test('O0 enumerates the complete resolved jurisdiction source before dispatch without deciding applicability', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
 
   assert.match(skill, /`rules\.yaml` 必须保留根级 `rules\[\]` 与 `conflicts\[\]` 两个完整数组/)
   assert.match(skill, /不得在 O0 按合同类型、`mandatory`、`detection`、`trigger`、关键词或 Lead 对合同事实的理解筛掉条目/)
@@ -35,7 +36,7 @@ test('O0 enumerates the complete resolved jurisdiction source before dispatch wi
 })
 
 test('O3 consumes the Jurisdiction artifact array by exact discovered tuple and same-artifact evidence', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
 
   assert.match(skill, /实际 `Read` 该分支返回的 `artifact_path`.*`jurisdiction\.coverage_updates` 读取权威数组/s)
   assert.match(skill, /`coverage_updates_ref`.*`coverage_updates_count` 只用于定位与对账，不是权威数据/s)
@@ -52,14 +53,14 @@ test('O3 consumes the Jurisdiction artifact array by exact discovered tuple and 
 })
 
 test('invalid O0 coverage arithmetic holds before dispatch instead of carrying an empty-template marker forward', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
 
   assert.match(skill, /空模板的零分母标记带到非空矩阵.*O0_COVERAGE_MATRIX_INVALID.*HOLD.*intake `not_started`.*不得 Delegate/s)
   assert.match(skill, /只有该闭环成功后才写 `orchestration-ledger\.yaml`/)
 })
 
 test('only a current successful Delegate proof may promote trusted calculation actuals', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
 
   assert.match(skill, /成功正文末尾的完整 `\{"verified_preconditions"/)
   assert.match(skill, /`child_run_id` 只能从该同一次成功 Delegate 的\s*模型可见正文标记 `\[子会话 runId: <真实值>\]` 原样取得/s)
@@ -71,7 +72,7 @@ test('only a current successful Delegate proof may promote trusted calculation a
 
 test('any post-O0 matrix edit invalidates the admission proof and final delivery uses current-read MathCalc', async () => {
   const [orchestration, coverage] = await Promise.all([
-    readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8'),
+    readOrchestrationPolicy(root),
     readFile(new URL('skills/coverage-matrix/SKILL.md', root), 'utf8'),
   ])
 

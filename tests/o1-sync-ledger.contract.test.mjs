@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 
 const root = new URL('..', import.meta.url)
 const source = (path) => readFile(new URL(path, root), 'utf8')
@@ -22,7 +23,7 @@ function ledgerGate(skill) {
 }
 
 test('O1 final validation uses the last immediate result and failure only permits honest HOLD bookkeeping', async () => {
-  const policy = o1(await source('skills/review-orchestration/SKILL.md'))
+  const policy = o1(await readOrchestrationPolicy(root))
   assert.match(policy, /最后一次.*紧邻 Delegate 的结果为准/)
   assert.match(policy, /较早的 `valid: true` 不能覆盖其后的 timeout、工具 error、`valid: false`、不匹配或没有明确成功结果/)
   assert.match(policy, /只允许以真实错误码\/结果写入 `O1_FINAL_STRUCTURE_VALIDATION_FAILED` 的 `H`（HOLD）记账/)
@@ -33,7 +34,7 @@ test('O1 final validation uses the last immediate result and failure only permit
 
 test('O1 blocking sync ledger records only post-return public facts and separates audit from continuation', async () => {
   const [skill, persona, principles] = await Promise.all([
-    source('skills/review-orchestration/SKILL.md'), source('persona.md'), source('principles.md'),
+    readOrchestrationPolicy(root), source('persona.md'), source('principles.md'),
   ])
   const policy = ledgerGate(skill)
   const corpus = [persona, principles].join('\n')

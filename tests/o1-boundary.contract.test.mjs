@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 
 const root = new URL('..', import.meta.url)
 
 async function source(path) {
+  if (path === 'skills/review-orchestration/SKILL.md') return readOrchestrationPolicy(root)
   return readFile(new URL(path, root), 'utf8')
 }
 
@@ -274,7 +276,7 @@ test('Clause v2.3 multipart admission requires its current capture set and never
   assert.match(v23, /`pinned_schema`、`artifact`、`rules`、同次完整 O0 `baseline` 四个 control captures，加上每个已交付 current part 的实际 capture/)
   assert.match(v23, /历史合同、reference、operator、commercial、resume 和 unclassified 材料不得进入 Clause parts、frozen baseline、source representations 或 delivered captures/)
   assert.match(v23, /固定 schema.*SHA-256/)
-  assert.match(v23, /固定 rules.*SHA-256/)
+  assert.match(v23, /固定 schema 与 rules.*SHA-256/)
   assert.match(v23, /`binding\.schema_source`、`binding\.schema_target`、`binding\.rules_source` 必须分别是前三个 control/)
   assert.match(v23, /`binding\.rule_manifest\.assertion_count` 必须为 24/)
   assert.match(v23, /selector 按 `payloadEvidence`、`coverageEvidence`、`ambiguityEv` 的固定顺序/)

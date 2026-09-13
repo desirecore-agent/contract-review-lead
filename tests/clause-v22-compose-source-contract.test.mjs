@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 
 const root = new URL('..', import.meta.url)
 const schemaSha = 'fc5355dfc349bde3ff52e0b05171010f7b6d8db0d5d3811576baf02ae7090d3d'
@@ -70,7 +71,7 @@ test('v2.2 retains bounded generic positive selectors and the fixed 19-group cov
 })
 
 test('O2 preserves v2.1 and makes v2.2 DOCX admission conditional on the public receipt', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
   assert.match(skill, /Clause v2\.1 单主合同自动消费/)
   assert.match(skill, /Clause v2\.2 单主合同 DOCX 自动消费/)
   assert.match(skill, /clause-extraction-artifact-v22\.schema\.json/)

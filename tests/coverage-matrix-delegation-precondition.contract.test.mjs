@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 
 const root = new URL('..', import.meta.url)
 const source = (path) => readFile(new URL(path, root), 'utf8')
@@ -23,7 +24,7 @@ const pointers = {
 
 test('Lead pins the coverage-matrix bucket-summary resources for every canonical Intake delegate', async () => {
   const [agentText, schemaText, descriptorText, orchestration] = await Promise.all([
-    source('agent.json'), source(schemaPath), source(descriptorPath), source('skills/review-orchestration/SKILL.md'),
+    source('agent.json'), source(schemaPath), source(descriptorPath), readOrchestrationPolicy(root),
   ])
   const agent = JSON.parse(agentText)
   const descriptor = JSON.parse(descriptorText)

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 import Ajv from 'ajv'
 
 const root = new URL('..', import.meta.url)
@@ -33,7 +34,7 @@ test('v23 pins the current Clause v22 schema and an unchanged LF-only multipart 
   assert.equal(pins.c01_limits.max_delivered_sources, 28)
   assert.equal(rules.assertions.length, 24)
   assert.equal(rules.literalSelectors.length, 3)
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
   assert.match(skill, new RegExp(pins.rules.sha256))
   assert.match(skill, /明确选择\*\*本节具名的 `v2\.3 current multipart` 分支/)
   assert.match(skill, /当前实际安装团队.*当前 read scope/s)

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 import Ajv from 'ajv'
 import { parseDocument } from 'yaml'
 
@@ -170,7 +171,7 @@ test('submitted business-context fixture models the separate cross-file checks w
 
 test('Lead routes bounded registration to its dedicated skill while full orchestration retains context handoff requirements', async () => {
   const [lead, registration, coverage, agent, persona, principles] = await Promise.all([
-    readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8'),
+    readOrchestrationPolicy(root),
     readFile(new URL('skills/review-registration/SKILL.md', root), 'utf8'),
     readFile(new URL('skills/coverage-matrix/SKILL.md', root), 'utf8'),
     json('agent.json'),
@@ -191,22 +192,22 @@ test('Lead routes bounded registration to its dedicated skill while full orchest
   assert.match(lead, /受限登记的停止、更新和回复规则仅由 `review-registration` 定义/)
   assert.doesNotMatch(lead, /\*\*受限 O0 不预检或推进。\*\*/)
   assert.match(registration, /^name: review-registration\r?$/m)
-  assert.match(registration, /^version: 1\.0\.2\r?$/m)
+  assert.match(registration, /^version: 1\.0\.3\r?$/m)
   assert.match(registration, /tools: \[Read, Write, GenerateUUID, FileDigest\]/)
   assert.ok(registration.length <= 4500, 'registration skill stays within the bounded prompt budget')
   const leadFrontmatter = parseDocument(lead.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1]).toJS()
   const coverageFrontmatter = parseDocument(coverage.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1]).toJS()
   const frontmatter = parseDocument(registration.match(/^---\r?\n([\s\S]*?)\r?\n---/)[1]).toJS()
-  assert.equal(leadFrontmatter.version, '1.0.16')
-  assert.equal(leadFrontmatter.metadata.version, '1.0.16')
+  assert.equal(leadFrontmatter.version, '1.0.17')
+  assert.equal(leadFrontmatter.metadata.version, '1.0.17')
   assert.equal(coverageFrontmatter.version, '1.0.7')
   assert.equal(coverageFrontmatter.metadata.version, '1.0.7')
   assert.equal(frontmatter.status, 'enabled')
-  assert.equal(frontmatter.version, '1.0.2')
-  assert.equal(frontmatter.metadata.version, '1.0.2')
+  assert.equal(frontmatter.version, '1.0.3')
+  assert.equal(frontmatter.metadata.version, '1.0.3')
   assert.notEqual(frontmatter['disable-model-invocation'], false, 'registration must remain explicit-only')
   assert.notEqual(frontmatter.disable_model_invocation, false, 'registration alias must remain explicit-only')
-  assert.equal(agent.version, '1.0.21')
+  assert.equal(agent.version, '1.0.23')
   assert.deepEqual(agent.default_enabled.skills, ['review-orchestration', 'coverage-matrix', 'review-registration'])
   assert.ok(agent.tool_permissions.allowed.includes('Skill'))
   assert.match(registration, /直接保留其真实返回值作为唯一 `case_id`/)
@@ -346,7 +347,7 @@ test('real Ajv requires an available manifest for a current-part clue inside con
   assert.equal(validate(context), false, 'changing only manifest availability cannot bypass the conflicting-candidate guard')
 })
 test('Lead O4 leaves canonical roots read-only and confines Reporter output to its verified Team subtree', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
   const start = skill.indexOf('### O4 版本对比 + 报告输出（第 6-7 步）')
   const end = skill.indexOf('### O5 Human Gate', start)
   assert.notEqual(start, -1)

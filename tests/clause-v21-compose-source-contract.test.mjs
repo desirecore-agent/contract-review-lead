@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
+import { parseDocument } from 'yaml'
 
 const root = new URL('..', import.meta.url)
 const coverage = ["parties","definitions","clause_tree","monetary_terms","payment_terms","temporal_terms","termination_grounds","dispute_resolution","governing_law","liability_cap","indirect_damages_excluded","breach_remedies","grace_period","subcontracting","audit_right","force_majeure","data_export","attachment_manifest","attachment_references"]
@@ -74,13 +76,14 @@ test('policy declares multi-part and semantic relations outside current generic 
 
 test('O2 consumes only the public Compose envelope for the fixed single-main-contract policy', async () => {
   const [skill, agent] = await Promise.all([
-    readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8'),
+    readOrchestrationPolicy(root),
     json('agent.json'),
   ])
-  const skillVersion = skill.match(/^version: (1\.0\.\d+)$/m)?.[1]
-  const metadataVersion = skill.match(/metadata:\s+author: DesireCore\s+version: (1\.0\.\d+)\s+updated_at: '2026-09-11'/s)?.[1]
-  assert.ok(skillVersion, 'skill frontmatter must retain a 1.0.x version')
-  assert.equal(metadataVersion, skillVersion, 'skill metadata version must track the published skill version')
+  const frontmatterText = skill.match(/^---\n([\s\S]*?)\n---/)?.[1]
+  assert.ok(frontmatterText, 'skill must retain YAML frontmatter')
+  const frontmatter = parseDocument(frontmatterText).toJS()
+  assert.match(frontmatter.version, /^1\.0\.\d+$/, 'skill frontmatter must retain a 1.0.x version')
+  assert.equal(frontmatter.metadata.version, frontmatter.version, 'skill metadata version must track the published skill version')
   assert.ok(agent.tool_permissions.allowed.includes('StructuredFileValidateCompose'))
   assert.equal(agent.tool_permissions.denied.includes('StructuredFileValidateCompose'), false)
   assert.deepEqual(agent.default_enabled.tools, [])

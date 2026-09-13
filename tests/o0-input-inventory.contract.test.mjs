@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 import Ajv from 'ajv'
 import { parseDocument } from 'yaml'
 
@@ -127,7 +128,7 @@ test('declared current-main count remains a Lead policy check outside local Draf
 })
 
 test('O0 classification text separates total/current manifests and keeps multi-part admission unavailable', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
   assert.match(skill, /submission_inventory_manifest_digest/)
   assert.match(skill, /current_contract_manifest_digest/)
   assert.match(skill, /旧 `attachment_manifest_digest` \/ `manifest_digest` 仅镜像 `current_contract_manifest_digest`/)
@@ -140,7 +141,7 @@ test('O0 classification text separates total/current manifests and keeps multi-p
 })
 
 test('O0 validates only its own inventory and review context before any Intake delegation', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
   assert.match(skill, /StructuredFileValidate/)
   assert.match(skill, /o0-input-inventory\.yaml.*立即 `Read` 回读.*`document_path`.*inventory.*`schema_path`.*references\/inventory\/o0-input-inventory\.schema\.json.*`format: yaml`/s)
   assert.match(skill, /O0_INPUT_INVENTORY_VALIDATION_FAILED.*HOLD.*不得 Delegate/s)
@@ -156,7 +157,7 @@ test('O0 validates only its own inventory and review context before any Intake d
 })
 
 test('O1 handoff keeps the submitted and current manifests distinct before Intake runs', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
   assert.match(skill, /Lead 写入 `handoff\.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`/s)
   assert.match(skill, /真实 `GenerateUUID` 值，或 O0 允许的固定 `case-` 加该 UUID/s)
   assert.match(skill, /review-context\.case_binding\.case_id.*orchestration-ledger\.case_id.*O1_CASE_ID_BINDING_INVALID.*HOLD/s)
@@ -178,7 +179,7 @@ test('O1 handoff keeps the submitted and current manifests distinct before Intak
 })
 
 test('O1 source contract requires mirrored unsigned-draft evidence and holds YAML not actually verified', async () => {
-  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  const skill = await readOrchestrationPolicy(root)
   assert.match(skill, /freeze\.execution_status\.signature_status.*unsigned_draft/s)
   assert.match(skill, /回执该处与 handoff 根中的两个镜像/)
   assert.match(skill, /review_purpose: draft_negotiation_assistance/)

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { readOrchestrationPolicy } from './helpers/orchestration-policy.mjs'
 
 const root = new URL('..', import.meta.url)
 const source = (path) => readFile(new URL(path, root), 'utf8')
 
 test('O1 mirrors the four receipt freeze booleans and rejects a false all_frozen claim', async () => {
   const [skill, principles] = await Promise.all([
-    source('skills/review-orchestration/SKILL.md'),
+    readOrchestrationPolicy(root),
     source('principles.md'),
   ])
 
@@ -22,7 +23,7 @@ test('O1 mirrors the four receipt freeze booleans and rejects a false all_frozen
 
 test('RC-1 keeps the complete submission manifest separate from the current-contract subset', async () => {
   const [skill, principles] = await Promise.all([
-    source('skills/review-orchestration/SKILL.md'),
+    readOrchestrationPolicy(root),
     source('principles.md'),
   ])
 
