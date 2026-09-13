@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lead coverage-matrix delegated-summary snapshot",
+  "description": "Static shape for one Lead coverage-matrix snapshot. This schema constrains declared summary branches only; it does not prove catalog membership, a historical MathCalc call, Human Gate completion, or any legal conclusion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["coverage_matrix"],
+  "properties": {
+    "coverage_matrix": {
+      "type": "object",
+      "required": ["summary", "rows"],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "covered", "blank", "blocked", "deferred", "not_applicable", "coverage_rate", "coverage_rate_reason", "mathcalc_receipt"],
+          "properties": {
+            "total": {"$ref": "#/definitions/count"},
+            "covered": {"$ref": "#/definitions/count"},
+            "blank": {"$ref": "#/definitions/count"},
+            "blocked": {"$ref": "#/definitions/count"},
+            "deferred": {"$ref": "#/definitions/count"},
+            "not_applicable": {"$ref": "#/definitions/count"},
+            "coverage_rate": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/percent"}]},
+            "coverage_rate_reason": {"oneOf": [{"type": "null"}, {"const": "NO_RATE_DENOMINATOR"}]},
+            "mathcalc_receipt": {"type": "object"}
+          },
+          "oneOf": [
+            {
+              "properties": {
+                "coverage_rate": {"$ref": "#/definitions/percent"},
+                "coverage_rate_reason": {"type": "null"},
+                "mathcalc_receipt": {"$ref": "#/definitions/nonzeroReceipt"}
+              }
+            },
+            {
+              "properties": {
+                "coverage_rate": {"type": "null"},
+                "coverage_rate_reason": {"const": "NO_RATE_DENOMINATOR"},
+                "mathcalc_receipt": {"$ref": "#/definitions/zeroReceipt"}
+              }
+            }
+          ]
+        },
+        "rows": {
+          "type": "array",
+          "maxItems": 8000,
+          "items": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {"enum": ["covered", "blank", "blocked", "deferred", "not_applicable"]}
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "count": {"type": "integer", "minimum": 0, "maximum": 8000},
+    "percent": {"type": "string", "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,2})?%$", "maxLength": 64},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered", "blank", "blocked", "deferred"],
+      "properties": {
+        "covered": {"$ref": "#/definitions/count"},
+        "blank": {"$ref": "#/definitions/count"},
+        "blocked": {"$ref": "#/definitions/count"},
+        "deferred": {"$ref": "#/definitions/count"}
+      }
+    },
+    "nonzeroReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["called", "expression", "scope", "result"],
+      "properties": {
+        "called": {"const": true},
+        "expression": {"const": "covered / (covered + blank + blocked + deferred) * 100"},
+        "scope": {"$ref": "#/definitions/scope"},
+        "result": {"type": "number", "minimum": 0}
+      }
+    },
+    "zeroReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["called", "reason"],
+      "properties": {
+        "called": {"const": false},
+        "reason": {"const": "NO_RATE_DENOMINATOR"}
+      }
+    }
+  }
+}

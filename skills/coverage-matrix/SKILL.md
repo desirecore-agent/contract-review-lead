@@ -4,7 +4,7 @@ description: >-
   合同审查覆盖矩阵的唯一生成、更新和交付控制协议。它从已解析的规则清单生成唯一 rows，
   保存欠账状态与可复算汇总；不把规则源或配置问题伪装为用户材料缺失。用户提到覆盖矩阵、
   欠账表、检查项、漏检、通过率或审查进度时使用。
-version: 1.0.2
+version: 1.0.3
 type: procedural
 risk_level: low
 status: enabled
@@ -13,8 +13,8 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc]
 metadata:
   author: DesireCore
-  version: 1.0.2
-  updated_at: '2026-09-11'
+  version: 1.0.3
+  updated_at: '2026-09-13'
 ---
 
 # 条款覆盖矩阵（欠账表）
@@ -117,6 +117,23 @@ coverage_matrix:
 ```
 
 In `clarification_required` mode the `jurisdiction` object is instead `{mode: clarification_required, path: null, version: null, pending_codes: [<typed review-context codes>]}`. It is not a catalog row and does not change the five-status denominator. After reading the actual `rows`, derive five status counts and `total` from that same array. Then call the real `MathCalc` API once with only `expression` and the numeric `scope` object shown above; it has no `count` operation and must not be asked to inspect rows. Save its returned numerical result in `mathcalc_receipt.result`. If its denominator is zero, do **not** divide and do not call MathCalc: replace `mathcalc_receipt` with `{called: false, reason: NO_RATE_DENOMINATOR}`, and use exactly the policy's null rate fields. Before delivery verify: `total == rows.length`; the five counts sum to total; denominator equals `covered + blank + blocked + deferred`; and the displayed rate is the MathCalc result for that denominator. A failed arithmetic check invalidates the summary, never the underlying rows.
+
+## Delegate 前的 release-pinned 汇总快照
+
+`references/coverage-matrix-bucket-summary.schema.json` 与
+`references/coverage-matrix-bucket-summary.descriptor.json` 是随本技能发布、由 Lead
+`agent.json#delegation_preconditions` 以精确 SHA-256 pin 的通用 `bucket-summary-v1`
+资源。它们只对同一份已授权、当前 effective cwd 下的
+`contract-review/coverage-matrix.yaml` 快照做有限计数和算术比较：完整 `rows` 数、五态各自
+计数及其总和始终比较；四态分母为零时，只接受所有 `covered`、`blank`、`blocked`、`deferred`
+均为零以及上述 null/`NO_RATE_DENOMINATOR` 表示；分母大于零时，额外比较四个
+`mathcalc_receipt.scope` 计数、数值 `result` 与两位百分比 `coverage_rate`。不得改写、另造或
+换根这些资源、矩阵或 pin。
+
+该 admission 只证明当前单文档快照的行桶、汇总、声明的结果与固定表示相符；它**不证明**
+过去曾调用 `MathCalc`、不认证 catalog 来源/成员回执、Human Gate 或法律结论。因此上节的
+真实 `MathCalc` 调用与交付前回读要求仍是必需条件，不能以 admission 结果、hash 或工具摘要
+替代。
 
 ## 交付前终检
 

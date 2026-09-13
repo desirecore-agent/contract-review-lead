@@ -18,7 +18,7 @@
   "schema": {
     "source_name": "pinned_schema",
     "relative_source": "clause-extractor/schemas/clause-extraction-artifact-v22.schema.json",
-    "sha256": "0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f"
+    "sha256": "eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439"
   },
   "method_catalog": {
     "relative_source": "clause-extractor/resources/absence-method-catalog/catalog.json",

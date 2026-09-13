@@ -5,12 +5,12 @@ import test from 'node:test'
 import Ajv from 'ajv'
 
 const root = new URL('..', import.meta.url)
-const schemaSha = '0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f'
+const schemaSha = 'eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439'
 const legacyReleaseBytes = {
   'compose-contracts/clause-v21-single-main-contract.rules.json': 'c515bd9b4f6873a1e7acb071e1e991f29f12a076253c85bf7e8581c6d6590ef7',
   'compose-contracts/clause-v21-single-main-contract.pins.json': 'a1cd7f95d67fe840d79c74e87a0d55aa80b9c4023e8712cb2c56bcc4e3a80b99',
   'compose-contracts/clause-v22-single-main-contract.rules.json': '4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8',
-  'compose-contracts/clause-v22-single-main-contract.pins.json': '394f2e4a9d4b52ab78005eef937bba915e7f443acf137241b5096ef46cabf423',
+  'compose-contracts/clause-v22-single-main-contract.pins.json': '337ba8bb8cd6c4b770602e6f4dc8ddbb80beeaea53da97caefe7e79c51a32436',
 }
 const readJson = async path => JSON.parse(await readFile(new URL(path, root), 'utf8'))
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')

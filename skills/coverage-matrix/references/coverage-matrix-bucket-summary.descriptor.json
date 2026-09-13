@@ -1,0 +1,38 @@
+{
+  "profile": "bucket-summary-v1",
+  "rows_pointer": "/coverage_matrix/rows",
+  "bucket_pointer": "/status",
+  "buckets": [
+    {"label": "covered", "value": "covered"},
+    {"label": "blank", "value": "blank"},
+    {"label": "blocked", "value": "blocked"},
+    {"label": "deferred", "value": "deferred"},
+    {"label": "not_applicable", "value": "not_applicable"}
+  ],
+  "assertions": [
+    {"kind": "total", "expected_pointer": "/coverage_matrix/summary/total"},
+    {"kind": "count", "buckets": ["covered"], "expected_pointer": "/coverage_matrix/summary/covered"},
+    {"kind": "count", "buckets": ["blank"], "expected_pointer": "/coverage_matrix/summary/blank"},
+    {"kind": "count", "buckets": ["blocked"], "expected_pointer": "/coverage_matrix/summary/blocked"},
+    {"kind": "count", "buckets": ["deferred"], "expected_pointer": "/coverage_matrix/summary/deferred"},
+    {"kind": "count", "buckets": ["not_applicable"], "expected_pointer": "/coverage_matrix/summary/not_applicable"},
+    {"kind": "count", "buckets": ["covered", "blank", "blocked", "deferred", "not_applicable"], "expected_pointer": "/coverage_matrix/summary/total"}
+  ],
+  "assertion_groups": [
+    {
+      "assertions": [
+        {"kind": "count", "buckets": ["covered", "blank", "blocked", "deferred"], "equals": 0}
+      ]
+    },
+    {
+      "assertions": [
+        {"kind": "count", "buckets": ["covered"], "expected_pointer": "/coverage_matrix/summary/mathcalc_receipt/scope/covered"},
+        {"kind": "count", "buckets": ["blank"], "expected_pointer": "/coverage_matrix/summary/mathcalc_receipt/scope/blank"},
+        {"kind": "count", "buckets": ["blocked"], "expected_pointer": "/coverage_matrix/summary/mathcalc_receipt/scope/blocked"},
+        {"kind": "count", "buckets": ["deferred"], "expected_pointer": "/coverage_matrix/summary/mathcalc_receipt/scope/deferred"},
+        {"kind": "ratio", "numerator_buckets": ["covered"], "denominator_buckets": ["covered", "blank", "blocked", "deferred"], "scale": 100, "decimal_places": 2, "expected_pointer": "/coverage_matrix/summary/coverage_rate"},
+        {"kind": "ratio", "numerator_buckets": ["covered"], "denominator_buckets": ["covered", "blank", "blocked", "deferred"], "scale": 100, "decimal_places": 2, "expected_pointer": "/coverage_matrix/summary/mathcalc_receipt/result"}
+      ]
+    }
+  ]
+}

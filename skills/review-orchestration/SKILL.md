@@ -182,6 +182,13 @@ metadata:
 
    任一 Skill/Write/Read/MathCalc/算术核对失败，或把空模板的零分母标记带到非空矩阵，均记录 `O0_COVERAGE_MATRIX_INVALID` 和真实原因，停在 `HOLD`、保持 intake `not_started`，**不得 Delegate**。只有该闭环成功后才写 `orchestration-ledger.yaml`；该根只用于 Lead 自己的 O0 inventory、context、账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
+   对 canonical `contract-intake` 的每一次新 `Delegate`，平台还会在真正启动 child 前按本 Agent
+   已发布的 `delegation_preconditions` 重新读取当前 effective cwd 内该 exact 矩阵快照，并以
+   `coverage-matrix` 技能内的 release-pinned schema/descriptor 作有限 bucket-summary 校验。该
+   通用 admission 失败、pin 不符、scope 不可读或快照不满足零/非零分支时，保持 HOLD，**不得
+   Delegate**；它不读取旧回执、不替代上述真实 `MathCalc` 调用、不证明历史工具调用、catalog
+   身份、Human Gate 或法律结论，也不授权修改矩阵、资源或任何成员产物。
+
 **O0 成功后的账本初态。**完整 O0 已真实成功后，才可把账本状态迁移为 `O0_REGISTERED`。如下只是附加到已完成、已核验 O0 ledger 的**状态片段**，只表示已登记，绝不表示已派发；它不得重建、删除或覆盖已核验的 `case_id`、双 manifest 摘要、`objects`、`jurisdiction_pack`、`freeze` 或已有可信 lead run。不得预填 `dispatched_at`、`run_id`、`child_run_id` 或 `work_context_id`，也不得以 `null` 占位冒充未知的派发事实：
 
 ```yaml
@@ -364,7 +371,7 @@ schema_target: artifact
 rules_source: rules
 ```
 
-仅从 release-owned pin 的相对 source 解析路径：schema 为 `clause-extractor/schemas/clause-extraction-artifact-v22.schema.json`，rules 为 `${SKILL_DIR}/references/compose-contracts/clause-v22-single-main-contract.rules.json`。schema SHA-256 必须为 `0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f`，LF rules SHA-256 必须为 `4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8`。同次 capture 的 `part_0` snapshot format 必须为 `docx`；worker 必须成功派生 canonical text。任何 native、derivation、scope、schema、rules、deadline 或 public-envelope 错误均写 `O2_CLAUSE_V22_DOCX_COMPOSE_UNAVAILABLE` 并 HOLD，不归责为成员返工，也不能让成员自报派生 SHA/codec/长度替代平台结果。
+仅从 release-owned pin 的相对 source 解析路径：schema 为 `clause-extractor/schemas/clause-extraction-artifact-v22.schema.json`，rules 为 `${SKILL_DIR}/references/compose-contracts/clause-v22-single-main-contract.rules.json`。schema SHA-256 必须为 `eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439`，LF rules SHA-256 必须为 `4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8`。同次 capture 的 `part_0` snapshot format 必须为 `docx`；worker 必须成功派生 canonical text。任何 native、derivation、scope、schema、rules、deadline 或 public-envelope 错误均写 `O2_CLAUSE_V22_DOCX_COMPOSE_UNAVAILABLE` 并 HOLD，不归责为成员返工，也不能让成员自报派生 SHA/codec/长度替代平台结果。
 
 仍只消费公共 `ToolExecutionResult.success: true` 的唯一 text JSON receipt。除上节公共 envelope 规则外，receipt 必须 `ok: true`，快照名称集合仍恰为五项，schema/rules/artifact binding 与双 release pin 必须逐项匹配；`binding.rule_manifest` 必须精确为 assertion_count `58`，selectors 依序为 `payloadEvidence`、`coverageEvidence`、`ambiguityEv`。其 `derived_sources` 必须恰有一项 `part_0`，且含原件 SHA/size、derived text SHA、`text_offset_codec: utf16_code_unit` 与 UTF-16 code-unit 长度，不含正文、路径或 lease ref。release-owned v2.2 rules 使用同次 worker 内的封闭 `derived_source` operand，把 artifact `source_representations[0]` 的原件 SHA/size、`format: docx`、`canonical_text`、派生 SHA、codec 和长度逐项绑定；Lead 不手工比较这些字符串。
 
@@ -394,7 +401,7 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 
 v2.3 是 v2.2 schema 的多材料候选，不替代已 pin 的 v2.1/v2.2 分支，也不表示平台或团队版本已发布。Lead 必须先在既有 O2 决策记录中明确选择**本节具名的 `v2.3 current multipart` 分支**；未选择、不能确认当前安装团队，或未能从该团队实际 read scope 解析 controls 的精确绝对路径时一律 HOLD，不能借用 Lead Skill、旧个人 workspace、其他 AgentFS 或猜测的根路径。仅当 O0 已用完整库存 schema 验证并冻结同次 baseline，且 `current_contract.parts` 中恰有一份 `main_contract`、所有当前已交付 part 不超过 28 份时，才可准备一次 Compose：`pinned_schema`、`artifact`、`rules`、同次完整 O0 `baseline` 四个 control captures，加上每个已交付 current part 的实际 capture。历史合同、reference、operator、commercial、resume 和 unclassified 材料不得进入 Clause parts、frozen baseline、source representations 或 delivered captures；这些桶可合法非空，Compose 链只绑定 O0 已声明的 current 集合，不证明 Agent 分类语义本身。
 
-固定 schema 与 rules 均必须从**当前实际安装团队**的 `shared/resources/compose-contracts/` 在当前 read scope 内解析并 `Read` 精确字节：`clause-extraction-artifact-v22.schema.json` 的 SHA-256 必须为 `0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f`；`clause-v23-current-multipart.rules.json` 必须保持 LF-only，SHA-256 必须为 `161a1eeb124db1f69320930d81c3076d2f8a8940bb63627490bacd4da040b82f`。Compose 的 `pinned_schema` 与 `rules` 分别使用这两个已解析的绝对路径；不得从 `${SKILL_DIR}`、Lead workspace、成员 workspace 或其他 AgentFS 复制、换根或替代。任一 exact `Read`、scope 或 hash 检查失败均记录实际 code 并 HOLD。Clause 委派仍必须按 v2.2 schema 输出：每个 delivered part 在 `parts`、`frozen_baseline.parts` 和 `source_representations` 中保持一致；未交付 part 保留 typed `part_not_delivered` debt，且不得有 representation 或 capture。Lead 不从 part index 猜 source name/format，也不把 artifact 自报 metadata 当 capture 事实。
+固定 schema 与 rules 均必须从**当前实际安装团队**的 `shared/resources/compose-contracts/` 在当前 read scope 内解析并 `Read` 精确字节：`clause-extraction-artifact-v22.schema.json` 的 SHA-256 必须为 `eefb5fdd4e38e0aafb5527b69fbfa203d76a37b6caadf8831fa7408f9768a439`；`clause-v23-current-multipart.rules.json` 必须保持 LF-only，SHA-256 必须为 `161a1eeb124db1f69320930d81c3076d2f8a8940bb63627490bacd4da040b82f`。Compose 的 `pinned_schema` 与 `rules` 分别使用这两个已解析的绝对路径；不得从 `${SKILL_DIR}`、Lead workspace、成员 workspace 或其他 AgentFS 复制、换根或替代。任一 exact `Read`、scope 或 hash 检查失败均记录实际 code 并 HOLD。Clause 委派仍必须按 v2.2 schema 输出：每个 delivered part 在 `parts`、`frozen_baseline.parts` 和 `source_representations` 中保持一致；未交付 part 保留 typed `part_not_delivered` debt，且不得有 representation 或 capture。Lead 不从 part index 猜 source name/format，也不把 artifact 自报 metadata 当 capture 事实。
 
 三个正向 evidence selector 使用 release-owned dynamic part-to-capture mapping；receipt 的 `source_requirement: captured_representation_part` 只说明动态来源账务。所有动态 required sources 都必须 complete，且 receipt `ok:true`、binding、snapshot、schema/rules pin、metadata/provenance 与 public envelope 均通过才可进入 O3。无 quote 只可能完成来源可读性，不能证明条款不存在、语义结论或 Human Gate。任一 capture 超限、动态 map/metadata/provenance 不匹配、未交付 part 被引用、native/unsupported/deadline 或 receipt 缺失都 HOLD；不得删件、降级为旧静态规则，或提前发布团队版本。
 
