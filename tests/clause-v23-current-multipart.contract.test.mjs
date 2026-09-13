@@ -35,6 +35,14 @@ test('v23 pins the unchanged Clause v22 schema and a LF-only multipart rule sour
   assert.equal(rules.literalSelectors.length, 3)
   const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
   assert.match(skill, new RegExp(pins.rules.sha256))
+  assert.match(skill, /明确选择\*\*本节具名的 `v2\.3 current multipart` 分支/)
+  assert.match(skill, /当前实际安装团队.*当前 read scope/s)
+  assert.match(skill, /`shared\/resources\/compose-contracts\/`/)
+  assert.match(skill, /Compose 的 `pinned_schema` 与 `rules` 分别使用这两个已解析的绝对路径/)
+  assert.match(skill, /不得从 `\$\{SKILL_DIR\}`、Lead workspace、成员 workspace 或其他 AgentFS 复制、换根或替代/)
+  assert.match(skill, /member-owned `members\/clause-extractor\/<case_id>\/<extraction_id>\/artifact\/` 子树/)
+  assert.match(skill, /只可消费最终回执原样返回、且在当前团队 read scope 中可 `Read` 的绝对路径/)
+
 })
 
 test('v23 leaves v21/v22 release bytes and their schema pins untouched', async () => {

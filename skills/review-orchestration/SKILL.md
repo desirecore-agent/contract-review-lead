@@ -379,7 +379,7 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 
 **O2 等待、归属与收口硬闸：**
 
-- O2 task 只能传入本案已核验的输入、`receipt_path`、账本路径与 Lead canonical 根；**不得**指定 `clauses.yaml`、任何成员输出文件名或 Lead 工作区作为 `clause-extractor` 的写入目标。条款结构化官必须在自己的确认 workspace 创建唯一产物，并在自己的最终回执中返回绝对 `artifact_path`。
+- O2 task 只能传入本案已核验的输入、`receipt_path`、账本路径与 Lead canonical 根；**不得**指定 `clauses.yaml`、任何成员输出文件名或 Lead 工作区作为 `clause-extractor` 的写入目标。条款结构化官必须在自己的确认 workspace 创建唯一产物，并在自己的最终回执中返回绝对 `artifact_path`。团队同步时，该 workspace 只能是本次实际确认的 team effective cwd 内 member-owned `members/clause-extractor/<case_id>/<extraction_id>/artifact/` 子树：Lead 不得为成员创建、写入、改名或重组该产物；只可消费最终回执原样返回、且在当前团队 read scope 中可 `Read` 的绝对路径。
 - `sync` 等待超时、取消提示、Delegate 返回文本不完整，或只看到中间文件/空骨架时，均不是 O2 成功或子任务终止的证据。Lead 不得读取、消费或登记这类中间产物为最终条款回执，也不得据此启动 O3。
 - 已知本次 child run / Work Context 为 `active` 或状态未知时，账本写 `O2_WAITING_OR_UNKNOWN`、保留现有绑定并停在 O2；不得对同一 `case_id:extract` 另发 `isolated`、不得让两次 run 写同名共享输出。
 - 无可信 child run 与 Work Context 绑定时，写 `O2_BINDING_UNAVAILABLE` 并转 `HALTED_FOR_HUMAN`；不得猜测 ID、从路径反推绑定或创建替代 `isolated`。
@@ -388,9 +388,9 @@ contextReason: "合同案件条款结构化，供后续分析环节共同使用�
 
 #### Clause v2.3 current multipart 候选（未发布，必须显式选择）
 
-v2.3 是 v2.2 schema 的多材料候选，不替代已 pin 的 v2.1/v2.2 分支，也不表示平台或团队版本已发布。仅当 O0 已用完整库存 schema 验证并冻结同次 baseline，且 `current_contract.parts` 中恰有一份 `main_contract`、所有当前已交付 part 不超过 28 份时，才可准备一次 Compose：`pinned_schema`、`artifact`、`rules`、同次完整 O0 `baseline` 四个 control captures，加上每个已交付 current part 的实际 capture。历史合同、reference、operator、commercial、resume 和 unclassified 材料不得进入 Clause parts、frozen baseline、source representations 或 delivered captures；这些桶可合法非空，Compose 链只绑定 O0 已声明的 current 集合，不证明 Agent 分类语义本身。
+v2.3 是 v2.2 schema 的多材料候选，不替代已 pin 的 v2.1/v2.2 分支，也不表示平台或团队版本已发布。Lead 必须先在既有 O2 决策记录中明确选择**本节具名的 `v2.3 current multipart` 分支**；未选择、不能确认当前安装团队，或未能从该团队实际 read scope 解析 controls 的精确绝对路径时一律 HOLD，不能借用 Lead Skill、旧个人 workspace、其他 AgentFS 或猜测的根路径。仅当 O0 已用完整库存 schema 验证并冻结同次 baseline，且 `current_contract.parts` 中恰有一份 `main_contract`、所有当前已交付 part 不超过 28 份时，才可准备一次 Compose：`pinned_schema`、`artifact`、`rules`、同次完整 O0 `baseline` 四个 control captures，加上每个已交付 current part 的实际 capture。历史合同、reference、operator、commercial、resume 和 unclassified 材料不得进入 Clause parts、frozen baseline、source representations 或 delivered captures；这些桶可合法非空，Compose 链只绑定 O0 已声明的 current 集合，不证明 Agent 分类语义本身。
 
-固定 schema 仍为 `clause-extraction-artifact-v22.schema.json`，SHA-256 为 `0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f`；固定 rules 为 `${SKILL_DIR}/references/compose-contracts/clause-v23-current-multipart.rules.json`，LF release pin SHA-256 为 `161a1eeb124db1f69320930d81c3076d2e8a8940bb63627490bacd4da040b82f`。Clause 委派仍必须按 v2.2 schema 输出：每个 delivered part 在 `parts`、`frozen_baseline.parts` 和 `source_representations` 中保持一致；未交付 part 保留 typed `part_not_delivered` debt，且不得有 representation 或 capture。Lead 不从 part index 猜 source name/format，也不把 artifact 自报 metadata 当 capture 事实。
+固定 schema 与 rules 均必须从**当前实际安装团队**的 `shared/resources/compose-contracts/` 在当前 read scope 内解析并 `Read` 精确字节：`clause-extraction-artifact-v22.schema.json` 的 SHA-256 必须为 `0349796015a208240887dc772795edde76c42552fbf61fc788769d07fad5c24f`；`clause-v23-current-multipart.rules.json` 必须保持 LF-only，SHA-256 必须为 `161a1eeb124db1f69320930d81c3076d2f8a8940bb63627490bacd4da040b82f`。Compose 的 `pinned_schema` 与 `rules` 分别使用这两个已解析的绝对路径；不得从 `${SKILL_DIR}`、Lead workspace、成员 workspace 或其他 AgentFS 复制、换根或替代。任一 exact `Read`、scope 或 hash 检查失败均记录实际 code 并 HOLD。Clause 委派仍必须按 v2.2 schema 输出：每个 delivered part 在 `parts`、`frozen_baseline.parts` 和 `source_representations` 中保持一致；未交付 part 保留 typed `part_not_delivered` debt，且不得有 representation 或 capture。Lead 不从 part index 猜 source name/format，也不把 artifact 自报 metadata 当 capture 事实。
 
 三个正向 evidence selector 使用 release-owned dynamic part-to-capture mapping；receipt 的 `source_requirement: captured_representation_part` 只说明动态来源账务。所有动态 required sources 都必须 complete，且 receipt `ok:true`、binding、snapshot、schema/rules pin、metadata/provenance 与 public envelope 均通过才可进入 O3。无 quote 只可能完成来源可读性，不能证明条款不存在、语义结论或 Human Gate。任一 capture 超限、动态 map/metadata/provenance 不匹配、未交付 part 被引用、native/unsupported/deadline 或 receipt 缺失都 HOLD；不得删件、降级为旧静态规则，或提前发布团队版本。
 
