@@ -4,7 +4,7 @@ description: >-
   合同审查覆盖矩阵的唯一生成、更新和交付控制协议。它从已解析的规则清单生成唯一 rows，
   保存欠账状态与可复算汇总；不把规则源或配置问题伪装为用户材料缺失。用户提到覆盖矩阵、
   欠账表、检查项、漏检、通过率或审查进度时使用。
-version: 1.0.7
+version: 1.0.8
 type: procedural
 risk_level: low
 status: enabled
@@ -13,7 +13,7 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, GenerateUUID, FileDigest, MathCalc, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.0.7
+  version: 1.0.8
   updated_at: '2026-09-13'
 ---
 
@@ -116,6 +116,10 @@ catalog-disposition 协议。
 
 ## 完整模板与内部计算候选
 
+### 已发布 baseline 的机械初始化
+
+首次 O0 可以使用已安装的 `coverage-matrix-baseline-init`，但它只减少完整矩阵文本的人工转写：它从 release-pinned catalog 和已授权 snapshot bytes 机械输出 JSON-as-YAML。它不证明案件身份、审查立场、材料完整、法域适用、Human Gate 或覆盖率。仅接受 catalog 明确列出的 base、custom pack/redlines 与法域 rules SHA；未知、用户动态或 hash 不符的 rules source 必须 HOLD，不能省略行继续。当前 fixed custom 模板是已加载、零 enabled 条目：它不产生 custom 行，也不得改称 optional-absent。resolved 分支仍要由 Lead 以实际 Read 的绝对 `rules.yaml` 路径和 SHA 回核每一行；clarification_required 仍没有法域行。输出 create-only 后必须 Read、SFV 并走下方既有 Delegate precondition，任何失败均不派发。
+
 首次矩阵 `Write` 前，必须实际 `Read`
 `${SKILL_DIR}/references/coverage-matrix-bucket-summary.schema.json` 和
 `${SKILL_DIR}/references/coverage-matrix-bucket-summary.descriptor.json`；任一不可读、解析失败或与
@@ -130,9 +134,9 @@ coverage_matrix:
   case_id: <case_id>
   generated_before_dispatch: true
   rule_sources:
-    base: {path: <absolute-path>, version: <version>}
+    base: {source_commit: <release-source-commit>, missing_clauses_sha256: <sha256>, market_benchmarks_sha256: <sha256>}
     jurisdiction: {mode: resolved, path: <absolute-path>, version: <pack-version>}
-    custom: {mode: loaded|optional-absent, path: <absolute-path-or-null>}
+    custom: {mode: loaded, enabled_count: 0, pack_sha256: <sha256>, redlines_sha256: <sha256>}
   summary:
     total: <rows.length>
     covered: <integer>
@@ -149,6 +153,10 @@ coverage_matrix:
       expected_coverage_rate: <untrusted-percent-string-candidate>
   rows: []
 ```
+
+仅对本发布 baseline，`rule_sources.base` 是固定 Team source commit 与上述两个 snapshot SHA-256。
+它们只绑定构造行所用的已发布规则字节，不证明案件身份、法律适用、材料完整、Human Gate 或任何
+`covered` 结论。
 
 In `clarification_required` mode the `jurisdiction` object is instead `{mode: clarification_required, path: null, version: null, pending_codes: [<typed review-context codes>]}`. It is not a catalog row and does not change the five-status denominator. After reading the actual `rows`, derive five status counts and `total` from that same array. When the denominator is positive, write the row-derived scope, denominator and a two-decimal `expected_coverage_rate` only as the worker comparison operand. It stays `pending_trusted_delegate_proof` and is not a numerical conclusion or tool receipt; O0 does not call MathCalc for this coverage candidate. When the denominator is exactly zero, use `{status: pending_trusted_delegate_proof, branch: zero_denominator, denominator: 0, coverage_rate: null, coverage_rate_reason: NO_RATE_DENOMINATOR}` and do not invent a ratio. Before dispatch verify only structural correspondence; the verified calculation is the successful Delegate proof assertion's `actual`. A failed admission invalidates the summary candidate, never the underlying rows. Other contract calculations remain governed by their own skills and actual calculation-tool requirements.
 

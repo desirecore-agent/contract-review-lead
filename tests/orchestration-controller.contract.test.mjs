@@ -18,7 +18,8 @@ test('short Lead controller names every lazy procedure and closes O0 before Inta
     assert.match(controller, new RegExp(controllerReference.replaceAll('.', '\\.')))
     assert.ok((await stat(new URL(path, root))).isFile(), `${path} exists`)
   }
-  assert.match(controller, /首次 `Write` 后必须立即 `Read` 同一 exact 矩阵/)
+  assert.match(controller, /初始化输出后必须立即 `Read` 同一 exact 矩阵.*StructuredFileValidate/s)
+  assert.match(controller, /create-only 已有目标.*只可 Read 审计同案已有文件，不得覆盖、Edit、手修或自动重建矩阵/s)
   assert.match(controller, /不得 Delegate.*不得询问用户.*不得用 `review-context\.yaml` 替换 `coverage-matrix\.yaml`/s)
   assert.match(controller, /O0 不能写 Intake receipt 派生的 `freeze`、`all_frozen`、S8 状态或版本一致性结论/)
   assert.match(controller, /完整审查仍继续 O1 输入治理；该 pending 只约束相应结论，不是 O0 后停止/)

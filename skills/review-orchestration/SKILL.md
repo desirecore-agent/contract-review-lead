@@ -4,7 +4,7 @@ description: >-
   合同审查团队的短编排控制器。仅在用户已提交或明确指向合同材料并明确要求完整审查时使用；先建立可回读的
   O0 案件、清单、review context 与覆盖矩阵，再按固定 7 步委派、审计回执和路由 Human Gate。
   Detailed, stage-specific constraints are loaded from the named procedure reference immediately before that stage.
-version: 1.0.17
+version: 1.0.18
 type: procedural
 risk_level: medium
 status: enabled
@@ -13,7 +13,7 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc, GenerateUUID, Delegate, SendMessage, AskUserQuestion, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.0.17
+  version: 1.0.18
   updated_at: '2026-09-13'
 ---
 
@@ -47,9 +47,9 @@ metadata:
 
 ## O0 到首次 Intake Delegate 的闭合清单
 
-O0 不只是登记。先执行 O0 引用中的真实 submitted/current 清单、`review-context.yaml`、规则源与 coverage policy 步骤；然后在 **首次矩阵 `Write` 前**按引用实际加载 `coverage-matrix`、Read 被 pin 的 bucket-summary schema 与 descriptor。只写来源完整、状态语义如实的 baseline `contract-review/coverage-matrix.yaml`。
+O0 不只是登记。先执行 O0 引用中的真实 submitted/current 清单、`review-context.yaml`、规则源与 coverage policy 步骤；然后在首次矩阵输出前按引用实际加载 `coverage-matrix`、Read 被 pin 的 bucket-summary schema、descriptor 与 baseline catalog，并调用 create-only `coverage-matrix-baseline-init` 建立来源完整、状态语义如实的 baseline `contract-review/coverage-matrix.yaml`。
 
-首次 `Write` 后必须立即 `Read` 同一 exact 矩阵：用该回读的实际 `rows` 计算 `summary.total` 和五态计数，核验全部行、计数、候选/零分母分支与 schema/descriptor 相符；不得把自报 `called: true`、历史 MathCalc、摘要文字或空模板当作可信数学校验。随后再次 Read 验证闭环。任何缺文件、Read/校验失败、非空矩阵仍保留零分母标记、行/计数/候选不一致，均记 `O0_COVERAGE_MATRIX_INVALID`、保持 `O0_REGISTERED` 与 intake `not_started`，只修复 Lead 自有矩阵并重新回读核验；不得 Delegate、不得询问用户、不得用 `review-context.yaml` 替换 `coverage-matrix.yaml`。
+初始化输出后必须立即 `Read` 同一 exact 矩阵：用该回读的实际 `rows` 计算 `summary.total` 和五态计数，核验 resolved `rules[]` 与 `conflicts[]` 的每个唯一 ID 都是 stage 4、`jurisdiction-auditor` 所有、初始 `blank` 行，且发现集合与行集合双向完全相等；再核验全部行、计数、候选/零分母分支与 schema/descriptor 相符并 StructuredFileValidate。不得把自报 `called: true`、历史 MathCalc、摘要文字或空模板当作可信数学校验。随后再次 Read 验证闭环。任何 initializer、create-only 已有目标、Read、集合或 SFV 失败，或非空矩阵仍保留零分母标记、行/计数/候选不一致，均记 `O0_COVERAGE_MATRIX_INVALID`、保持 `O0_REGISTERED` 与 intake `not_started`；只可 Read 审计同案已有文件，不得覆盖、Edit、手修或自动重建矩阵，不得 Delegate、不得询问用户、不得用 `review-context.yaml` 替换 `coverage-matrix.yaml`。
 
 只有此闭环、review context 与 O0 引用中的全部前置完成后，才可按 O1 引用对 canonical `contract-intake` 发出首次 `Delegate sync + isolated`。O0 不能写 Intake receipt 派生的 `freeze`、`all_frozen`、S8 状态或版本一致性结论；这些只可来自 O1 的真实回执及其 RC 审计。
 

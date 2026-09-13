@@ -9,9 +9,9 @@ test('O0 loads the coverage policy and keeps the row-derived comparison candidat
   const skill = await readOrchestrationPolicy(root)
 
   assert.match(skill, /实际调用 `Skill` 装载 `coverage-matrix`/)
-  assert.match(skill, /首次矩阵 `Write` 前.*分别 `Read` `references\/coverage-matrix-bucket-summary\.schema\.json` 与 `references\/coverage-matrix-bucket-summary\.descriptor\.json`/s)
+  assert.match(skill, /首次矩阵输出前.*分别 `Read` `references\/coverage-matrix-bucket-summary\.schema\.json`、`references\/coverage-matrix-bucket-summary\.descriptor\.json` 与 `references\/coverage-matrix-baseline\.catalog\.json`/s)
   assert.match(skill, /含 `%` 的两位字符串.*`0\.00%`、`25\.00%`.*不是 `0\.00` 或裸数/s)
-  assert.match(skill, /coverage-matrix\.yaml.*立即 `Read` 回读 exact 文件/s)
+  assert.match(skill, /初始化输出后必须立即 `Read` 同一 exact 矩阵/s)
   assert.match(skill, /只从该次回读的实际 `rows` 计算 `total` 与五态计数/)
   assert.match(skill, /denominator = covered \+ blank \+ blocked \+ deferred.*大于零.*`expected_coverage_rate`.*pending_trusted_delegate_proof/s)
   assert.match(skill, /Lead coverage 在 O0 不另调 MathCalc/)
@@ -25,8 +25,8 @@ test('O0 enumerates the complete resolved jurisdiction source before dispatch wi
 
   assert.match(skill, /`rules\.yaml` 必须保留根级 `rules\[\]` 与 `conflicts\[\]` 两个完整数组/)
   assert.match(skill, /不得在 O0 按合同类型、`mandatory`、`detection`、`trigger`、关键词或 Lead 对合同事实的理解筛掉条目/)
-  assert.match(skill, /`rules\[\]` 与 `conflicts\[\]` 的每个唯一 ID 全部投影为 stage 4、`jurisdiction-auditor` 所有、初始 `blank`/)
-  assert.match(skill, /验证发现集合与行集合双向完全相等/)
+  assert.match(skill, /比较 resolved `rules\[\]`\/`conflicts\[\]` 的每个唯一 ID 与 stage 4 行集合双向相等/)
+  assert.match(skill, /stage 4、`jurisdiction-auditor` 所有、初始 `blank`/)
   assert.match(skill, /不得先判断适用性\/trigger，不得漏冲突条目/)
   assert.match(skill, /分支合格本身不表示其全部行 `covered`/)
   assert.match(skill, /未声明行保持 `blank`/)
