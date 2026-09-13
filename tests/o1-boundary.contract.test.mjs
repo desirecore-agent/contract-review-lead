@@ -54,13 +54,30 @@ test('agent version is semantic and O1 has the required isolated sync Delegate c
 
   assert.match(agent.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/)
   assert.ok(delegateYaml, 'O1 must contain Delegate parameters')
-  assert.deepEqual(yamlFields(delegateYaml[1]), {
+  const { task, context, ...delegateBinding } = yamlFields(delegateYaml[1])
+  assert.deepEqual(delegateBinding, {
     target: 'contract-intake',
     mode: 'sync',
     contextMode: 'isolated',
     intentId: '${case_id}:intake',
     contextReason: '合同案件输入治理与受理门禁。',
   })
+  assert.ok(task?.trim(), 'Delegate task must be a non-empty execution instruction')
+  assert.match(task, /context/)
+  assert.match(context, /完整 YAML/)
+  assert.match(o1, /`handoff` 不是 Delegate 的顶层参数/)
+
+  const handoffYaml = o1.match(/`context` 的值必须是以下[\s\S]*?```yaml\n(?<yaml>handoff:\n[\s\S]*?)```/)
+  assert.ok(handoffYaml?.groups?.yaml, 'Delegate context must carry a complete YAML handoff')
+  const handoff = handoffYaml.groups.yaml
+  assert.match(handoff, /^handoff:\n  case_id: \$\{case_id\}$/m)
+  assert.match(handoff, /^  to: contract-intake$/m)
+  assert.match(handoff, /^  from: contract-review-lead$/m)
+  assert.match(handoff, /^  intake_gate_steps_required: \[S1, S2, S3, S4, S5, S6, S7, S8\]$/m)
+  assert.match(handoff, /^  review_context_path: \/abs\/path\/to\/lead-workspace\/contract-review\/review-context\.yaml$/m)
+  assert.match(handoff, /^  submitted_file_paths:/m)
+  assert.match(handoff, /^  object:\n    manifest_digest: <current_contract_manifest_digest>[^\n]*\n    documents:/m)
+  assert.match(handoff, /^  input_inventory:\n    current_contract_manifest_digest: <64-lowercase-sha256-or-unknown>\n    submission_inventory_manifest_digest: <64-lowercase-sha256-or-unknown>$/m)
 })
 
 test('policy corpus contains no authorization for lead-authored intake artifacts', async () => {

@@ -192,7 +192,7 @@ metadata:
 
 ### O1 输入治理（第 1-2 步）
 
-`Delegate`，`mode: sync`，目标 `contract-intake`，并显式创建本案件的独立 Work Context：
+`Delegate`，`mode: sync`，目标 `contract-intake`，并显式创建本案件的独立 Work Context。`task` 必须是简短的动作指令；完整、可审计的交接载荷必须是下方 YAML 原文，并作为唯一的 `context` 字符串传入。`handoff` 不是 Delegate 的顶层参数，不能把它、`case_id` 或其他载荷字段塞进 `task`、`intentId` 或 Work Context 代替 `context`：
 
 ```yaml
 target: contract-intake
@@ -200,22 +200,24 @@ mode: sync
 contextMode: isolated
 intentId: "${case_id}:intake"
 contextReason: "合同案件输入治理与受理门禁。"
+task: "仅按 context 中已验证的 Intake handoff 执行输入治理；不得扩大范围，也不得从 task、intentId 或 Work Context 补全缺失字段。"
+context: <下方完整 YAML 交接块的原文>
 ```
 
-O1 交接块必须单列完整、顺序固定的 Intake 步骤要求；这组值是对 `contract-intake` 的真实回执 `checks[].id` 的要求，不是 Lead 矩阵 ID：
-
-```yaml
-handoff:
-  intake_gate_steps_required: [S1, S2, S3, S4, S5, S6, S7, S8]
-```
+O1 `context` 中的交接块必须单列完整、顺序固定的 Intake 步骤要求；这组值是对 `contract-intake` 的真实回执 `checks[].id` 的要求，不是 Lead 矩阵 ID。
 
 **O1 派发前闭合核验（双集合摘要交接）。**Lead 写入 `handoff.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`：真实 `GenerateUUID` 值，或 O0 允许的固定 `case-` 加该 UUID（同案更新则使用已核验保留的旧值）；在 `Delegate` 前必须实际 `Read` 回核它同时等于 `review-context.case_binding.case_id` 与 `orchestration-ledger.case_id`，不等则记录 `O1_CASE_ID_BINDING_INVALID` 并 HOLD。不得从 `intentId`、Work Context、旧回执或成员文本推导。随后对**恰为** `current_contract.parts` 的规范路径调用一次真实 `FileDigest` 并取得其完整 aggregate：不得用完整提交集合的 `submission_inventory`、任何单文件或旧任务 aggregate 替代。实际 `Read` 回读 `review-context` 与 `orchestration-ledger` 后，构造本次 handoff；同一个 current aggregate 必须逐字同时写入并比较四处：`review-context.case_binding.current_contract_manifest.digest`、`orchestration-ledger.manifest.current_contract_manifest_digest`、`handoff.object.manifest_digest`、`handoff.input_inventory.current_contract_manifest_digest`。`object.documents` 必须恰为同一 `current_contract.parts`，绝不得混入 `operator_input`、历史、参考或其他总提交文件；`submitted_file_paths` 与 `submission_inventory_manifest_digest` 仍是完整用户提交集合，二者不得互代。任一 aggregate 缺失/unknown、四处任一不等、集合范围不自洽，或 Intake 复核的完整提交 aggregate 与 submission 值不等时，先只用 `Edit` 修正 Lead 自有的 context/ledger 并再次 `Read` 闭合核验；仍不能得到真实 current aggregate 或仍不等，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，**不得 Delegate**、不得消费回执或进入 O2。仅当 `FileDigest` 明确报批量参数形态错误时可按 O0 在同一完整集合内纠正一次；纠正后 aggregate 成功就是可用摘要，不能把先前形态错误留作 `*_manifest_digest_unavailable`、`unknown` 或 `frozen_without_digest` 的理由。S4 的 `attachment_manifest_digest` 仍只表示四字段对账表摘要，不能写入、比较或镜像任一 FileDigest 集合摘要。
 
 **首次 O1 `Delegate` 前的最终结构重验。**第 8 项的预检以及本段的 Lead 自有 `Write` / `Edit` 都可能使前述 inventory 或 review-context 校验过期。完成既有四处 current-manifest 集合比较和所有允许的 Lead 自有修正后、首次 `Delegate` 紧前，必须分别 `Read` 两个当前 exact 文件，并以各自同一 release-owned schema 和 `format: yaml` 再调用 `StructuredFileValidate`；两个结果均须工具成功且 `valid: true`。任一失败、不匹配或没有明确成功结果均记录 `O1_FINAL_STRUCTURE_VALIDATION_FAILED`、进入 HOLD，**不得 Delegate**。这次成功后不得修改任一文件而直接派发；如仍需 `Write` / `Edit`，该文件的旧校验立即失效，必须再次 `Read` 并重验后才可派发。该最终单文件闸门不替代本段四处摘要的集合比较、`INV-001`、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`。
 
+`context` 的值必须是以下**完整 YAML 文本**，根键为 `handoff`；它不是另一条工具调用、不是顶层 Delegate 参数，也不能只发送其中的 `case_id`：
+
 ```yaml
 handoff:
   case_id: ${case_id}
+  to: contract-intake
+  from: contract-review-lead
+  intake_gate_steps_required: [S1, S2, S3, S4, S5, S6, S7, S8]
   review_context_path: /abs/path/to/lead-workspace/contract-review/review-context.yaml
   submitted_file_paths:                 # 全部用户提交；S1 必须完整批量复核
     - /abs/path/contract.md
@@ -231,7 +233,7 @@ handoff:
     submission_inventory_manifest_digest: <64-lowercase-sha256-or-unknown>
 ```
 
-交接块见「派发载荷模板」。
+仅在上述完整 `context` 已由刚刚 `Read` 的 O0 inventory、review-context 与 ledger 的当前事实构造，且本节全部闭合核验与最终结构重验均成功后，才调用**一次**该 `sync` Delegate。任何必填交接字段缺失、不能从这些已读事实取得、或载荷不再与它们逐值一致时，记录 `O1_MANIFEST_CONTRACT_INVALID` 并 HOLD，**不得 Delegate**；不得把裸 `case_id` 当作交接、不得从 `task` / `intentId` / Work Context 推断或补写 `handoff.case_id`。已成功派发且可信 child/Work Context binding 为 `active` 或状态未知时，按既有绑定规则等待或 HOLD；不得为了补发字段、修补 context 或重试裸 task 对同一 `${case_id}:intake` 再发 `isolated` Delegate。Intake 只验证并返回其回执及后续所需的 handoff 事实；只有 Lead 完成既有 RC 与账本更新后，才可走唯一的 O2 `clause-extractor` 派发路径。
 
 收到回执后：
 
@@ -533,7 +535,7 @@ handoff:
 
 ## 派发载荷模板（结构化交接块）
 
-先按上面的环节模板组装合法的 Delegate 参数，再发送这个交接块。不发对话历史、不发你的推理过程、不发其他成员的结论草稿。`contextMode`、`intentId`、`contextReason`（或 fan-out 的 `contextSelections`）属于 Delegate 参数，不要塞进交接块代替真实参数。
+先按上面的环节模板组装合法的 Delegate 参数，再把这个完整 YAML 交接块作为 `context` 的字符串值发送；`task` 只写简短动作指令，不能承载或替代结构化 handoff。不发对话历史、不发你的推理过程、不发其他成员的结论草稿。`contextMode`、`intentId`、`contextReason`（或 fan-out 的 `contextSelections`）属于 Delegate 参数，不要塞进交接块代替真实参数；`handoff` 同样必须留在 `context` 内，不能作为未经 schema 支持的顶层参数。
 
 ```yaml
 handoff:
