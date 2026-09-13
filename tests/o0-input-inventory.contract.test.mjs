@@ -132,6 +132,21 @@ test('O0 classification text separates total/current manifests and keeps multi-p
   assert.match(skill, /当前集合多 part.*O2 保持 HOLD/s)
 })
 
+test('O0 validates only its own inventory and review context before any Intake delegation', async () => {
+  const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
+  assert.match(skill, /StructuredFileValidate/)
+  assert.match(skill, /o0-input-inventory\.yaml.*立即 `Read` 回读.*`document_path`.*inventory.*`schema_path`.*references\/inventory\/o0-input-inventory\.schema\.json.*`format: yaml`/s)
+  assert.match(skill, /O0_INPUT_INVENTORY_VALIDATION_FAILED.*HOLD.*不得 Delegate/s)
+  assert.match(skill, /review-context\.yaml.*`document_path`.*`schema_path`.*references\/review-context\/review-context\.schema\.json.*`format: yaml`/s)
+  assert.match(skill, /O0_REVIEW_CONTEXT_VALIDATION_FAILED.*HOLD.*不得 Delegate/s)
+  assert.match(skill, /只可修复自己的 inventory 一次.*第二次不匹配/s)
+  assert.match(skill, /只可修复自己的 context 一次.*第二次不匹配/s)
+  assert.match(skill, /不替代第 5 项 `INV-001`、O1 的四处 current-manifest 集合比较、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`/)
+  assert.match(skill, /不生成或复制通用 hash.*不能替代 O1 四处 current-manifest 集合比较、任何 Human Gate 或 O2 的 `StructuredFileValidateCompose`/)
+  assert.match(skill, /首次 O1 `Delegate` 前的最终结构重验.*分别 `Read` 两个当前 exact 文件.*各自同一 release-owned schema.*`format: yaml`.*再调用 `StructuredFileValidate`.*两个结果均须工具成功且 `valid: true`/s)
+  assert.match(skill, /如仍需 `Write` \/ `Edit`，该文件的旧校验立即失效，必须再次 `Read` 并重验后才可派发/)
+})
+
 test('O1 handoff keeps the submitted and current manifests distinct before Intake runs', async () => {
   const skill = await readFile(new URL('skills/review-orchestration/SKILL.md', root), 'utf8')
   assert.match(skill, /Lead 写入 `handoff\.case_id` 时，只能使用本次 O0 已实际回核的 `case_id`/s)
