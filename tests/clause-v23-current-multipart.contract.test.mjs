@@ -5,12 +5,12 @@ import test from 'node:test'
 import Ajv from 'ajv'
 
 const root = new URL('..', import.meta.url)
-const schemaSha = '46a2b4a99fc6dcf659117f4d33b7556c07a59b3628388b2272c58cd5fbc25dfb'
+const schemaSha = 'fc5355dfc349bde3ff52e0b05171010f7b6d8db0d5d3811576baf02ae7090d3d'
 const pinnedReleaseBytes = {
   'compose-contracts/clause-v21-single-main-contract.rules.json': 'c515bd9b4f6873a1e7acb071e1e991f29f12a076253c85bf7e8581c6d6590ef7',
   'compose-contracts/clause-v21-single-main-contract.pins.json': 'a1cd7f95d67fe840d79c74e87a0d55aa80b9c4023e8712cb2c56bcc4e3a80b99',
   'compose-contracts/clause-v22-single-main-contract.rules.json': '4ca27f8d9e8566a2e9ae989d18377d864f646eeb91cd0aece8c93170f9b63fb8',
-  'compose-contracts/clause-v22-single-main-contract.pins.json': '63d8a12bfdef6a5b0aaff3ad9a494205ddd7592f278b251d37e5f35d89e8aecf',
+  'compose-contracts/clause-v22-single-main-contract.pins.json': 'd8a2eb3bc05451cc5bf3ee4de77ffafb4e5ec2e63e14c4ef932e5169a39276cb',
 }
 const readJson = async path => JSON.parse(await readFile(new URL(path, root), 'utf8'))
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -23,7 +23,7 @@ const setPointer = (value, pointer, replacement) => {
   current[last] = replacement
 }
 
-test('v23 pins the unchanged Clause v22 schema and a LF-only multipart rule source', async () => {
+test('v23 pins the current Clause v22 schema and an unchanged LF-only multipart rule source', async () => {
   const pins = await readJson('compose-contracts/clause-v23-current-multipart.pins.json')
   const bytes = await readFile(new URL('compose-contracts/clause-v23-current-multipart.rules.json', root))
   const rules = JSON.parse(bytes)
@@ -45,7 +45,7 @@ test('v23 pins the unchanged Clause v22 schema and a LF-only multipart rule sour
 
 })
 
-test('v23 preserves v21 and both rule sources while the authorized v22 pin tracks Clause 1.0.12', async () => {
+test('v23 preserves v21 and both rule sources while the authorized v22 pin tracks Clause 1.0.13', async () => {
   for (const [path, expected] of Object.entries(pinnedReleaseBytes)) {
     assert.equal(digest(await readFile(new URL(path, root))), expected, path)
   }
