@@ -178,13 +178,30 @@ metadata:
 8. 按 `review-context` 完成 `coverage-matrix` 规则源预检。完整 O0 读到唯一 `candidate_basis.pack.status: not_prechecked` 时，只在已授权的 `shared/resources/jurisdiction-packs/` 内先以 `Ls` / `Glob` 枚举每个候选 `*/pack.yaml`，再实际 `Read` 候选包的 `pack.yaml`，按其中实际存在的包身份与法域标识/名称/匹配线索字段选择唯一匹配目录；不得由候选代码、自然语言或目录名拼接/猜测路径。当前支持的包结构以实际读到的 `meta.pack_id`、`jurisdiction.code`、`jurisdiction.name` 和 `jurisdiction.detection_clues` 为例；字段缺失或不能解析时记录该候选不可用，不得臆造替代字段。只在唯一匹配目录中实际读取 `pack.yaml` **和** `rules.yaml`；成功时才以真实版本和两个 SHA-256 pin 将它改为 `read_and_pinned`，实际无匹配、多匹配、路径不可定位、读取失败、pin 不符或范围不支持时才改为 `unavailable`、记录 `RULE_SOURCE_UNAVAILABLE` 并停在 H。不得跳过此转换、把 `not_prechecked` 当已预检，或把它写成用户 `SCOPE-*`、`deferred` 或“全 blank”。这只是候选审查基准，不是最终法律适用结论。`jurisdiction.status: undetermined` 或 `conflicting` 时不得默认选包；按 coverage-matrix 的 `clarification_required` 分支建立基础矩阵并保留 typed pending，且冲突必须保留 `HG-02`。再判定 custom 层是 loaded、optional-absent 还是 required；required 却缺席同样停在 H。
 9. 调用 `coverage-matrix` 建立初始矩阵。已选择候选且预检成功时，行来自完整已解析 catalog；法域未定/冲突时，行来自不含法域规则行的基础 catalog，`rule_sources.jurisdiction` 只能是 `clarification_required`，不得伪造路径、版本或全 blank 法域行。大多数新行从 `blank` 开始，optional-absent custom 的唯一声明行按该技能写为 `not_applicable`。`contract.yaml#INV-001` 仍只留在 Lead 账本，不得生成任何 `INV-001-MAIN-CONTRACT` 矩阵行。按该技能的同一 `rows` 计算并写回五态 summary 与 MathCalc 回执。随后才写 `orchestration-ledger.yaml`；该根只用于 Lead 自己的 O0 inventory、context、账本与覆盖矩阵。每次 handoff 可携带绝对 `canonical_artifact_root` 与 `lead_workspace` 供成员读取输入，但不得把它们当成员输出目标；成员产物路径必须由目标成员在其确认 workspace 创建并在最终回执中返回，Lead 收到后再做绝对路径与归属核验并登记。
 
+**O0 成功后的账本初态。**完整 O0 已真实成功后，才可把账本状态迁移为 `O0_REGISTERED`。如下只是附加到已完成、已核验 O0 ledger 的**状态片段**，只表示已登记，绝不表示已派发；它不得重建、删除或覆盖已核验的 `case_id`、双 manifest 摘要、`objects`、`jurisdiction_pack`、`freeze` 或已有可信 lead run。不得预填 `dispatched_at`、`run_id`、`child_run_id` 或 `work_context_id`，也不得以 `null` 占位冒充未知的派发事实：
+
+```yaml
+case_id: ${case_id}
+status: O0_REGISTERED
+steps:
+  - step: 1-2
+    name: intake
+    status: not_started
+    agent: contract-intake
+completed_steps: []
+blocked_reasons: []
+artifacts: {}
+```
+
+O0 任一未允许纠正后的工具、验证或 timeout 失败时，不得创建 `O0_REGISTERED` 或任何 `O1_INTAKE`/`dispatched` 状态；账本如已存在则写 `H`（HOLD）、保持 intake `not_started`，并在 `blocked_reasons` 逐字记录实际工具错误码（如有）和失败步骤。若尚无账本，允许首次写入只含 `status: H`、intake `not_started` 与该 `blocked_reasons` 的最小 HOLD 记录；只有已经实际取得的 `case_id` 或 lead run 才可原样带入，二者均不得猜测或以 `null` 补位，且不得附带对象、manifest、冻结或任何派发事实。它不是 Human Gate，不得写成 `HALTED_FOR_HUMAN`、预填派发时间或任何 Delegate ID。
+
 **O0 通用错误退出。**经本节既有的允许纠正或如实降级后仍无法完成的实际 O0 工具或门禁错误，必须进入 HOLD；面向用户只能用自然语言说明工具返回的原始错误码（如有）和被阻断步骤。不得请求、建议或接受跳过/豁免校验，不得把文本伪装成工具调用或未实际发生的 `AskUserQuestion`。这不改变 O5 Human Gate 的真实 `AskUserQuestion`：只有实际工具调用才可称为提问或显示为工具调用。
 
 ### 编排账本状态写入硬闸
 
-账本是案件状态的事实来源，不能只在 O0 登记而把后续状态留成 `pending`。每一次委派返回并通过 RC-1..RC-6 后，先 `Read` 当前账本，再用 `Edit` 更新同一份 `orchestration-ledger.yaml`，随后立即 `Read` 回读验证；状态更新失败、目标段不存在、或回读仍显示旧状态时，停止在 `H` 并报告 `REJECT-LEDGER-STATE`，不得继续派发或声称该步骤完成。
+账本是案件状态的事实来源，不能只在 O0 登记而把后续状态留成 `pending`。实际成功的 `Delegate` 返回本次可信 binding 后，先 `Read` 当前账本，再用**唯一一次** `Edit` 将 O1 写为 `status: O1_INTAKE`、对应 intake `steps[*].status: dispatched`，并原样登记该返回的 `target`、非空 `child_run_id`、非空 `work_context_id` 与实际 `dispatched_at`；随后立即 `Read` 回读验证。`intentId`、任务文本、工作目录、成员回执或任何 `null`/自造值都不能补全 binding。状态更新失败、目标段不存在、回读仍显示旧状态，或 `O1_INTAKE`/`dispatched` 缺任一上述可信字段时，停止在 `H` 并报告 `REJECT-LEDGER-STATE`，不得继续派发或声称该步骤完成。
 
-至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：登记完成且 intake 已发出写 `O1_INTAKE`；intake 合格后把第 1-2 步写为 `completed` 并转 `O2_EXTRACT`；Clause v2 的同次 Compose 命名观察与 release-owned contract 全通过后才把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
+至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：仅在上一段的成功 Delegate binding 已回读闭合后，才写 `O1_INTAKE`；intake 合格后把第 1-2 步写为 `completed` 并转 `O2_EXTRACT`；Clause v2 的同次 Compose 命名观察与 release-owned contract 全通过后才把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
 
 任何下游未启动、回执不合格或成员无响应都必须写入 `blocked_reasons`，不能用 `pending` 掩盖已发生的失败或已完成的步骤。`run_id` 必须同时保留外层 lead run 和每个 Delegate 子 run；若成员回执中的案件/内部 run 标识与外层运行不一致，原样记录 `identity_discrepancy` 并保持人工阻断，不得静默覆盖成单一 ID。账本更新属于本技能的必做产物，不以模型是否“打算稍后补写”为完成条件。
 
