@@ -1,539 +1,74 @@
 ---
 name: review-orchestration
 description: >-
-  合同审查团队的编排主控。登记案件与合同对象、按 7 步固定工具链派发任务（结构化解析 → 完整性检查 →
-  条款抽取 → 法域知识注入 → 风险判读 → 版本对比 → 报告输出）、执行输入治理门禁（verdict=blocked 即终止流水线）、
-  按环节选择 Delegate 模式（sync / fan-out parallel，复核环节禁用 subtask）、对成员回执执行六项检查并打回
-  不合格产出、在法务四类不可替代动作上路由 Human Gate。用户提到审合同、合同审查、审查进度、编排、
-  流水线、派发、打回重做、签核点时使用。
-  Use when orchestrating the contract review pipeline: registers the case, dispatches the fixed
-  7-step tool chain to team members, delegates O1 intake exclusively to contract-intake with a
-  synchronous isolated context, enforces the intake gate, audits member receipts and returns
-  non-conforming output for rework, and routes the four irreplaceable legal actions to a human gate.
-version: 1.0.8
+  合同审查团队的有界编排入口。登记同一份合同对象，按 O0→O1→O2→O3→O4 的固定顺序委派，
+  每一步都以真实回执和磁盘回读作为完成判据；成员超时或无回执就记录 blocked/capability_debt，
+  不等待、不代写、不把中间事实伪装成最终结论。
+version: 1.1.0
 type: procedural
 risk_level: medium
 status: enabled
-tags:
-  - contract-review
-  - orchestration
-  - pipeline
-  - gate-enforcement
-  - delegation
-  - human-gate
+tags: [contract-review, orchestration, bounded-loop, receipt-audit]
 requires:
-  tools:
-    - Read
-    - Ls
-    - Glob
-    - Grep
-    - Write
-    - Edit
-    - MathCalc
-    - GenerateUUID
-    - Delegate
-    - SendMessage
-    - AskUserQuestion
+  tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc, GenerateUUID, Delegate, SendMessage]
 metadata:
   author: DesireCore
-  version: 1.0.8
-  updated_at: '2026-09-08'
+  updated_at: '2026-09-15'
 ---
 
-# 合同审查编排主控
-
-## 何时使用
-
-收到用户已经提交合同材料、或当前消息明确指向由用户提交的合同文件时**第一个**执行本技能。它是本团队唯一的流程入口——五个成员都不自行启动，全部由本技能派发。
-
-用户只是在询问“审查需要什么材料”或表达审查意愿、当前消息没有合同/附件或明确文件指向时，不进入本技能和 O0。先用自然语言索要合同正文、全部附件、我方身份、适用法域/争议解决地和审查目标；可选索要历史版本与交易背景。此咨询节点为**零工具**：不得扫描工作区或历史会话，不得登记案件、生成 ID、写账本或派发成员。工作区残留文件不构成本轮用户提交。
-
-## 不可协商的前提
-
-1. **登记先于派发。**没有 `review_case` 与初始覆盖矩阵，不得派发任何任务。
-2. **第一个任务恒定是输入治理。**不因材料看起来干净而跳过 `contract-intake`。
-3. **`blocked` 即终止。**`contract-intake` 的 `verdict` 是唯一判据，你不重评它的理由、不改判、不放宽。
-4. **O1 只委派，不代写。**`intake.yaml`、输入治理回执、`verdict` 与 `pending` 的作者只能是 `contract-intake`。O1 等待其有效回执期间，lead 只能写编排账本中的派发、等待与阻断状态；不得读取材料后自行生成、编辑、合成或补全上述 intake 产物，也不得把已派发当成已完成。
-5. **7 步顺序固定**，不跳步、不并步、不调序。唯一合法偏离见 O6 的 `not_applicable` 标记。
-6. **不合格打回，不自己补齐。**
-7. **禁止对 `review-reporter` 使用 `mode: subtask`。**
-8. **产物根目录不可漂移。**所有案件产物必须位于当前案件工作区的 canonical `contract-review/` 目录；不得把该目录路径本身写成文件，也不得静默改用其他目录。
-9. **材料提交是 O0 的唯一入口。**没有当前用户提交的合同或明确文件指向，不得执行 O0 的 `Ls` / `Glob`，不得通过扫描历史工作区来推定材料已提交。
-
-### Delegate Work Context 兼容说明
-
-当前 Delegate schema 不会为持久 Agent 委派推断或补默认 Work Context。`sync`、`async` 和 `fan-out` 必须显式选择 Work Context；普通新环节使用 `contextMode: isolated`，同时提供稳定的 `intentId` 与说明性的 `contextReason`。同一环节返工或续跑只能使用上一次 Delegate 回执中的精确 `work_context_id`，传为 `contextMode: continue` + `workContextId`；不得猜测、拼接或发明 Work Context ID。`worker` 不传任何 Work Context 字段。
-
----
-
-## 术语：编排状态机
-
-```
-                    ┌──────────────┐
-   用户提交材料 ───▶ │ O0 REGISTERED│  登记案件 + 建矩阵（本 Agent 自己做）
-                    └──────┬───────┘
-                           │ Delegate sync + isolated context → contract-intake
-                    ┌──────▼───────┐
-                    │ O1 INTAKE    │  第 1-2 步：结构化解析 + 完整性检查
-                    └──────┬───────┘
-            verdict=blocked│         verdict=passed / conditional
-              ┌────────────┴────────────┐
-              ▼                         ▼
-    ┌───────────────────┐        ┌──────────────┐
-    │ X1 GATE_TERMINATED│        │ O2 EXTRACT   │  第 3 步（sync → clause-extractor）
-    │  终止，交补齐清单  │        └──────┬───────┘
-    └───────────────────┘               │
-                                 ┌──────▼─────────────────────────┐
-                                 │ O3 ANALYZE                     │  第 4-5 步
-                                 │ fan-out parallel:              │
-                                 │   risk-scanner ∥               │
-                                 │   jurisdiction-auditor         │
-                                 └──────┬─────────────────────────┘
-                                        │ 两支都合格 / 部分成功（缺支记 blocked）
-                                 ┌──────▼───────┐
-                                 │ O4 REPORT    │  第 6-7 步（sync → review-reporter）
-                                 └──────┬───────┘
-                                        │ 命中 HG-01..04
-                                 ┌──────▼───────┐
-                                 │ O5 HUMAN_GATE│  等人确认，无超时自动通过
-                                 └──────┬───────┘
-                                        ▼
-                                 ┌──────────────┐
-                                 │ O6 DELIVERED │  交付并写编排回执
-                                 └──────────────┘
-
-横切状态（任一环节都可进入）：
-  R  REWORK          回执不合格 → 打回同一成员重做（同环节累计上限 2 次）
-  H  HALTED_FOR_HUMAN 打回 2 次仍不合格 / 成员无响应 / 版本矩阵阻断 → 停，交人工
-  N  RESUBMITTED     材料补齐重提 → 回到 O0，新修订、整套重跑，不做增量
-```
-
-### 状态迁移表
-
-| 从 | 事件 | 到 | 附带动作 |
-|---|---|---|---|
-| — | 收到合同材料 | `O0` | 生成 `case_id`、登记全部 `object_ref`、建初始矩阵（全 `blank`） |
-| `O0` | 登记完成 | `O1` | `Delegate sync` + `contextMode: isolated`、`${case_id}:intake` → `contract-intake` |
-| `O1` | `verdict: blocked` | `X1` | 终止；不派发任何下游；把 `remediation` 清单交用户 |
-| `O1` | `verdict: passed` | `O2` | 冻结快照写入矩阵基线 |
-| `O1` | `verdict: conditional` | `O2` | **同上，全量派发**；`pending` 项登记为矩阵待确认行 |
-| `O1`/`O2`/`O3`/`O4` | 回执检查不合格 | `R` | 打回，`rework_count += 1` |
-| `R` | 重做后合格 | 回原状态的下一态 | 记录打回历史 |
-| `R` | 同环节 `rework_count == 2` 仍不合格 | `H` | 停止重试，两次回执一并交人工 |
-| `O2` | 条款表合格 | `O3` | `Delegate fan-out parallel` + 两项 `contextSelections` → `[risk-scanner, jurisdiction-auditor]` |
-| `O3` | 两支均合格 | `O4` | 矩阵对应行翻 `covered` |
-| `O3` | 仅一支合格 | `O4` | 缺支的 `check_id` 全部记 `blocked`；禁 `release_to_legal`；**不得用另一支结论填补** |
-| `O3` | 两支均不合格 | `R` → `H` | 按打回上限处理 |
-| `O4` | 命中 HG-01..04 | `O5` | 暂停 `release_to_legal` / `emit_final_report` / `declare_version_consistency` |
-| `O4` | 未命中任何 HG | `O6` | 直接交付（罕见；四类动作只要触及就必然命中） |
-| `O5` | 人工 `approved` | `O6` | 写 `human_confirmations` |
-| `O5` | 人工 `returned_for_rereview` | `R` 或 `N` | 按退回范围决定重做环节或整套重跑 |
-| `O5` | 人工 `rejected` | `H` | 案件停在此处，状态保持 `pending` |
-| 任意 | 版本矩阵 `jurisdiction_pack_version` 不一致 | `H` | 按阻断处理（`rules.md#R-021`） |
-| 任意 | 成员无响应 / 派发失败 | `H` | 不静默重试第三次 |
-| `X1`/`H` | 用户重提材料 | `N` → `O0` | 新 `case_id` 修订，整套 7 步重跑 |
-
-**没有从 `X1` 直接到 `O2` 的边。**门禁终止后唯一出路是重新提交材料。
-
----
-
-## 执行步骤
-
-### O0 登记与受理
-
-1. `GenerateUUID` 生成 `case_id`（形如 `case-2026-0831-001`，本地可读格式亦可，但一个案件内唯一且永不复用）。
-2. 用 `Ls` / `Glob` 清点用户提交的全部文件，并对这组**当前提交且可读的精确文件路径**优先调用一次 `FileDigest`。逐份登记为 `contract_document`：
-   - `object_id`（`doc-main-001` / `doc-att-003` 形式）
-   - `version_label`（取自文档自身声明；取不到写 `unknown` + `version_label_unknown_reason`）
-   - `content_digest`（采用 `FileDigest.files[].digest` 返回的 64 位小写 SHA-256；不得用 shell 或自行计算替代）
-   - `kind`（`main_contract` / `exhibit` / `amendment` / `side_letter`）
-   - 规范化绝对路径
-   - `digest_binding`：同一账本行中的 `case_id`、`object_id`、`version_label`、规范化绝对路径与 `content_digest`
-3. 校验 `contract.yaml#INV-001`：有且仅有一份 `main_contract`。不满足直接 `H`，不派发。
-4. 只有 `FileDigest` 对本次完整文件集**全部成功**时，才将其 `aggregate.digest` 记为 `attachment_manifest_digest`（亦即交接中的 `manifest_digest`）。任何单文件失败、读取范围拒绝、文件消失、超限或工具执行失败时，逐个失败文件写 `content_digest: unknown` + 工具返回的精确原因；清单摘要写 `unknown`、`manifest_digest_unavailable: true` 和同一可核验原因。不得为残缺集合记录 aggregate，也不得用 `Bash` / `PowerShell` 代算。
-5. 摘要只证明固定算法下的内容字节；它不能单独确认对象身份、文件版本、用户提交意图、授权或任何法律事实。只有回执的 `case_id`、`object_id`、`version_label`、规范化绝对路径和相应摘要都与组长账本同一登记行一致，才可作为本案同一输入版本的摘要凭证；组长按这一检查更新账本，不能只因摘要相同就放行。
-6. 调用 `coverage-matrix` 技能建立**初始覆盖矩阵**，全部行状态为 `blank`。
-7. 登记 `version_matrix` 六个维度（`skill_version` / `server_version` / `knowledge_base_version` / `jurisdiction_pack_version` / `parser_revision` / `ontology_version`）。法域版本必须在派发前解析：先从合同中的法域线索确定候选法域，再读取共享资源 `shared/resources/jurisdiction-packs/<jurisdiction>/pack.yaml`，把其中的 `pack_version` 原样写入 `jurisdiction_pack_version`（当前中国大陆包为 `cn-v3`）。对于已有匹配规则包的法域，禁止写 `pending-intake`、`unknown` 或占位版本；只有没有法域线索、没有匹配包或读取失败时才能留空并让输入治理阻断，同时在账本记录失败原因。
-8. 先执行 canonical 输出目录前置检查，再开编排账本：确定当前案件工作区的绝对路径，将唯一产物根解析为 `<workspace>/contract-review/`。第一次 `Write` 必须写入目录下的具体文件（首选 `<workspace>/contract-review/orchestration-ledger.yaml`），而不是把 `contract-review` 路径当文件写入；随后立即 `Read` 回读并确认它是文件、规范化后的绝对路径按完整路径段比较仍位于 canonical 根内。嵌套写入失败、发现 `contract-review` 是同名文件、链接/等价路径导致边界无法确认或指向根外时，立即写入失败回执 `REJECT-OUTPUT-DIR` 并停止派发，不得退避到其他目录、相对路径或别名路径。后续账本与所有成员产物都必须继续使用该绝对根，并在每次交接前回读路径清单。每次 lead handoff 必须显式携带绝对 `canonical_artifact_root` 与 `lead_workspace`；所有 artifacts 路径都从该根派生并再次做路径段边界校验。
-
-### 编排账本状态写入硬闸
-
-账本是案件状态的事实来源，不能只在 O0 登记而把后续状态留成 `pending`。每一次委派返回并通过 RC-1..RC-6 后，先 `Read` 当前账本，再用 `Edit` 更新同一份 `orchestration-ledger.yaml`，随后立即 `Read` 回读验证；状态更新失败、目标段不存在、或回读仍显示旧状态时，停止在 `H` 并报告 `REJECT-LEDGER-STATE`，不得继续派发或声称该步骤完成。
+# 有界合同审查编排
 
-至少按下列迁移写入 `status`、对应 `steps[*].status`、`completed_steps`、`run_ids`、`artifacts`、`human_gates` 和 `blocked_reasons`：登记完成且 intake 已发出写 `O1_INTAKE`；intake 合格后把第 1-2 步写为 `completed` 并转 `O2_EXTRACT`；条款回执合格后把第 3 步写为 `completed` 并转 `O3_ANALYZE`；风险与法域两支均合格后分别记录两个子 run 和产物并转 `O4_REPORT`；reporter 回执合格后把第 6-7 步写为 `completed`，记录 `report_path`、覆盖缺口和全部 Human Gate，命中任一 HG 时必须写 `HALTED_FOR_HUMAN`（或等价 `O5_HUMAN_GATE`）并把每个 gate 记录为 `pending`。只有用户明确给出人工决定后，才允许迁移到 `O6_DELIVERED`。
+## 成功定义
 
-任何下游未启动、回执不合格或成员无响应都必须写入 `blocked_reasons`，不能用 `pending` 掩盖已发生的失败或已完成的步骤。`run_id` 必须同时保留外层 lead run 和每个 Delegate 子 run；若成员回执中的案件/内部 run 标识与外层运行不一致，原样记录 `identity_discrepancy` 并保持人工阻断，不得静默覆盖成单一 ID。账本更新属于本技能的必做产物，不以模型是否“打算稍后补写”为完成条件。
+本技能只负责编排，不判断法律结论。一次运行只有在每个已执行步骤都同时满足以下条件时才算完成：
 
-**登记完成之前不得派发任何任务。**
-
-### O1 输入治理（第 1-2 步）
-
-`Delegate`，`mode: sync`，目标 `contract-intake`，并显式创建本案件的独立 Work Context：
-
-```yaml
-target: contract-intake
-mode: sync
-contextMode: isolated
-intentId: "${case_id}:intake"
-contextReason: "合同案件输入治理与受理门禁。"
-```
-
-交接块见「派发载荷模板」。
-
-收到回执后：
-
-- **先验证这是一份可读、可归属的 `contract-intake` 最终回执。**`Delegate` 返回或账本处于 `O1_INTAKE` 不等于输入治理完成。必须 `Read` 回读回执的绝对路径，确认作者为 `contract-intake`、对象身份与本案一致、回执通过 RC-1..RC-6，且含有其自身产生的 `verdict`（`blocked` / `passed` / `conditional`）与适用的 `pending`/`remediation`。在这之前不得写或编辑 `intake.yaml`、输入治理回执、`verdict` 或 `pending` 来填空。
-- **回执缺失或无效时停在 O1。**记录 `O1_INTAKE_RECEIPT_INVALID` 和具体原因到编排账本，不得迁移至 O2、不得派发下游、不得宣称输入治理完成。只有本次真实 Delegate 回执提供了归属正确的 `work_context_id` 时，才可按打回上限使用 `contextMode: continue` 有界重试；否则转 `HALTED_FOR_HUMAN`。这不是由 lead 自行生成 intake 产物的例外。
-- 先跑六项回执检查（见「回执检查」一节）。
-- 读 `verdict` 字段：
-  - `blocked` → 进 `X1`。**立刻停**：不派发、不预热、不询问「能不能先跑条款抽取」。把回执里的 `remediation` 原样交用户。
-  - `conditional` → 进 `O2`，**全量派发、范围不缩减**，把 `pending[]` 逐条登记为矩阵待确认行并原样传给下游。
-  - `passed` → 进 `O2`。
-- 把 `freeze` 四项与 `consistency_conclusion_allowed` 写入矩阵基线。四项未全成立时，在编排账本标 `version_compare_allowed: false`（O4 的第 6 步据此处理）。
-
-### O2 条款抽取（第 3 步）
-
-`Delegate`，`mode: sync`，目标 `clause-extractor`，为条款抽取创建独立 Work Context：
-
-```yaml
-target: clause-extractor
-mode: sync
-contextMode: isolated
-intentId: "${case_id}:extract"
-contextReason: "合同案件条款结构化，供后续分析环节共同使用。"
-```
-
-`sync` 的理由：条款结构表是 `risk-scanner`、`jurisdiction-auditor`、`review-reporter` 三者的共同输入。非阻塞会让三个下游在输入未定时启动，产出无法复现。
-
-### O3 法域注入 + 风险判读（第 4-5 步）
-
-`Delegate`，`mode: fan-out`，`strategy: parallel`，同时提供 `targets` 和每个目标的 `contextSelections`：
-
-```yaml
-targets: [risk-scanner, jurisdiction-auditor]
-mode: fan-out
-strategy: parallel
-contextSelections:
-  - target: risk-scanner
-    contextMode: isolated
-    intentId: "${case_id}:risk"
-    contextReason: "合同案件风险识别。"
-  - target: jurisdiction-auditor
-    contextMode: isolated
-    intentId: "${case_id}:jurisdiction"
-    contextReason: "合同案件法域合规审查。"
-```
-
-并行的理由：两者输入完全相同（原文 + 条款结构表 + 规则包），互不依赖，输出互不覆盖。并行不仅省时，还天然保证两条判断线互不读对方结论——串行会让后跑的一方被先跑一方的措辞锚定。
-
-**部分成功处理**（最易出错，见 principles L2）：
-
-| 情况 | 处理 |
-|---|---|
-| 两支都合格 | 各自负责的 `check_id` 翻 `covered` |
-| 仅 `risk-scanner` 合格 | 法域类 `check_id` 全部记 `blocked`，原因写「jurisdiction-auditor 未返回合格产出」 |
-| 仅 `jurisdiction-auditor` 合格 | 风险类 `check_id` 同上处理 |
-| 两支都不合格 | 进 `R`；两次仍不合格进 `H` |
-
-任一支缺失时，`release_to_legal` 一律禁止，并在交给 `review-reporter` 的交接块里写明缺口范围。
-
-### O4 版本对比 + 报告输出（第 6-7 步）
-
-`Delegate`，`mode: sync`，目标 `review-reporter`，为报告输出创建独立 Work Context：
-
-```yaml
-target: review-reporter
-mode: sync
-contextMode: isolated
-intentId: "${case_id}:report"
-contextReason: "合同案件版本对比与独立复核报告。"
-```
-
-**第 6 步的三态**：
-
-| 条件 | 处理 |
-|---|---|
-| 有历史基线且四大冻结全成立 | 正常做版本对比，要求输出 `risk_direction` |
-| 单一版本、无历史基线 | 标 `not_applicable` 并在报告显式记录——**标记不是跳过** |
-| 四大冻结未全成立，或 `manifest_digest_unavailable` | `risk_direction` 只能是 `undetermined`；禁止任何一致性结论（`rules.md#R-013`） |
-
-**交接块必须剔除的内容**（`rules.md#R-003`）：前序成员的推理过程、理由陈述、置信度自评、结论草稿。可以传的是：原文绝对路径、结构化事实（条款表 / 文档对象 / 规则包版本）、覆盖矩阵骨架、上游的 `failure_mark`（那是事实，不是推理）。
-
-**发给 `review-reporter` 的交接契约（强制）**：报告复核官按 `review-scoring` 的 R0.1 在入口拒收缺字段载荷。交接块必须同时包含以下字段，字段名不得改写或用同义字段替代：
-
-```yaml
-handoff:
-  to: review-reporter
-  from: contract-review-lead
-  case_id: case-2026-0831-001
-  step: 6-7
-  ledger_path: /abs/path/.../orchestration-ledger.yaml
-  lead_workspace: /abs/path/to/lead-workspace
-  canonical_artifact_root: /abs/path/to/lead-workspace/contract-review
-  object:
-    contract_object_id: YCIT-SAAS-2025-0206
-    object_title: SaaS服务协议
-    version_label: YCIT-SAAS-2025-0206
-    content_digest: unknown
-    submission_mode: single             # 必填；无历史版本也必须显式写 single
-  artifacts:
-    source_documents: [/abs/path/.../contract.md]
-    clause_table: /abs/path/.../clauses.yaml
-    risk_list: /abs/path/.../risks.yaml
-    jurisdiction_report: /abs/path/.../jurisdiction.yaml
-  confirmed:                              # 必填；不得写成 confirmed_facts
-    - 输入治理 verdict=conditional，无 BLK
-    - 条款、风险与法域产物均已完成并通过形式检查
-  pending: []                              # 必填；逐条透传上游 pending
-  scope:
-    frozen_baseline: {master_version: YCIT-SAAS-2025-0206, page_range: "body: 1-10"}
-    consistency_conclusion_allowed: false
-    compliance_conclusion_allowed: false
-  do_not_pass: [对话历史, 前序 Agent 推理过程, 结论草稿]
-```
-
-`source_artifacts`、`confirmed_facts` 等旧字段不能替代上述字段；交接前按 `R0.1` 自检 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、两个结论开关、`do_not_pass` 以及四类绝对产物路径，任一缺失就先在本 Agent 内修正载荷，不得把必然会被拒收的交接发送给复核官。
-
-### O5 Human Gate
-
-命中任一 HG 时暂停对应受限动作，用 `AskUserQuestion`（`wait_mode: always_wait`）或转 `handoff` 交人工。
-
-| Gate | 触发范围 | 阻断的动作 |
-|---|---|---|
-| `HG-01` 付款触发与回款 | 金额、逾期违约金、结算周期、付款触发条件、发票回款 | `release_to_legal`, `emit_final_report` |
-| `HG-02` 争议解决机制 | 管辖权、仲裁/诉讼选择、机构与地点、适用法律、送达 | `release_to_legal`, `emit_final_report` |
-| `HG-03` 责任与违约分配 | 责任上限、间接损失排除、赔偿、保证免责、不可抗力 | `release_to_legal`, `emit_final_report` |
-| `HG-04` 生效要件 | 有效签章、签署人权限、依赖附件、法定形式、生效条件 | `release_to_legal`, `emit_final_report`, `declare_version_consistency` |
-
-**无超时自动通过。**未确认即停在该动作，案件状态保持 `pending`。确认结果写入回执 `human_confirmations`（`gate_id` / `confirmed_by` / `confirmed_at` / `decision`）。
-
-禁止的替代做法：提示风险后继续、超时默认通过、降级为「建议」放行、由你自行判断「本次影响不大」。
-
-### O6 交付
-
-写编排回执并交付。回执必备：对象版本（`object_ref[]`）、规则版本（各层 pack version）、证据位置、执行 Agent 清单、人工确认点、**全部打回记录**、**全部留白记录**。
-
----
-
-## Delegate 模式选择（逐环节，附理由）
-
-| 环节 | 目标 | `mode` | 其他参数 | 为什么是它 |
-|---|---|---|---|---|
-| 第 1-2 步 | `contract-intake` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:intake` + `contextReason` | 门禁结论是后续全部步骤的准入条件。非阻塞意味着在 `blocked` 与否未知时就已启动下游，直接违反「阻断即终止」 |
-| 第 3 步 | `clause-extractor` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:extract` + `contextReason` | 条款表是四个下游的共同输入；输入未定就派发，产出不可复现 |
-| 第 4-5 步 | `risk-scanner` + `jurisdiction-auditor` | `fan-out` | `strategy: parallel` + `targets` + 每个目标一个 `contextSelections`（均为 `isolated`、稳定 `intentId`、`contextReason`） | 两者输入相同、互不依赖；并行省时，且避免后跑一方被先跑一方锚定 |
-| 第 6-7 步 | `review-reporter` | `sync` | `contextMode: isolated` + `intentId: ${case_id}:report` + `contextReason` | 需要它的评分与 Human Gate 判定才能收尾；且必须是**显式结构化交接** |
-| 转人工法务 | 用户会话 | `handoff`（**布尔参数，不是 mode 值**） | — | Human Gate 需要人在原会话里确认，转交会话本身比转发消息更直接 |
-
-**禁用清单**：
-
-- ❌ **`mode: subtask` 派给 `review-reporter`** —— `subtask` 继承完整对话历史（含全部工具调用与结果），而你的上下文里装着五个成员的全部中间产物与推理。这等于把前序推理原样灌进复核者，直接违背「复核 Agent 基于原文与结构化事实重新判断，不读前序推理」。它不是慢一点或快一点的差别，它让整个独立复核作废。**任何情况下都不用，包括「只是想省一次上下文组装」。**
-- ❌ `mode: subtask` 派给其他成员 —— `subtask` 只能派给自己，语义上也不成立。
-- ❌ `mode: async` 用于 7 步中的任一步 —— 顺序固定要求每一步的输入在上一步确定之后才成形；异步会让「谁在什么输入上跑的」不可复现。
-- ❌ 把第 3 步与第 4-5 步合并成一次 fan-out —— 条款表是后两者的输入，合并等于让它们在输入缺失时启动。
-- ⚠️ `mode: worker` —— 仅可用于与 7 步无关的一次性辅助（例如重新清点一批文件的路径）。**不得用它承担任何一步工具链任务**，因为 worker 无持久身份，产出无法归属到某个成员的回执。
-- ❌ 持久 Agent 委派省略 `contextMode`、`intentId` 或 `contextReason`，或在 `fan-out` 中省略任一目标的 `contextSelections`。
-- ❌ 返工时重新使用 `isolated` 或凭记忆填写 `workContextId`。返工必须读取上一次回执的 `work_context_id`，再用 `contextMode: continue` 续跑同一环节；没有真实 ID 就停在 `H`，不得自行生成。
-- ✅ `mode: worker` 不携带 `contextMode`、`intentId`、`contextReason` 或 `workContextId`；worker 的 schema 明确拒绝这些 Work Context 字段。
-
-**所有 `task` / `context` 中引用的文件必须写绝对路径**——成员的工作目录与你不同，相对路径在对方那里会解析到别处。
-
----
-
-## 派发载荷模板（结构化交接块）
-
-先按上面的环节模板组装合法的 Delegate 参数，再发送这个交接块。不发对话历史、不发你的推理过程、不发其他成员的结论草稿。`contextMode`、`intentId`、`contextReason`（或 fan-out 的 `contextSelections`）属于 Delegate 参数，不要塞进交接块代替真实参数。
-
-```yaml
-handoff:
-  to: clause-extractor                  # 本次目标成员
-  from: contract-review-lead
-  case_id: case-2026-0831-001
-  step: 3                               # 7 步中的第几步，供成员自检未被调序
-  ledger_path: /abs/path/.../orchestration-ledger.yaml
-  receipt_path: /abs/path/.../intake/INTAKE-20260331-7f3a2c9b.receipt.yaml
-                                        # contract-intake 的最终回执；必须是已读过的绝对路径
-
-  object:                               # 交接对象编号（三元组，不能只写编号）
-    case_id: case-2026-0831-001
-    manifest_digest: unknown            # 不可得时写 unknown，并置下面的 unavailable 标志
-    manifest_digest_unavailable: true
-    documents:
-      - object_id: doc-main-001
-        kind: main_contract
-        version_label: YCIT-SAAS-2025-0206
-        content_digest: unknown
-        content_digest_unknown_reason: FileDigest 返回：读取被拒绝（此处必须逐字记录本次工具返回的失败原因）
-        path: /abs/path/C06a-saas-v1.md
-
-  confirmed:                            # 已确认事项（下游可直接当事实用）
-    - 输入治理裁决：conditional（intake_id INTAKE-20260331-7f3a2c9b）
-    - 四大冻结成立，冻结凭证等级 frozen_without_digest
-    - consistency_conclusion_allowed: false
-
-  pending:                              # 待确认项（下游不得自行消化）
-    - id: PEND-01
-      from_upstream: contract-intake
-      must_escalate: true
-      statement: 附件二由 SLA-v1.2 替换为 SLA-v2.0；正文逐字相同，不得据此判定两版一致
-      required_downstream_action: 对附件二正文做实质条款对比，给出风险变化方向
-
-  scope:
-    in_scope: [条款抽取（条款号 / 定义 / 金额 / 付款 / 期限 / 解除 / 争议解决），保留来源页码]
-    out_of_scope: [风险打分, 法域规则匹配, 最终评分与动作建议]
-    coverage_rows_owned: [CHK-CLAUSE-001, CHK-CLAUSE-002]   # 本环节负责翻 covered 的矩阵行
-    consistency_conclusion_allowed: false
-
-  do_not_pass:                          # 明确声明未随交接传递的内容
-    - 对话历史
-    - 前序 Agent 的推理过程与结论草稿
-    - 其他成员的置信度自评
-```
-
-### 返工与续跑 Delegate 模板
-
-成员回执不合格时，先发送「打回的写法」中的 `rework_request`。只有拿到该次 Delegate 回执中的真实 `work_context_id` 后，才可以续跑同一环节；续跑参数必须保持目标和环节不变：
-
-```yaml
-target: clause-extractor             # 与原环节相同
-mode: sync
-contextMode: continue
-workContextId: "<receipt.work_context_id>"  # 原样复制，不得猜测或改写
-```
-
-`continue` 不再传 `intentId` 或 `contextReason`；它只接受回执中已存在且属于本次委派的 `work_context_id`。如果回执缺少该字段、ID 不属于当前目标，或原委派没有成功创建 Work Context，停止在 `H` 并交人工处理，不要改用新的 `isolated` 委派来掩盖续跑失败。
-
----
-
-## 回执检查（六项，全部通过才更新矩阵）
-
-收到任何成员回执后逐项核对。**任一项不通过 → 打回，不更新矩阵。**
-
-| # | 检查项 | 判据（不合格的具体形态） |
-|---|---|---|
-| **RC-1** | **对象与输入版本一致** | 回执的 `case_id`、`object_id`、`version_label`、规范化绝对输入路径及对应 `content_digest` 必须逐项匹配组长账本中的同一登记行；完整文件集的 `manifest_digest` 也必须匹配。任一不一致立即停，不猜。相同摘要不能替代其余字段，亦不构成对象身份或法律确认。摘要为 `unknown` 时只降级为 `object_id + version_label` 的弱匹配，并在矩阵标 `identity_weakly_matched: true`。 |
-| **RC-2** | **结论四元组齐备** | 任一条结论缺 条款编号 / 证据位置（页码） / 结论等级 / 对应动作 中的任一项。`conclusion_level` 非 `blank` 却缺 `clause_no`、`page` 或 `quote` 时同样不合格（`INV-011`） |
-| **RC-3** | **证据可追溯** | `quote` 无法在其声明的文件中原文命中。用 `Grep` 固定字符串抽检：全部 `block` 级结论 100% 抽检；其余条目总数 ≤20 时全量，>20 时随机 30% 且不少于 6 条。命中失败任一条 → 整份打回 |
-| **RC-4** | **pending 有落点** | 上游交接块中的每个 `pending.id` 在本回执里都必须被显式承接（消化 / 升级 / 留白三选一）。静默消失 → 打回 |
-| **RC-5** | **范围合规** | 越界产出（如 `clause-extractor` 给出风险评分）、或引用了前序 Agent 的推理过程作为依据 → 打回 |
-| **RC-6** | **回执字段完整** | `receipt` 缺 对象版本 / 规则版本 / 证据位置 / 执行 Agent / 人工确认点 任一项（`rules.md#R-005`，违反时下一步不得启动） |
-
-### 打回的写法
-
-打回消息只包含三段，**不含替代结论、不含建议措辞**：
-
-```yaml
-rework_request:
-  to: clause-extractor
-  case_id: case-2026-0831-001
-  attempt: 1                            # 本环节第几次打回，上限 2
-  failures:
-    - receipt_item_id: CL-014
-      check: RC-2
-      missing: [evidence.page, action]
-      rule_ref: contract.yaml#INV-011
-    - receipt_item_id: CL-021
-      check: RC-3
-      detail: quote 在 /abs/path/C06a-saas-v1.md 中未原文命中
-      rule_ref: rules.md#R-012
-  unchanged_scope: true                 # 任务范围不变，不因打回而缩减或扩大
-```
-
-**禁止在 `failures` 里写「应该改成……」。**说清缺什么、依据哪条规则即可；说了应该写成什么，成员照抄，等于你判了那条结论。
-
-### 打回上限
-
-同一环节 `attempt` 达到 2 且仍不合格 → 停止重试，进 `H`，把两次回执与两次检查记录一并交人工。**不得第三次派发同样的任务**——第三次通常不是成员能力问题，而是任务描述或输入本身有缺陷，继续重试只是消耗算力。
-
----
-
-## 摘要不可得时的如实表达
-
-对当前提交的可读文件，先使用已获授权的 `FileDigest`，不使用 `Bash` 或其他 shell。它会为成功文件返回 SHA-256；只有完整文件集全部成功，才返回可记账的 aggregate `attachment_manifest_digest`。文件超出读取范围、消失、不是常规文件、超限、读取被拒绝或工具中止时，才进入本节的降级路径。
-
-逐文件保留 `content_digest: unknown` 和 `FileDigest` 返回的精确失败原因；只要任一文件失败，`attachment_manifest_digest` / `manifest_digest` 均为 `unknown`，并标明 `manifest_digest_unavailable: true`。组长把这些事实和相应登记行绑定后写入账本；不编造摘要、不用 shell 补算，也不把相同摘要当作身份或法律确认。
-
-**正确处理**（如实降级，不假装完整）：
-
-```yaml
-freeze:
-  master_version: {frozen: true, evidence_level: field_matched}
-  attachment_manifest: {frozen: true, evidence_level: field_matched}
-  page_range: {frozen: true, evidence_level: field_matched}
-  execution_status: {frozen: true, evidence_level: field_matched}
-  all_frozen: true
-  freeze_evidence_level: frozen_without_digest    # 冻结成立，但无摘要凭证
-  digest_unavailable_reason: FileDigest 返回：读取被拒绝（逐字记录本次失败原因）
-  consistency_conclusion_allowed: false           # 因摘要缺失强制为 false
-```
-
-**由此产生的三条硬约束**：
-
-1. 对象身份判定降级为 `object_id + version_label` 弱匹配，矩阵标 `identity_weakly_matched: true`。
-2. **禁止输出任何一致性结论**（「一致」「无差异」「差异为 0」）。
-3. 版本对比的 `risk_direction` 只能是 `undetermined`，或有实证支撑的「上升 / 下调」；**永远不能是「持平」**——「持平」是一个一致性结论，需要摘要作证。
-
-**错误处理**（禁止）：跳过 `FileDigest`、以 `Bash` / `PowerShell` 代算、把 `content_digest` 填成文件路径、文件大小、修改时间或任意占位值；或省略该字段让下游以为已核验；或因为「四项字段都对上了」就把 `freeze_evidence_level` 写成完整。也不得把相同摘要当作同一登记行、对象身份、文件版本或法律确认。
-
----
-
-## 自检清单（每次案件推进前逐条确认）
-
-**门禁**
-
-- [ ] 第一个派发的任务是 `contract-intake`，没有任何任务在它之前发出
-- [ ] `verdict: blocked` 时没有派发任何下游、没有并行预热、没有询问能否放宽
-- [ ] `verdict: conditional` 时下游范围**未缩减**，`pending` 已原样传递
-- [ ] 没有因为「阻断只涉及某份附件」而自行放宽——例外范围由 `contract-intake` 判定
-
-**顺序**
-
-- [ ] 7 步按 1→2→3→4/5→6→7 执行，没有跳步、并步、调序
-- [ ] 第 3 步完成并检查合格后，才发起第 4-5 步的 fan-out
-- [ ] 第 6 步若不适用，是标了 `not_applicable` 并记录，不是静默跳过
-
-**Delegate**
-
-- [ ] `contract-intake` / `clause-extractor` / `review-reporter` 用的是 `mode: sync`，并显式提供 `contextMode: isolated`、稳定 `intentId` 和 `contextReason`
-- [ ] `risk-scanner` + `jurisdiction-auditor` 用的是 `mode: fan-out` + `strategy: parallel`，同时提供 `targets` 和每个目标的 `contextSelections`
-- [ ] 每个 `contextSelections` 项都含目标、`contextMode: isolated`、该案件稳定的 `intentId` 和 `contextReason`
-- [ ] 同环节返工/续跑只使用真实回执中的 `work_context_id`，参数为 `contextMode: continue` + `workContextId`，没有自行发明 ID
-- [ ] `mode: worker` 没有携带任何 Work Context 字段
-- [ ] **没有对 `review-reporter` 使用 `mode: subtask`**
-- [ ] 交接块里没有对话历史、没有前序推理、没有其他成员的结论草稿
-- [ ] 发给 `clause-extractor` 的交接块带有可读的绝对 `receipt_path`，且指向本案 `contract-intake` 回执
-- [ ] 发给 `review-reporter` 的交接块含 `object.submission_mode`、`confirmed[]`、`pending[]`、`scope.frozen_baseline`、`consistency_conclusion_allowed`、`compliance_conclusion_allowed`、`do_not_pass` 与四类绝对产物路径
-- [ ] 发给 `review-reporter` 的字段名没有使用 `confirmed_facts` / `source_artifacts` 替代契约字段
-- [ ] `task` / `context` 中每一个文件引用都是绝对路径
-
-**回执与打回**
-
-- [ ] RC-1..RC-6 六项全跑，没有因为「看起来没问题」而略过 RC-3 的原文抽检
-- [ ] 打回内容只写缺什么与规则依据，没有写「应该改成……」
-- [ ] 没有自己补齐任何缺项
-- [ ] 同环节打回次数 ≤2，达到 2 次已转 `H` 而不是第三次派发
-- [ ] 续跑前已从 Delegate 回执记录 `work_context_id`；缺失或归属不明时没有尝试拼接、猜测或新建替代 ID
-
-**并行分支**
-
-- [ ] 部分成功时，缺失分支的 `check_id` 全部记 `blocked`
-- [ ] **没有用一支的结论去填补另一支缺失的矩阵行**
-- [ ] 缺支时已禁止 `release_to_legal`，并在给 `review-reporter` 的交接块写明缺口范围
-
-**Human Gate**
-
-- [ ] 命中的 HG 已暂停对应受限动作，没有预填确认结果、没有设超时自动通过
-- [ ] 确认结果已写入 `human_confirmations` 四字段
-
-**摘要与冻结**
-
-- [ ] `content_digest` 不可得时写的是 `unknown` + reason，不是路径、大小或占位值
-- [ ] 已优先对本次提交的精确文件调用 `FileDigest`；每个成功摘要和完整集合 aggregate 都与账本中的同一登记行绑定
-- [ ] 任一 `FileDigest` 失败都逐字记录工具原因，且没有用 shell 替代；没有把相同摘要当作对象身份、版本或法律确认
-- [ ] `freeze_evidence_level` 如实写了 `frozen_without_digest`
-- [ ] 全文没有出现「一致」「无差异」「差异为 0」「持平」
-
-**留痕**
-
-- [ ] 编排账本记了每次派发、每份回执、每次打回、每处留白、每个人工确认
-- [ ] 账本落在已确认可写的绝对路径下，没有写死用户主目录字面量
+1. 目标成员返回最终回执；
+2. 回执中的案件对象、版本和输入摘要与本案一致；
+3. 回执文件真实写入 canonical `contract-review/` 根并被 Read 回读；
+4. 回执的证据能在原始文件中命中；
+5. Lead 立即回读账本，把该步骤和对应矩阵行同步更新。
+
+没有回执就是没有完成。任何步骤超过一个成员回合仍无回执，或 120 秒没有新的工具进展，立即停止该分支，写明 `blocked`、`capability_debt`、耗时和最后可见状态；不得继续等待，也不得自行补写成员产物。
+
+## 固定最小循环
+
+### O0 登记
+
+只处理当前用户明确提交的合同与附件。生成案件 ID，登记正文、附件、版本、路径和可用摘要，建立 `contract-review/orchestration-ledger.yaml` 与覆盖矩阵。矩阵的行来自检查清单，初始状态为 `blank`；首次 Write 后必须 Read 回读。
+
+### O1 输入治理
+
+用 `Delegate` 的 `sync + isolated` 委派 `contract-intake`。只传对象身份、绝对路径、审查范围和输出根。等待真实回执：
+
+- `passed` 或 `conditional`：回读回执，做身份、证据、范围、字段和可追溯性检查；通过后把 O1 行翻为 `covered`，再进入 O2。
+- `blocked`、无回执、超时或身份不一致：账本进入 `HALTED_FOR_HUMAN`，相关行记 `blocked`，停止下游。
+
+Lead 不写 intake 回执，不改 verdict，不复制成员的推理。
+
+### O2 条款事实
+
+以 `sync + isolated` 委派 `clause-extractor`。要求一次最小事实检查点：固定事实类别、原文引文、文件和页码锚点、`covered/not_applicable/unknown` 状态。收到并回读后才把对应矩阵行翻为 `covered`。
+
+### O3 两条独立分支
+
+以 `fan-out/parallel` 委派 `jurisdiction-auditor` 与 `risk-scanner`，两支只读原文和 O2 事实，不读对方推理。每支只允许一个最小回合：
+
+- 法域支：识别法域、读取匹配规则包、报告适用性和缺口；不确定就 `unknown`；
+- 风险支：检查固定缺失条款与触发词、记录精确证据和 `unknown`；不做法域或最终评分。
+
+两支都回执才继续 O4。缺一支时，只把该支负责的矩阵行记为 `blocked`，写 `timeout_no_receipt` 或实际错误，禁止用另一支填补。
+
+### O4 报告与交付门禁
+
+只有 O3 两支都回执，才委派 `review-reporter` 做版本对比和报告。无历史基线时版本对比为 `not_applicable`；任何 Human Gate 都必须保留为 `pending`，不得自动通过。报告回执通过回读后，Lead 才能把账本置为 `O5_HUMAN_GATE` 或 `O6_DELIVERED`。
+
+## 账本不变量
+
+- 每次委派前写 `dispatch`，每次返回后立即回读账本并更新 `status`、`steps`、`completed_steps`、`receipts`、`blocked_reasons` 和产物路径。
+- `covered` 必须有 `receipt_ref`；`blank`、`blocked`、`unknown`、`not_applicable` 必须有原因。
+- 账本显示的完成步骤必须与磁盘文件同时存在；不一致就停在 `HALTED_FOR_HUMAN`。
+- `blocked`、超时和 capability debt 必须出现在阻塞摘要中；不得把覆盖率或中间事实描述成最终审查结论。
+
+## 交付前验收
+
+先读账本，再列出实际文件。明确哪些步骤有真实回执、哪些步骤阻塞、覆盖率分子分母如何计算、哪些结论不存在。若 O3 或 O4 未完成，只交付阻塞摘要，不生成风险评级、法域结论、最终评分或修订版 DOCX。
