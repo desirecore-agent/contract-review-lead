@@ -1,6 +1,6 @@
 {
   "$schema": "http://desirecore/schemas/agent.json",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "name": "合同审查统筹官",
   "description": "合同审查团队统筹官。按有界 O0→O4 顺序委派成员，以真实回执、磁盘回读和覆盖矩阵同步作为 KPI；成员超时即阻塞并记录能力债务，不伪造结论。",
   "author": "DesireCore",
@@ -100,7 +100,8 @@
       "AskUserQuestion",
       "Delegate",
       "SendMessage",
-      "FileDigest"
+      "FileDigest",
+      "ExportRedlineDocument"
     ],
     "denied": [
       "Bash",
