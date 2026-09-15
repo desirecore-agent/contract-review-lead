@@ -4,7 +4,7 @@ description: >-
   合同审查团队的有界编排入口。按 O0→O1→O2→O3→O4 固定顺序委派，
   以真实回执、磁盘回读、证据位置和明确的覆盖目标作为完成判据；能力不可用时如实降级，
   不伪造结论，也不让单个非关键工具错误拖死整个审查。
-version: 1.2.0
+version: 1.2.1
 type: procedural
 risk_level: medium
 status: enabled
@@ -65,7 +65,7 @@ intentId: ${case_id}:intake
 contextReason: 合同案件输入治理与受理门禁。
 ```
 
-- `passed` 或 `conditional`：回读回执，确认对象、范围、证据和产物路径；合格后把对应行标为 `covered`，再进入 O2。
+- `passed` 或 `conditional`：回读回执，确认对象、范围、证据和产物路径；合格后立即回写矩阵：将 `contract-intake#S1`–`#S8` 逐行更新为 `covered`、`unknown` 或 `not_applicable`，每行填写 `receipt_ref` 与 `evidence_or_reason`，并同步 `summary` 计数，再进入 O2。只写账本而不回写矩阵不算完成。
 - `blocked`、无回执、超时或身份不一致：账本进入 `HALTED_FOR_HUMAN`，相关行标为 `blocked`，停止下游。
 
 Lead 不写 intake 回执，不改 verdict，不复制成员推理。conditional 继续向下游传递 pending；blocked 终止流程。
@@ -73,30 +73,30 @@ Lead 不写 intake 回执，不改 verdict，不复制成员推理。conditional
 ## O2 条款事实
 
 以 sync + isolated 委派 clause-extractor。要求一次最小事实检查点：重要条款、原文引文、文件和位置、
-covered/not_applicable/unknown 状态。收到并回读后才更新矩阵。缺证据就打回一次；第二次仍不合格转人工。
+covered/not_applicable/unknown 状态。收到并回读后才更新矩阵：把条款回执中的 `category` / `key_missing_facts` 映射到预先存在的固定 `check_id`，逐行写入 `status`、`receipt_ref`、证据位置和未知原因，并重算 `summary`。缺证据就打回一次；第二次仍不合格转人工。不得只追加成员产物而留下矩阵初始 `blank`。
 
 ## O3 两条独立分支
 
 以 fan-out/parallel 委派 jurisdiction-auditor 与 risk-scanner，两支只读原文和 O2 事实，不读对方推理。
 每支只允许一个最小回合。法域支报告法域线索、适用性和缺口；风险支报告固定风险检查、精确证据和未知项。
-两支都回执才可进入 O4；缺一支只阻塞该支负责的矩阵行，不得用另一支填补。
+两支都回执才可进入 O4；收到每支回执后立即把该支负责的固定行更新为 `covered` / `unknown` / `not_applicable` 并写 `receipt_ref`，重算 `summary`；缺一支只阻塞该支负责的矩阵行，不得用另一支填补。
 
 ## O4 报告与交付门禁
 
 只有 O3 两支都回执，才委派 review-reporter 做版本对比和报告。无历史基线时显式标记 not_applicable。
-报告必须列出：已覆盖检查、欠账/阻塞、证据位置、待人工确认和下一步动作。任何 Human Gate 保持 pending，不得自动通过。
+报告必须列出：已覆盖检查、欠账/阻塞、证据位置、待人工确认和下一步动作。任何 Human Gate 保持 pending，不得自动通过。报告回执返回后，必须再读一次矩阵，把 `REPORT-*` 行和已确认的前置行更新并重算 `summary`；最终交付前若矩阵仍有 `blank`，必须逐行说明原因，不能只在报告正文中概括。
 O3/O4 未完成时不生成风险评级、最终评分或修订版 DOCX。
 
 ## 账本与输出不变量
 
-- 每次委派前写 dispatch，每次返回后立即回读账本并更新状态、负责人、回执和产物路径。
+- 每次委派前写 dispatch，每次返回后立即回读账本和矩阵，并更新状态、负责人、回执、产物路径及矩阵 `summary`。矩阵的 `blank` 计数只能在确实没有对应回执时保留。
 - covered 必须能指向真实回执和文件；blank、blocked、unknown、not_applicable 必须有自然语言原因。
 - 矩阵行集合固定，不能因成员漏提而消失；同一类输入必须使用相同的状态词和检查组。
 - 摘要缺失时可以继续事实审查，但不得宣称“同一版本”“无差异”或“差异为零”；一致性结论记为 undetermined。
 
 ## 交付前验收
 
-先读账本，再列出实际文件。给出 KPI 结果：文件覆盖、证据可回查、成员回执、欠账数量、Human Gate 和交付物路径。
+先读账本，再读矩阵，再列出实际文件。给出 KPI 结果：文件覆盖、证据可回查、成员回执、矩阵逐行状态及 `summary`、欠账数量、Human Gate 和交付物路径。逐项核对：每个 `covered` 必须指向真实回执；每个 `blank` / `blocked` / `unknown` / `deferred` 必须有原因；若计数与行状态不一致，先修正矩阵再交付。
 明确哪些步骤有真实回执、哪些步骤阻塞、哪些结论不存在。只有所有必需步骤均有合格回执且人工门禁已处理时，才可交付最终报告；
 否则交付阻塞摘要和可执行的补齐清单。
 
