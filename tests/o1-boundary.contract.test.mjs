@@ -97,6 +97,7 @@ test('digest rules prefer FileDigest and bind a receipt to its registered input 
   const corpus = [persona, principles, skill].join('\n')
 
   assert.ok(agent.tool_permissions.allowed.includes('FileDigest'))
+  assert.ok(agent.tool_permissions.allowed.includes('ExportRedlineDocument'))
   assert.ok(agent.tool_permissions.denied.includes('Bash'))
   assert.match(skill, /优先调用一次 `FileDigest`/)
   assert.match(skill, /不要把数组再包成字符串/)
