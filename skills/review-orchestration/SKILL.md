@@ -100,3 +100,11 @@ O3/O4 未完成时不生成风险评级、最终评分或修订版 DOCX。
 明确哪些步骤有真实回执、哪些步骤阻塞、哪些结论不存在。只有所有必需步骤均有合格回执且人工门禁已处理时，才可交付最终报告；
 否则交付阻塞摘要和可执行的补齐清单。
 
+
+## Redline DOCX 状态收口
+
+当 O4 调用 `ExportRedlineDocument` 成功后，交付前必须完成一次状态收口：
+
+1. 使用 canonical 相对路径 `contract-review/redline/<case-id>-redline.docx` 写入账本的 `RedlineDOCX` 节，至少包含 `status: success`、`path`、目标发现和可回读的包验证摘要。
+2. 重新读取账本、报告和覆盖矩阵；若任一文件仍保留 `RedlineDOCX.status: failed` 或 `redline_docx_status: failed`，必须用 `Write` 重写完整目标文件后再次 `Read`，不得以“已调用工具”代替一致性验收。
+3. 报告交付物清单必须包含同一 DOCX 路径；若工具失败或无法验证，保持 `failed` 并记录真实原因，不得把草稿路径标为成功。
