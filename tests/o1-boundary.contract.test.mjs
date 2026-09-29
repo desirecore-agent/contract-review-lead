@@ -68,5 +68,3 @@ test('Lead can expose the real structured validator to its intake child without 
   assert.match(skill, /StructuredFileValidate.*document.*schema.*format/)
   assert.match(skill, /校验工具调用失败.*不启动下游/)
 })
-
-
