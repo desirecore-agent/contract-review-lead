@@ -1,0 +1,10 @@
+{
+  "name": "contract-review-lead-contract-tests",
+  "private": true,
+  "version": "1.0.22",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/o1-boundary.contract.test.mjs",
+    "test:platform": "node --experimental-strip-types --loader ./tests/ts-extension-loader.mjs --test tests/delegate-api.contract.test.mjs"
+  }
+}
