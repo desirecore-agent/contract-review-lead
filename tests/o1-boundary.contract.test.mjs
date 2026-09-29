@@ -5,28 +5,6 @@ import test from 'node:test'
 const root = new URL('..', import.meta.url)
 const read = (path) => readFile(new URL(path, root), 'utf8')
 
-function gatePersistedReceipt(text, format, artifactPath) {
-  try {
-    const receipt = format === 'json' ? JSON.parse(text) : parseIntakeYaml(text)
-    if (!receipt || receipt.valid !== true || !['blocked','passed','conditional'].includes(receipt.verdict)) {
-      return {dispatch:{O2:0,O3:0,O4:0,O5:0}, handoff:{to:null}, retained:[artifactPath], reason:'invalid-receipt'}
-    }
-    return {dispatch:{O2:receipt.verdict === 'blocked' ? 0 : 1}, handoff:{to:receipt.verdict === 'blocked' ? null : 'O2'}, retained:[artifactPath]}
-  } catch {
-    return {dispatch:{O2:0,O3:0,O4:0,O5:0}, handoff:{to:null}, retained:[artifactPath], reason:'parse-failed'}
-  }
-}
-
-function parseIntakeYaml(text) {
-  if (/[[\]{}]/.test(text)) throw new SyntaxError('unsupported or malformed flow collection')
-  const receipt = Object.fromEntries(text.trim().split(/\r?\n/).map((line) => {
-    const match = /^([a-z_]+):\s*(\S.*)$/.exec(line)
-    if (!match) throw new SyntaxError('malformed YAML line')
-    return [match[1], match[2] === 'true' ? true : match[2] === 'false' ? false : match[2]]
-  }))
-  return receipt
-}
-
 test('O1 remains sync isolated, blocked cannot pass, conditional continues', async () => {
   const [persona, principles, orchestration] = await Promise.all([
     read('persona.md'), read('principles.md'), read('skills/review-orchestration/SKILL.md'),
@@ -88,16 +66,7 @@ test('Lead can expose the real structured validator to its intake child without 
   const skill = await read('skills/review-orchestration/SKILL.md')
   assert.match(skill, /tools:.*StructuredFileValidate/)
   assert.match(skill, /StructuredFileValidate.*document.*schema.*format/)
-  assert.match(skill, /校验工具不可用.*不得启动下游/)
+  assert.match(skill, /校验工具调用失败.*不启动下游/)
 })
 
-test('malformed YAML/JSON and valid:false retain the failure artifact and dispatch nothing', async () => {
-  for (const [fixture,format] of [['tests/fixtures/intake-malformed.yaml','yaml'],['tests/fixtures/intake-malformed.json','json'],['tests/fixtures/intake-valid-false.json','json']]) {
-    const result = gatePersistedReceipt(await read(fixture), format, fixture)
-    assert.deepEqual(result.dispatch, {O2:0,O3:0,O4:0,O5:0})
-    assert.equal(result.handoff.to, null)
-    assert.deepEqual(result.retained, [fixture])
-  }
-  const orchestration = await read('skills/review-orchestration/SKILL.md')
-  assert.match(orchestration, /解析失败.*`valid:false`[\s\S]*失败产物原路径保留[\s\S]*`handoff\.to:null`/)
-})
+

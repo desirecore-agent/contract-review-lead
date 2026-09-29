@@ -21,7 +21,7 @@ metadata:
 
 `canonical_artifact_root` 的唯一语义：Lead 为本次 case/object/version/run 选定并核验过的绝对目录，已经包含这四项的唯一身份。成员只在该根下追加阶段目录及唯一产物名，绝不再次拼接 case_id、contract_object_id 或 workspace；这些身份仍写进回执，不靠重复目录表达。缺根、相对根或范围不符时先报路径欠账，不自行选择目录。根必须位于已授权 workspace，路径授权不是本约定自行授予的。
 
-阶段相对目录固定为 O1 `intake/`、O2 `clause-extraction/`、O3 `risk-scan/` 与 `jurisdiction-audit/`；O4/O5 的输出逐项列入 write_allowlist。Lead 在每次 task 中传完整根、实际输入路径及允许输出路径，收回时校验实际返回文件仍在本轮根内。补料或新 run 使用新的根和标识，保留旧产物。
+阶段相对目录固定为 O1 `intake/`、O2 `clause-extraction/`、O3 `risk-scan/` 与 `jurisdiction-audit/`、O4 `independent-verification/`、O5 `report-delivery/`；O4/O5 的输出逐项列入 write_allowlist。Lead 在每次 task 中传完整根、实际输入路径及允许输出路径，收回时校验实际返回文件仍在本轮根内。补料或新 run 使用新的根和标识，保留旧产物。
 
 首次派发前建立并回读七行固定矩阵：`input-integrity`、`clause-facts`、`jurisdiction`、`risk`、`independent-review`、`version-comparison`、`report-and-delivery`。不得先收发现再建行。
 
@@ -38,7 +38,7 @@ metadata:
 }
 ```
 
-对实际落盘回执使用真实 `StructuredFileValidate`：`document_path` 为回执绝对路径，`schema_path` 为当前 intake 技能声明的回执 schema 绝对路径，`format` 与文档实际 YAML/JSON 格式一致；两个路径都必须获准读取。工具结果中的 `valid` 是结构校验结果，不能替代回执自己的 verdict。校验工具不可用或返回失败时保留原回执和能力欠账，不得启动下游，不用文本猜测代替解析。统筹官的非空工具允许清单必须含该工具，否则平台的父子工具交集会使 intake 也无法使用。
+对实际落盘回执使用真实 `StructuredFileValidate`：`document_path` 为回执绝对路径，`schema_path` 为当前 intake 技能声明的回执 schema 绝对路径，`format` 与文档实际 YAML/JSON 格式一致；两个路径都必须获准读取。工具结果中的 `valid` 是结构校验结果，不能替代回执自己的 verdict，也不能由回执或 sidecar 自签。校验工具调用失败（`success:false`）与工具成功返回 `valid:false` 必须分别记录；任一情形都不启动下游。统筹官的非空工具允许清单必须含该工具，否则平台的父子工具交集会使 intake 也无法使用。
 
 ```json validator-example:O1
 {
@@ -48,7 +48,9 @@ metadata:
 }
 ```
 
-Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，并用对应 YAML/JSON 解析器解析；解析失败、顶层 `valid:false`、缺少必需字段、无回执、超时、取消或身份不符均为不合格。失败产物原路径保留，另记失败回执，设置 `handoff.to:null`，且 O2/O3/O4/O5 的 dispatch 均保持 0。只有解析成功且 `valid:true`（或契约明确的等价有效标记）时才读取 verdict：`blocked` 停止全部下游；`passed` 与 `conditional` 进入 O2，conditional 的 pending 原样携带并保留欠账。不得通过字符串匹配或内存中未落盘对象绕过门禁。
+Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，并用标准 YAML/JSON 解析器解析；不得自建简化 YAML parser。对完整回读字节计算 SHA-256，并要求真实工具报告的 `document_sha256` 与它一致；同样完整读取实际 schema 字节并要求报告的 `schema_sha256` 一致，同时保留 `report_sha256`。任何解析失败、schema `additionalProperties`/必需字段错误、摘要不一致、无回执、超时、取消或身份不符都不合格：失败产物原路径保留，另记失败回执，`handoff.to:null`，O2/O3/O4/O5 dispatch 均为 0。只有工具调用成功、工具报告 `valid:true`、两个摘要完全绑定，且回执 verdict 严格为白名单 `passed` 或 `conditional` 时进入 O2；`blocked`、`unknown`、缺失或其他值均不派发，conditional 的 pending 原样携带。不得通过字符串匹配、sidecar 或内存中未落盘对象绕过门禁。
+
+`<intake_id>.receipt.yaml` 是唯一机器摘要；`<intake_id>.detail.yaml` 保存原文证据、签章观察、四元组、版本矩阵和补料动作，机器摘要中的 finding id/source_scope/action 必须可追到 detail，但 detail 不能覆盖或授权机器摘要。`<intake_id>.validation.json` 只记录真实 validator 报告的摘要绑定和诊断，是审计 sidecar，不是自主授权。三者都只读取本次任务明确列出的绝对路径，且必须在同一 `<canonical_artifact_root>/intake/` 下；不得借此枚举目录、读取父目录或其他 run。
 
 ## O2 条款事实
 
