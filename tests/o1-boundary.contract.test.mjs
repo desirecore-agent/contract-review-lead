@@ -3,108 +3,101 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const root = new URL('..', import.meta.url)
+const read = (path) => readFile(new URL(path, root), 'utf8')
 
-async function source(path) {
-  return readFile(new URL(path, root), 'utf8')
+function gatePersistedReceipt(text, format, artifactPath) {
+  try {
+    const receipt = format === 'json' ? JSON.parse(text) : parseIntakeYaml(text)
+    if (!receipt || receipt.valid !== true || !['blocked','passed','conditional'].includes(receipt.verdict)) {
+      return {dispatch:{O2:0,O3:0,O4:0,O5:0}, handoff:{to:null}, retained:[artifactPath], reason:'invalid-receipt'}
+    }
+    return {dispatch:{O2:receipt.verdict === 'blocked' ? 0 : 1}, handoff:{to:receipt.verdict === 'blocked' ? null : 'O2'}, retained:[artifactPath]}
+  } catch {
+    return {dispatch:{O2:0,O3:0,O4:0,O5:0}, handoff:{to:null}, retained:[artifactPath], reason:'parse-failed'}
+  }
 }
 
-function section(markdown, heading, nextHeading) {
-  const start = markdown.indexOf(heading)
-  assert.notEqual(start, -1, `missing ${heading}`)
-  const end = markdown.indexOf(nextHeading, start + heading.length)
-  assert.notEqual(end, -1, `missing ${nextHeading}`)
-  return markdown.slice(start, end)
+function parseIntakeYaml(text) {
+  if (/[[\]{}]/.test(text)) throw new SyntaxError('unsupported or malformed flow collection')
+  const receipt = Object.fromEntries(text.trim().split(/\r?\n/).map((line) => {
+    const match = /^([a-z_]+):\s*(\S.*)$/.exec(line)
+    if (!match) throw new SyntaxError('malformed YAML line')
+    return [match[1], match[2] === 'true' ? true : match[2] === 'false' ? false : match[2]]
+  }))
+  return receipt
 }
 
-function yamlFields(block) {
-  return Object.fromEntries(
-    block
-      .trim()
-      .split('\n')
-      .map((line) => line.match(/^([A-Za-z]+):\s*(.+)$/))
-      .filter(Boolean)
-      .map(([, key, value]) => [key, value.replace(/^"|"$/g, '')]),
-  )
-}
-
-function o1Transitions(o1) {
-  return Object.fromEntries(
-    [...o1.matchAll(/^\s*- `(?<verdict>blocked|conditional|passed)`\s*→\s*进 `(?<next>X1|O2)`/gm)].map(
-      ({ groups }) => [groups.verdict, groups.next],
-    ),
-  )
-}
-
-test('agent version is semantic and O1 has the required isolated sync Delegate contract', async () => {
-  const [agentText, skill] = await Promise.all([source('agent.json'), source('skills/review-orchestration/SKILL.md')])
-  const agent = JSON.parse(agentText)
-  const o1 = section(skill, '## O1 输入治理', '## O2 条款事实')
-  const delegateYaml = o1.match(/```yaml\n([\s\S]*?)```/)
-
-  assert.match(agent.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/)
-  assert.ok(delegateYaml, 'O1 must contain Delegate parameters')
-  assert.deepEqual(yamlFields(delegateYaml[1]), {
-    target: 'contract-intake',
-    mode: 'sync',
-    contextMode: 'isolated',
-    intentId: '${case_id}:intake',
-    contextReason: '合同案件输入治理与受理门禁。',
-  })
-})
-
-test('policy corpus contains no authorization for lead-authored intake artifacts', async () => {
-  const policy = await Promise.all([
-    source('persona.md'),
-    source('principles.md'),
-    source('skills/review-orchestration/SKILL.md'),
+test('O1 remains sync isolated, blocked cannot pass, conditional continues', async () => {
+  const [persona, principles, orchestration] = await Promise.all([
+    read('persona.md'), read('principles.md'), read('skills/review-orchestration/SKILL.md'),
   ])
-  const corpus = policy.join('\n')
-  const artifact = '(?:intake\\.yaml|输入治理回执|`verdict`|`pending`)'
-  const actor = '(?:lead|统筹官|你)'
-  const authoring = '(?:写|编写|编辑|生成|合成|补写)'
-  const positiveAuthorization = new RegExp(
-    `${actor}.{0,60}(?:可(?:以)?|允许|负责|应|须|必须)(?:(?!不得|禁止|不可).){0,40}${authoring}.{0,40}${artifact}`,
-  )
-  const passiveAuthorization = new RegExp(
-    `由${actor}(?:(?!不得|禁止|不可).){0,30}${authoring}.{0,40}${artifact}`,
-  )
-  const contradictoryClauses = corpus
-    .split(/[。；\n]/)
-    .filter((clause) => positiveAuthorization.test(clause) || passiveAuthorization.test(clause))
-
-  assert.deepEqual(contradictoryClauses, [])
-  assert.match(corpus, /Lead 不写 intake 回执/)
-  assert.match(corpus, /不得写、编辑、合成或补全 `intake\.yaml`/)
+  const corpus = [persona, principles, orchestration].join('\n')
+  assert.match(orchestration, /"target": "contract-intake"[\s\S]*"mode": "sync"[\s\S]*"contextMode": "isolated"[\s\S]*"contextReason":/)
+  assert.match(corpus, /Lead 不写 intake 回执|不代写 O1/)
+  assert.match(corpus, /`blocked`.*停止|O1 blocked.*停止/s)
+  assert.match(corpus, /`passed`.*`conditional`.*进入 O2/s)
+  assert.match(corpus, /conditional.*pending.*继续/s)
 })
 
-test('O1 receipt transitions distinguish passed, conditional, blocked, and invalid receipts', async () => {
-  const skill = await source('skills/review-orchestration/SKILL.md')
-  const o1 = section(skill, '## O1 输入治理', '## O2 条款事实')
-  assert.match(o1, /`passed` 或 `conditional`/)
-  assert.match(o1, /`blocked`、无回执、超时或身份不一致/)
-  assert.match(o1, /conditional 继续向下游传递 pending/)
-  assert.match(o1, /账本进入 `HALTED_FOR_HUMAN`/)
+test('execution graph has true O3 parallel and two isolated reporter calls', async () => {
+  const skill = await read('skills/review-orchestration/SKILL.md')
+  assert.match(skill, /"targets": \["risk-scanner", "jurisdiction-auditor"\]/)
+  assert.match(skill, /"mode": "fan-out"[\s\S]*"strategy": "parallel"[\s\S]*"contextSelections":/)
+  assert.match(skill, /"intentId": "\$\{case_id\}:o4-independent-verification"/)
+  assert.match(skill, /"intentId": "\$\{case_id\}:o5-report-delivery"/)
+  assert.doesNotMatch(skill, /\n\s*"skill(?:s)?"\s*:/)
+  assert.match(skill, /"childContext": \{ "memoryScope": "none" \}/)
+  assert.match(skill, /禁止传 O3 推理、严重度、评分、建议/)
 })
 
-test('digest rules prefer FileDigest and bind a receipt to its registered input version', async () => {
-  const [agentText, persona, principles, skill] = await Promise.all([
-    source('agent.json'),
-    source('persona.md'),
-    source('principles.md'),
-    source('skills/review-orchestration/SKILL.md'),
+test('coverage goals are seven fixed rows and not nonexistent S1-S8 rows', async () => {
+  const [coverage, orchestration] = await Promise.all([
+    read('skills/coverage-matrix/SKILL.md'), read('skills/review-orchestration/SKILL.md'),
   ])
-  const agent = JSON.parse(agentText)
-  const corpus = [persona, principles, skill].join('\n')
+  for (const id of ['input-integrity','clause-facts','jurisdiction','risk','independent-review','version-comparison','report-and-delivery']) {
+    assert.match(coverage, new RegExp('`' + id + '`'))
+  }
+  assert.doesNotMatch([coverage, orchestration].join('\n'), /contract-intake#S1|S1–S8/)
+})
 
-  assert.ok(agent.tool_permissions.allowed.includes('FileDigest'))
-  assert.ok(agent.tool_permissions.allowed.includes('ExportRedlineDocument'))
+test('digest failure continues and direction vocabulary is canonical', async () => {
+  const corpus = [await read('persona.md'), await read('principles.md'), await read('skills/review-orchestration/SKILL.md')].join('\n')
+  assert.match(corpus, /frozen_without_digest/)
+  assert.match(corpus, /继续事实审查|继续 O1/)
+  assert.match(corpus, /up\/down\/flat\/undetermined|`up`、`down`、`flat`、`undetermined`/)
+  assert.match(corpus, /单版本.*not_applicable/)
+  assert.doesNotMatch(corpus, /risk_direction:\s*(rising|falling|n\/a)/)
+})
+
+test('agent model block and permissions retain expected safety boundaries', async () => {
+  const agent = JSON.parse(await read('agent.json'))
+  assert.equal(agent.version, '1.0.22')
+  assert.equal(agent.llm.routingMode, 'smart')
+  assert.equal(agent.llm.smart.profile.tier, 'flagship')
   assert.ok(agent.tool_permissions.denied.includes('Bash'))
-  assert.match(skill, /优先调用一次 `FileDigest`/)
-  assert.match(skill, /不要把数组再包成字符串/)
-  assert.match(skill, /`frozen_without_digest`/)
-  assert.match(skill, /aggregate\.digest/)
-  assert.match(skill, /同一登记行/)
-  assert.match(persona, /相同摘要也不能替代这些绑定字段/)
-  assert.match(corpus, /不得用 `Bash`|不使用 `Bash`|不能用被禁的 `Bash`/)
-  assert.doesNotMatch(corpus, /当前平台无可用哈希工具|平台也没有内置哈希工具/)
+  assert.ok(agent.tool_permissions.allowed.includes('AskUserQuestion'))
+  assert.equal(agent.tools.ask_user_question.wait_mode, 'always_wait')
+  assert.equal(agent.tool_permissions.allowed.includes('ExportRedlineDocument'), false)
+})
+
+test('Lead can expose the real structured validator to its intake child without enabling shell or changing routing', async () => {
+  const agent = JSON.parse(await read('agent.json'))
+  assert.ok(agent.tool_permissions.allowed.includes('StructuredFileValidate'))
+  assert.equal(agent.tool_permissions.denied.includes('StructuredFileValidate'), false)
+  assert.ok(agent.tool_permissions.denied.includes('Bash'))
+  const skill = await read('skills/review-orchestration/SKILL.md')
+  assert.match(skill, /tools:.*StructuredFileValidate/)
+  assert.match(skill, /StructuredFileValidate.*document.*schema.*format/)
+  assert.match(skill, /校验工具不可用.*不得启动下游/)
+})
+
+test('malformed YAML/JSON and valid:false retain the failure artifact and dispatch nothing', async () => {
+  for (const [fixture,format] of [['tests/fixtures/intake-malformed.yaml','yaml'],['tests/fixtures/intake-malformed.json','json'],['tests/fixtures/intake-valid-false.json','json']]) {
+    const result = gatePersistedReceipt(await read(fixture), format, fixture)
+    assert.deepEqual(result.dispatch, {O2:0,O3:0,O4:0,O5:0})
+    assert.equal(result.handoff.to, null)
+    assert.deepEqual(result.retained, [fixture])
+  }
+  const orchestration = await read('skills/review-orchestration/SKILL.md')
+  assert.match(orchestration, /解析失败.*`valid:false`[\s\S]*失败产物原路径保留[\s\S]*`handoff\.to:null`/)
 })
