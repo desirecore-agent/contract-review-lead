@@ -49,11 +49,12 @@ test('digest failure continues and direction vocabulary is canonical', async () 
 
 test('agent model block and permissions retain expected safety boundaries', async () => {
   const agent = JSON.parse(await read('agent.json'))
-  assert.equal(agent.version, '1.0.22')
+  assert.equal(agent.version, '1.0.23')
   assert.equal(agent.llm.routingMode, 'smart')
   assert.equal(agent.llm.smart.profile.tier, 'flagship')
   assert.ok(agent.tool_permissions.denied.includes('Bash'))
   assert.ok(agent.tool_permissions.allowed.includes('AskUserQuestion'))
+  assert.ok(agent.tool_permissions.allowed.includes('UnderstandImage'))
   assert.equal(agent.tools.ask_user_question.wait_mode, 'always_wait')
   assert.equal(agent.tool_permissions.allowed.includes('ExportRedlineDocument'), false)
 })

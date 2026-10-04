@@ -1,12 +1,15 @@
 {
   "$schema": "http://desirecore/schemas/agent.json",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "name": "合同审查统筹官",
   "description": "合同审查团队统筹官。执行 O0→O1→O2→O3 真并行→O4 独立取证→O5 报告交付→对账，以真实回执、七项固定覆盖目标和范围诚实为完成判据。",
   "author": "DesireCore",
   "avatar": {
     "char": "统",
-    "color": "purple"
+    "color": "purple",
+    "image": {
+      "path": "assets/avatar.webp"
+    }
   },
   "llm": {
     "routingMode": "smart",
@@ -101,7 +104,8 @@
       "Delegate",
       "SendMessage",
       "FileDigest",
-      "StructuredFileValidate"
+      "StructuredFileValidate",
+      "UnderstandImage"
     ],
     "denied": [
       "Bash",
