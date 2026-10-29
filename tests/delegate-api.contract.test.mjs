@@ -104,7 +104,9 @@ test('platform source keeps control separate and memoryScope none has the audite
   const childSchema = await readFile(path.join(platform, 'packages/schemas/src/agent-service/delegate-child-context.ts'), 'utf8')
   assert.match(delegateSource, /DELEGATE_CONTROL_TOOL_NAME = 'DelegateControl'/)
   assert.doesNotMatch(allowedNames.join('\n'), /^(action|stop)$/m)
-  assert.match(childSchema, /none=连团队记忆也跳过/)
+  // 平台 #4336（2026-10-06）把说明从「none=连团队记忆也跳过」精简为「none 不加载任何记忆」；
+  // 语义未变，真正的保证在下面两条 delegate.ts 断言里。
+  assert.match(childSchema, /none=连团队记忆也跳过|none 不加载任何记忆/)
   assert.match(delegateSource, /memoryScope === 'none'[\s\S]*scopeExcludes\.push\('agent_memory'\)/)
   assert.match(delegateSource, /disableMemoryInjection = true/)
   assert.match(delegateSource, /isMandatorySection\(name\)/)
