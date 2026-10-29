@@ -50,6 +50,8 @@ metadata:
 
 Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，并用标准 YAML/JSON 解析器解析；不得自建简化 YAML parser。对完整回读字节计算 SHA-256，并要求真实工具报告的 `document_sha256` 与它一致；同样完整读取实际 schema 字节并要求报告的 `schema_sha256` 一致，同时保留 `report_sha256`。任何解析失败、schema `additionalProperties`/必需字段错误、摘要不一致、无回执、超时、取消或身份不符都不合格：失败产物原路径保留，另记失败回执，`handoff.to:null`，O2/O3/O4/O5 dispatch 均为 0。只有工具调用成功、工具报告 `valid:true`、两个摘要完全绑定，且回执 verdict 严格为白名单 `passed` 或 `conditional` 时进入 O2；`blocked`、`unknown`、缺失或其他值均不派发，conditional 的 pending 原样携带。不得通过字符串匹配、sidecar 或内存中未落盘对象绕过门禁。
 
+回执仅因序列化或 schema 校验失败（解析失败、必需字段缺失、`additionalProperties` 违例）而不合格时，可重派 O1 一次：使用新的 intake_id 与新的 canonical 子根，`task` 正文只附 validator 诊断（文件路径与错误类别，不附业务判断）；旧产物原样保留。重派仍不合格则按上文停止。intake 报告 `detail.yaml` 语法校验失败时不阻断有效回执进入 O2，但登记 serialization 欠账，并在交付时说明 detail 只能按文本追溯。
+
 `<intake_id>.receipt.yaml` 是唯一机器摘要；`<intake_id>.detail.yaml` 保存原文证据、签章观察、四元组、版本矩阵和补料动作，机器摘要中的 finding id/source_scope/action 必须可追到 detail，但 detail 不能覆盖或授权机器摘要。`<intake_id>.validation.json` 只记录真实 validator 报告的摘要绑定和诊断，是审计 sidecar，不是自主授权。三者都只读取本次任务明确列出的绝对路径，且必须在同一 `<canonical_artifact_root>/intake/` 下；不得借此枚举目录、读取父目录或其他 run。
 
 ## O2 条款事实
