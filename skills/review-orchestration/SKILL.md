@@ -21,7 +21,7 @@ metadata:
 
 `canonical_artifact_root` 的唯一语义：Lead 为本次 case/object/version/run 选定并核验过的绝对目录，已经包含这四项的唯一身份。成员只在该根下追加阶段目录及唯一产物名，绝不再次拼接 case_id、contract_object_id 或 workspace；这些身份仍写进回执，不靠重复目录表达。缺根、相对根或范围不符时先报路径欠账，不自行选择目录。根必须位于已授权 workspace，路径授权不是本约定自行授予的。
 
-阶段相对目录固定为 O1 `intake/`、O2 `clause-extraction/`、O3 `risk-scan/` 与 `jurisdiction-audit/`、O4 `independent-verification/`、O5 `report-delivery/`；O4/O5 的输出逐项列入 write_allowlist。Lead 在每次 task 中传完整根、实际输入路径及允许输出路径，以及本案 Plan 的绝对路径与当前 revision（成员读取沿用，不另建自己的 Plan），收回时校验实际返回文件仍在本轮根内。补料或新 run 使用新的根和标识，保留旧产物。
+阶段相对目录固定为 O1 `intake/`、O2 `clause-extraction/`、O3 `risk-scan/` 与 `jurisdiction-audit/`、O4 `independent-verification/`、O5 `report-delivery/`；O4/O5 的输出逐项列入 write_allowlist。Lead 在每次 task 中传完整根、实际输入路径及允许输出路径，O1–O3 还传本案 Plan 的绝对路径与当前 revision（成员读取沿用，不另建自己的 Plan）；O4/O5 是带白名单的隔离调用，不传 Plan。收回时校验实际返回文件仍在本轮根内。补料或新 run 使用新的根和标识，保留旧产物。
 
 首次派发前建立并回读七行固定矩阵：`input-integrity`、`clause-facts`、`jurisdiction`、`risk`、`independent-review`、`version-comparison`、`report-and-delivery`。不得先收发现再建行。
 
@@ -96,7 +96,7 @@ Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，�
 
 两支只接收相同的原件身份、O2 净化事实、范围与各自预定检查目标，不读对方输出。分别更新 `risk`、`jurisdiction`。task 正文只给输入路径、canonical 根、Plan 与边界；检查范围与条数上限以成员技能为准（风险九类固定分母、候选不超过 8 条、可比事实不超过 4 条；法域观察不超过 5 条），不在 task 里另列检查类别或要求“全部产出”。2026-10-29 真机运行中，task 另列十几类风险，成员把取证扩到 60 多条引文，单次回复过长而反复断流。
 
-两支各自回报。只收到一支回报时，另一支仍在运行：继续等它的回报，不重派、不另起同支运行；同一支任何时候只保留一个运行。某支回报失败时，优先用 `DelegateControl` 的 `resume` 续跑一次，`message` 写明失败原因，并要求它先回读已落盘的产物、从下一项接着做；只有任务本身需要重新定义时才重新 Delegate。续跑仍失败就保留该行欠账；已有证据仍可进入范围受限报告，但不得冒充完整合规或完整评分。
+fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍在后台继续执行”，汇总里也可能显示成功，这些都不是成员回报。成员真正结束后，结果作为后台回报逐支送达。只收到一支回报时，另一支仍在运行：继续等它，不重派、不另起同支运行；同一支任何时候只保留一个运行。某支回报失败时，优先用 `DelegateControl` 的 `resume` 续跑一次，`message` 只写平台返回的失败原因，并要求它回读本次产物、从未完成的下一项接着做，不附自己的判断。只有任务本身需要重新定义时才重新 Delegate：先对仍在后台的旧运行用超时提示里的 `session_id` 执行 `DelegateControl` 的 `terminate`，新调用使用新的产物 id。回收产物与回执时，和 O2 一样用 `StructuredFileValidate` 做 YAML 语法校验；没有回执的半成品只算欠账，不当作 covered。续跑仍失败就保留该行欠账；已有证据仍可进入范围受限报告，但不得冒充完整合规或完整评分。
 
 ## O4 独立取证
 
@@ -140,4 +140,4 @@ Human Gate pending 不阻止文件交付。O5 先写并回读 scorecard、report
 
 回读账本、矩阵和每个实际路径。风险方向仅 `up/down/flat/undetermined`；单版本比较适用状态为 `not_applicable`。范围缺项不能 flat；局部下降可描述但全局可为 undetermined。R7 附件正文未交与 R9 权威清单不完整分别列示。
 
-超时/取消以真实返回为准；sync 等待时不宣称已停止。有界重试，不无限 poll。控制已有 run 使用独立 `DelegateControl`，不得在 Delegate 参数中造 `action`/`stop`；若未获准控制工具，登记“不能中止”而非伪称已停止。最终交付区分完整结果、范围受限结果、业务 pending 与导出 failed/blocked，绝不把工具结束或模拟批准写成业务批准。
+超时/取消以真实返回为准；sync 等待时不宣称已停止。任何阶段的同步等待超时都只表示成员仍在后台运行：等后台回报再推进，不当作完成或失败。有界重试，不无限 poll。控制已有 run 使用独立 `DelegateControl`，不得在 Delegate 参数中造 `action`/`stop`；若未获准控制工具，登记“不能中止”而非伪称已停止。最终交付区分完整结果、范围受限结果、业务 pending 与导出 failed/blocked，绝不把工具结束或模拟批准写成业务批准。
