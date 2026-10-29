@@ -13,7 +13,6 @@
   },
   "llm": {
     "routingMode": "smart",
-    "reasoning": "auto",
     "smart": {
       "profile": {
         "tier": "flagship",
@@ -24,6 +23,7 @@
         "reasoning": "auto"
       }
     },
+    "reasoning": "auto",
     "maxRetryDelayMs": 32000
   },
   "capabilities": [

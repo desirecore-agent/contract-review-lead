@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test tests/o1-boundary.contract.test.mjs",
     "test:intake": "node --test tests/intake-integration.contract.test.mjs",
-    "test:platform": "node --experimental-strip-types --loader ./tests/ts-extension-loader.mjs --test tests/delegate-api.contract.test.mjs"
+    "test:platform": "node --experimental-strip-types --loader ./tests/ts-extension-loader.mjs --test tests/delegate-api.contract.test.mjs",
+    "test:routing": "node tests/run-routing-normalize.mjs"
   },
   "devDependencies": {
     "ajv": "8.20.0",
