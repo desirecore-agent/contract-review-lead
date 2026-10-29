@@ -21,7 +21,7 @@ metadata:
 
 `canonical_artifact_root` 的唯一语义：Lead 为本次 case/object/version/run 选定并核验过的绝对目录，已经包含这四项的唯一身份。成员只在该根下追加阶段目录及唯一产物名，绝不再次拼接 case_id、contract_object_id 或 workspace；这些身份仍写进回执，不靠重复目录表达。缺根、相对根或范围不符时先报路径欠账，不自行选择目录。根必须位于已授权 workspace，路径授权不是本约定自行授予的。
 
-阶段相对目录固定为 O1 `intake/`、O2 `clause-extraction/`、O3 `risk-scan/` 与 `jurisdiction-audit/`、O4 `independent-verification/`、O5 `report-delivery/`；O4/O5 的输出逐项列入 write_allowlist。Lead 在每次 task 中传完整根、实际输入路径及允许输出路径，收回时校验实际返回文件仍在本轮根内。补料或新 run 使用新的根和标识，保留旧产物。
+阶段相对目录固定为 O1 `intake/`、O2 `clause-extraction/`、O3 `risk-scan/` 与 `jurisdiction-audit/`、O4 `independent-verification/`、O5 `report-delivery/`；O4/O5 的输出逐项列入 write_allowlist。Lead 在每次 task 中传完整根、实际输入路径及允许输出路径，以及本案 Plan 的绝对路径与当前 revision（成员读取沿用，不另建自己的 Plan），收回时校验实际返回文件仍在本轮根内。补料或新 run 使用新的根和标识，保留旧产物。
 
 首次派发前建立并回读七行固定矩阵：`input-integrity`、`clause-facts`、`jurisdiction`、`risk`、`independent-review`、`version-comparison`、`report-and-delivery`。不得先收发现再建行。
 
