@@ -21,4 +21,4 @@
 
 报告和 DOCX 使用 Lead 本次明确传入的 canonical 根；成员工具返回的真实路径是唯一引用。先预检真实导出入口；工具未暴露时记录 tool-not-found/blocked，不发明工具或外部脚本替代。导出失败时保留报告、失败记录与可操作原因，不伪造成功。成功更新当前尝试状态，但保留先前失败审计。
 
-风险方向只使用 `up`、`down`、`flat`、`undetermined`。单版本用适用状态 `not_applicable`，不是第五个方向；范围缺项不能是 `flat`，局部下调可描述但全局仍可为 `undetermined`。R7“附件正文未交”与 R9“权威清单不完整”分别记账，不得据此放行。
+风险方向只使用 `up`、`down`、`flat`、`undetermined`。单版本用适用状态 `not_applicable`，不是第五个方向；范围缺项不能是 `flat`，局部下调可描述但全局仍可为 `undetermined`。R7“已列明附件正文未交”是范围事实；R9“权威清单不完整”只在 O1 报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE`（正文指向的另附权威附件清单本身未取得）时成立，合同条款自己列明附件清单即 R9 未命中。二者分别记账、不合并；有欠账时不得据此放行。

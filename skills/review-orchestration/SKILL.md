@@ -1,7 +1,7 @@
 ---
 name: review-orchestration
 description: 以 O0→O1→O2→O3 真并行→O4 独立取证→O5 报告交付→Lead 对账编排合同审查。
-version: 1.4.0
+version: 1.4.1
 type: procedural
 risk_level: medium
 status: enabled
@@ -9,8 +9,8 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc, GenerateUUID, Delegate, SendMessage, FileDigest, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.4.0
-  updated_at: '2026-09-29'
+  version: 1.4.1
+  updated_at: '2026-10-30'
 ---
 
 # 有界合同审查编排
@@ -114,7 +114,7 @@ fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍
 }
 ```
 
-每次调用必须显式列出具体文件绝对路径的 `read_allowlist` 与 `write_allowlist`；禁止列目录、通配目录、canonical 根或成员工作区目录。只传 allowlist 内原件、对象/范围、预定检查清单，以及事实候选 `id`、断言、来源位置。禁止传 O3 推理、严重度、评分、建议和对话历史。每个候选仅允许 `confirmed/refuted/unlocatable`；unlocatable 写检索范围和原因；补漏单列 `additional[]`，可为 0。污染拒收后必须发起新的 isolated 调用，不能在旧调用续做。`memoryScope:none` 仅关闭记忆注入，平台尚无 per-call 文件能力沙箱，必须作为未验隔离欠账，不能谎称文件隔离已被强制。
+每次调用必须显式列出具体文件绝对路径的 `read_allowlist` 与 `write_allowlist`；禁止列目录、通配目录、canonical 根或成员工作区目录。只传 allowlist 内原件、对象/范围、预定检查清单，以及事实候选 `id`、断言、来源位置。对象/范围里照抄 O1 回执的附件结论：R7 是否命中（已列明附件的正文未送达）、R9 是否命中（O1 是否报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE`）。禁止传 O3 推理、严重度、评分、建议和对话历史。每个候选仅允许 `confirmed/refuted/unlocatable`；unlocatable 写检索范围和原因；补漏单列 `additional[]`，可为 0。污染拒收后必须发起新的 isolated 调用，不能在旧调用续做。`memoryScope:none` 仅关闭记忆注入，平台尚无 per-call 文件能力沙箱，必须作为未验隔离欠账，不能谎称文件隔离已被强制。
 
 ## O5 评分、报告与修订建议
 
@@ -144,6 +144,6 @@ Human Gate pending 不阻止文件交付。O5 先写并回读 scorecard、report
 
 ## Lead 对账
 
-回读账本、矩阵和每个实际路径。风险方向仅 `up/down/flat/undetermined`；单版本比较适用状态为 `not_applicable`。范围缺项不能 flat；局部下降可描述但全局可为 undetermined。R7 附件正文未交与 R9 权威清单不完整分别列示。
+回读账本、矩阵和每个实际路径。风险方向仅 `up/down/flat/undetermined`；单版本比较适用状态为 `not_applicable`。范围缺项不能 flat；局部下降可描述但全局可为 undetermined。R7 附件正文未交与 R9 权威清单不完整分别列示；R9 只在 O1 报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE` 时成立，否则写未命中，不列欠账。
 
 超时/取消以真实返回为准；sync 等待时不宣称已停止。任何阶段的同步等待超时都只表示成员仍在后台运行：等后台回报再推进，不当作完成或失败。有界重试，不无限 poll。控制已有 run 使用独立 `DelegateControl`，不得在 Delegate 参数中造 `action`/`stop`；若未获准控制工具，登记“不能中止”而非伪称已停止。最终交付区分完整结果、范围受限结果、业务 pending 与导出 failed/blocked，绝不把工具结束或模拟批准写成业务批准。

@@ -88,3 +88,11 @@ test('O5 task lists the CN pack, fixed output files and fact-only pending entrie
   assert.match(o5, /只接收[^。]*pending 事实条目/)
   assert.match(persona, /O5 只接收[^；]*pending 事实条目/)
 })
+
+test('R9 only holds when O1 reports the manifest flag, and O4 receives the O1 attachment conclusion', async () => {
+  const [persona, orchestration] = await Promise.all([read('persona.md'), read('skills/review-orchestration/SKILL.md')])
+  assert.match(persona, /R9“权威清单不完整”只在 O1 报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE`/)
+  assert.match(persona, /合同条款自己列明附件清单即 R9 未命中/)
+  assert.match(orchestration, /R9 只在 O1 报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE` 时成立，否则写未命中，不列欠账/)
+  assert.match(orchestration, /对象\/范围里照抄 O1 回执的附件结论/)
+})
