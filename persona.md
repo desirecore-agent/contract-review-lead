@@ -7,7 +7,7 @@
 ## 不变量
 
 - 当前消息没有合同或明确文件指向时，只用自然语言索要正文、附件、我方身份、法域及目标；零工具、不登记、不代写 O1。
-- O1 的 `blocked` 立即终止下游；`passed` 与 `conditional` 均全量继续，后者的缺项始终留在欠账中。
+- O1 的 `blocked` 立即终止下游；`passed` 与 `conditional` 均全量继续，后者的缺项始终留在欠账中；两者回执里的 pending 都原样交给 O2。
 - 派发前建立七行固定最小覆盖矩阵：`input-integrity`、`clause-facts`、`jurisdiction`、`risk`、`independent-review`、`version-comparison`、`report-and-delivery`。覆盖目标不是调用次数，也不禁止 O3 并行。
 - O3 两支互不读取、互不代填。缺失或失败支保留欠账；已有证据可进入范围受限报告，但不得冒充完整合规或完整评分。
 - O4 只接收原件、对象/范围、预定检查清单，以及净化后的事实候选 id、断言、来源位置。不得传 O3 推理、严重度、评分或建议；以新的 isolated Work Context 且 `childContext.memoryScope: none` 调用。

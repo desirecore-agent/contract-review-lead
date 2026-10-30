@@ -1,7 +1,7 @@
 ---
 name: review-orchestration
 description: 以 O0→O1→O2→O3 真并行→O4 独立取证→O5 报告交付→Lead 对账编排合同审查。
-version: 1.4.2
+version: 1.4.3
 type: procedural
 risk_level: medium
 status: enabled
@@ -9,7 +9,7 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc, GenerateUUID, Delegate, SendMessage, FileDigest, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.4.2
+  version: 1.4.3
   updated_at: '2026-10-30'
 ---
 
@@ -48,7 +48,7 @@ metadata:
 }
 ```
 
-Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，并用标准 YAML/JSON 解析器解析；不得自建简化 YAML parser。对完整回读字节计算 SHA-256，并要求真实工具报告的 `document_sha256` 与它一致；同样完整读取实际 schema 字节并要求报告的 `schema_sha256` 一致，同时保留 `report_sha256`。任何解析失败、schema `additionalProperties`/必需字段错误、摘要不一致、无回执、超时、取消或身份不符都不合格：失败产物原路径保留，另记失败回执，`handoff.to:null`，O2/O3/O4/O5 dispatch 均为 0。只有工具调用成功、工具报告 `valid:true`、两个摘要完全绑定，且回执 verdict 严格为白名单 `passed` 或 `conditional` 时进入 O2；`blocked`、`unknown`、缺失或其他值均不派发，conditional 的 pending 原样携带。不得通过字符串匹配、sidecar 或内存中未落盘对象绕过门禁。
+Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，并用标准 YAML/JSON 解析器解析；不得自建简化 YAML parser。对完整回读字节计算 SHA-256，并要求真实工具报告的 `document_sha256` 与它一致；同样完整读取实际 schema 字节并要求报告的 `schema_sha256` 一致，同时保留 `report_sha256`。任何解析失败、schema `additionalProperties`/必需字段错误、摘要不一致、无回执、超时、取消或身份不符都不合格：失败产物原路径保留，另记失败回执，`handoff.to:null`，O2/O3/O4/O5 dispatch 均为 0。只有工具调用成功、工具报告 `valid:true`、两个摘要完全绑定，且回执 verdict 严格为白名单 `passed` 或 `conditional` 时进入 O2；`blocked`、`unknown`、缺失或其他值均不派发，conditional 的 pending 原样携带；`passed` 的回执也可能带非阻断 pending（如 R7 范围待办），同样原样携带。不得通过字符串匹配、sidecar 或内存中未落盘对象绕过门禁。
 
 回执仅因序列化或 schema 校验失败（解析失败、必需字段缺失、`additionalProperties` 违例）而不合格时，可重派 O1 一次：使用新的 intake_id 与新的 canonical 子根，`task` 正文只附 validator 诊断（文件路径与错误类别，不附业务判断）；旧产物原样保留。重派仍不合格则按上文停止。intake 报告 `detail.yaml` 语法校验失败时不阻断有效回执进入 O2，但登记 serialization 欠账，并在交付时说明 detail 只能按文本追溯。
 
@@ -56,12 +56,12 @@ Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，�
 
 ## O2 条款事实
 
-以 sync + isolated 调用 `clause-extractor`，传对象、原件、范围、预定检查目标与 canonical 根。技能要求写在 `task` 正文，不使用虚构 `skill` 参数。要求事实、原文位置、未知/缺失及附件状态；不得要求它做风险或法律判断。合格回执后更新 `clause-facts`。
+以 sync + isolated 调用 `clause-extractor`，传对象、原件、范围、预定检查目标与 canonical 根，并附 O1 回执绝对路径与回执 `handoff.pending` 原文：每项整项照抄（含 id、`must_escalate`、`source_scope` 与动作），不改写、不升级；回执没有 pending 时写明「上游无 pending」。技能要求写在 `task` 正文，不使用虚构 `skill` 参数。要求事实、原文位置、未知/缺失及附件状态；不得要求它做风险或法律判断。合格回执后更新 `clause-facts`。
 
 ```json delegate-example:O2
 {
   "target": "clause-extractor",
-  "task": "对 ${case_id} 调用你的条款事实提取技能；只提交可回原文的事实、未知项和附件状态，并使用任务中给出的 canonical 根。",
+  "task": "对 ${case_id} 调用你的条款事实提取技能；只提交可回原文的事实、未知项和附件状态，并使用任务中给出的 canonical 根。O1 回执：${intake_receipt_absolute_path}；上游 pending 原文（整项照抄，无 pending 时写「上游无 pending」）：${intake_handoff_pending_verbatim}",
   "mode": "sync",
   "contextMode": "isolated",
   "intentId": "${case_id}:o2-clause-facts",

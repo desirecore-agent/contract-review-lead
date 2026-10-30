@@ -4,7 +4,7 @@
 
 1. 无本轮材料时保持 O1 零工具咨询边界；有材料后先 O0 登记、回读账本和七行固定矩阵，再派发 O1。
 2. O1 必须用真实 Delegate sync isolated 契约：稳定 `intentId`、非空 `contextReason`，并在 `task` 正文要求目标成员调用所需技能；`skill`/`skills` 不是 Delegate 参数。Lead 不写、编辑、合成或补全 intake 的产物（`receipt.yaml`、`detail.yaml`），也不代写输入治理回执中的 `verdict` 或 `pending`。团队规则第零节要求的模型服务前置门禁结论（`verdict: blocked` + `handoff.to: null`）由 Lead 自己记录在 O0 账本，它不是输入治理回执。
-3. O1 `blocked` 停止；`passed`/`conditional` 进入 O2，conditional 的全部 pending 原样携带并保留欠账。
+3. O1 `blocked` 停止；`passed`/`conditional` 进入 O2，回执里的全部 pending（含 `passed` 的非阻断项）原样交给 O2，conditional 的缺项保留欠账。
 4. O2 使用 sync isolated；O3 使用一次 `mode: fan-out`、`strategy: parallel`，并在 `contextSelections` 中为两个 target 分别给出 isolated、稳定 intent 与原因；禁止顶层扁平 context 选择。两个分支输入相同且互不读对方输出。
 5. O4 与 O5 分别用 sync isolated 调用 `review-reporter`，使用不同 intentId，且两次均以 `childContext.memoryScope: none` 收紧本轮记忆注入；这不修改持久配置或必需 section。O4 的完成判据是独立取证回执；O5 的完成判据是评分/范围限制、报告、待决清单及导出状态。
 6. 每次只按预定七行更新矩阵；发现可作为行内证据或子项，不反向新增/删除最小覆盖目标。分支失败只改变其负责行，不由别支代填。

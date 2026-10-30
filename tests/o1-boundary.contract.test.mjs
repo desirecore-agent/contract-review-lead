@@ -17,6 +17,22 @@ test('O1 remains sync isolated, blocked cannot pass, conditional continues', asy
   assert.match(corpus, /conditional.*pending.*继续/s)
 })
 
+// 2026-10-30 E 轮：O1 passed 带 PEND-002（must_escalate: false），Lead 没转给 O2，条款成员自拟 must_escalate: true 的新待办
+test('O2 任务附 O1 回执路径与 pending 原文，passed 的非阻断 pending 也带上', async () => {
+  const skill = await read('skills/review-orchestration/SKILL.md')
+  assert.match(skill, /`passed` 的回执也可能带非阻断 pending（如 R7 范围待办），同样原样携带/)
+  const o2 = skill.slice(skill.indexOf('## O2 条款事实'), skill.indexOf('## O3 真正并行'))
+  assert.match(o2, /附 O1 回执绝对路径与回执 `handoff\.pending` 原文：每项整项照抄（含 id、`must_escalate`、`source_scope` 与动作），不改写、不升级/)
+  assert.match(o2, /回执没有 pending 时写明「上游无 pending」/)
+  // 模型常照抄示例：O2 示例 task 本身要带回执路径与 pending 原文
+  const example = JSON.parse(o2.match(/```json delegate-example:O2\n([\s\S]*?)\n```/)[1])
+  assert.match(example.task, /O1 回执：\$\{intake_receipt_absolute_path\}/)
+  assert.match(example.task, /上游 pending 原文（整项照抄，无 pending 时写「上游无 pending」）/)
+  const [persona, principles] = await Promise.all([read('persona.md'), read('principles.md')])
+  assert.match(principles, /回执里的全部 pending（含 `passed` 的非阻断项）原样交给 O2/)
+  assert.match(persona, /两者回执里的 pending 都原样交给 O2/)
+})
+
 test('execution graph has true O3 parallel and two isolated reporter calls', async () => {
   const skill = await read('skills/review-orchestration/SKILL.md')
   assert.match(skill, /"targets": \["risk-scanner", "jurisdiction-auditor"\]/)
