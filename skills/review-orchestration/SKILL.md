@@ -1,143 +1,157 @@
 ---
 name: review-orchestration
-description: >-
-  合同审查团队的有界编排入口。按 O0→O1→O2→O3→O4→O5 固定顺序委派，
-  以真实回执、磁盘回读、证据位置和明确的覆盖目标作为完成判据；能力不可用时如实降级，
-  不伪造结论，也不让单个非关键工具错误拖死整个审查。
-version: 1.3.0
+description: 以 O0→O1→O2→O3 真并行→O4 独立取证→O5 报告交付→Lead 对账编排合同审查。
+version: 1.4.3
 type: procedural
 risk_level: medium
 status: enabled
-tags: [contract-review, orchestration, bounded-loop, receipt-audit, kpi]
 requires:
-  tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc, GenerateUUID, Delegate, SendMessage, FileDigest]
+  tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc, GenerateUUID, Delegate, SendMessage, FileDigest, StructuredFileValidate]
 metadata:
   author: DesireCore
-  updated_at: '2026-09-15'
+  version: 1.4.3
+  updated_at: '2026-10-30'
 ---
 
 # 有界合同审查编排
 
-## 成功定义与 KPI
+## O0 登记
 
-这是一条可复核的工作流，不是一组必须填满的字段。每个成员只需用自然语言完成清晰、可执行的任务，
-但必须留下下面的可观察结果：
+只读取本轮明确提交/指向的材料。生成 case/object/version 身份，记录规范化绝对路径，并由 Lead 明确本案 canonical 根。对文件调用 `FileDigest`；只可为参数形态修正重试一次。失败则记录真实返回和 `frozen_without_digest`，摘要为 unknown，继续事实审查。摘要不是来源、对象或版本身份的替代。
 
-| KPI | 合格标准 |
-|---|---|
-| 输入覆盖 | 当前提交的每个文件都被读取并在账本中列出；未读取的文件明确写明原因 |
-| 事实可回查 | 每个重要发现都有原文引用、文件名和条款/行位置；引用能在原文件中找到 |
-| 责任可定位 | 每个结论只归属于一个成员，并带真实回执和产物路径 |
-| 流程一致 | 每次都按 O0→O1→O2→O3→O4→O5；同一类输入使用同一组检查目标和状态词 |
-| 失败诚实 | 超时、无回执、工具不可用都写为 blocked 或 capability_debt，不补写成员成果 |
-| 交付安全 | O3 无回执时只交付阻塞摘要；能力债务可交付范围受限报告，但 Human Gate 未确认时不得宣称通过 |
+`canonical_artifact_root` 的唯一语义：Lead 为本次 case/object/version/run 选定并核验过的绝对目录，已经包含这四项的唯一身份。成员只在该根下追加阶段目录及唯一产物名，绝不再次拼接 case_id、contract_object_id 或 workspace；这些身份仍写进回执，不靠重复目录表达。缺根、相对根或范围不符时先报路径欠账，不自行选择目录。根必须位于已授权 workspace，路径授权不是本约定自行授予的。
 
-没有回执就是没有完成。单次成员回合超过 120 秒没有新的工具进展，或一个回合结束仍无回执，
-立即停止该分支并记录原因；不要继续等待、无限重试或替成员写产物。
+阶段相对目录固定为 O1 `intake/`、O2 `clause-extraction/`、O3 `risk-scan/` 与 `jurisdiction-audit/`、O4 `independent-verification/`、O5 `report-delivery/`；O4/O5 的输出逐项列入 write_allowlist。Lead 在每次 task 中传完整根、实际输入路径及允许输出路径，O1–O3 还传本案 Plan 的绝对路径与当前 revision（成员读取沿用，不另建自己的 Plan）；O4/O5 是带白名单的隔离调用，不传 Plan。收回时校验实际返回文件仍在本轮根内。补料或新 run 使用新的根和标识，保留旧产物。
 
-## 调用一致性约束
-
-自然语言负责完成业务工作，Lead 只验证以下可观察事实：
-
-1. 每次委派的 `intentId` 必须由 `${case_id}:${stage}` 组成；同一 case/stage 重跑必须显式增加 attempt，不能复用旧产物或覆盖旧回执。
-2. 委派前记录当前 case 的 `aggregate_digest`、目标角色和阶段；回执必须带回同一对象身份。身份、digest、阶段或目标不一致时标记 `blocked`，不得把文本相似当作完成。
-3. 真机运行前确认当前 provider/model 与本次验收选择一致；如果 UI 或路由发生变化，先停止并记录 `MODEL_ROUTE_MISMATCH`，不要在错误模型上继续。
-4. 成员输出可以是自然语言，但必须能回答“做了什么、依据哪份原文、结果属于哪个状态、下一步是什么”。格式完整性由工具和平台检查，不把 YAML 排版当作业务 KPI。
-
-## O0 登记（一个最小可验证环）
-
-1. 只读取用户本轮明确提交或明确指向的文件，生成 case_id，在 contract-review/ 下建立编排账本和一张简明覆盖矩阵。
-2. 对已确认存在的文件优先调用一次 `FileDigest`。正确调用形态是：
-
-   ```json
-   {"paths":["contract.md","appendix-a1.md","intake.json"]}
-   ```
-
-   paths 可以是一个字符串或字符串数组；不要把数组再包成字符串。成功时把逐文件摘要和 `aggregate.digest` 记入同一登记行。
-3. 如果 FileDigest 返回错误、读取范围不允许或协议适配器无法提供摘要，只重试一次且只修正参数形态；仍失败就记录真实错误，
-   将对象标为 `frozen_without_digest`，摘要写 `unknown`，继续 O1。摘要是增强一致性的凭证，不是阻止读取和审查的前置条件。
-4. O0 的完成判据只有：账本存在、矩阵列出本案的固定检查组、首次 Write 后能 Read 回读。不要在 O0 预加载大段规则包，
-   不要为了生成矩阵调用另一个技能，也不要等待成员回执。
-
-矩阵使用固定的检查组即可：input-integrity、clause-facts、jurisdiction、risk、report-and-delivery。
-每行至少包含 check_id、owner、status、evidence_or_reason；初始状态为 blank。这张表是欠账表，不是强制 schema。
+首次派发前建立并回读七行固定矩阵：`input-integrity`、`clause-facts`、`jurisdiction`、`risk`、`independent-review`、`version-comparison`、`report-and-delivery`。不得先收发现再建行。
 
 ## O1 输入治理
 
-用 Delegate 的 sync + isolated 委派 `contract-intake`，只传对象身份、绝对路径、审查范围和输出根：
-
-```yaml
-target: contract-intake
-mode: sync
-contextMode: isolated
-intentId: ${case_id}:intake
-contextReason: 合同案件输入治理与受理门禁。
+```json delegate-example:O1
+{
+  "target": "contract-intake",
+  "task": "对 ${case_id} 调用你的输入治理技能，读取任务中给出的绝对路径和 canonical 根，提交真实 intake 回执；不得由 Lead 代写。",
+  "mode": "sync",
+  "contextMode": "isolated",
+  "intentId": "${case_id}:o1-intake",
+  "contextReason": "O1 是本案独立的输入治理与受理门禁任务。"
+}
 ```
 
-- `passed` 或 `conditional`：回读回执，确认对象、范围、证据和产物路径；合格后立即回写矩阵：将 `contract-intake#S1`–`#S8` 逐行更新为 `covered`、`unknown` 或 `not_applicable`，每行填写 `receipt_ref` 与 `evidence_or_reason`，并同步 `summary` 计数，再进入 O2。只写账本而不回写矩阵不算完成。
-- `blocked`、无回执、超时或身份不一致：账本进入 `HALTED_FOR_HUMAN`，相关行标为 `blocked`，停止下游。
+对实际落盘回执使用真实 `StructuredFileValidate`：`document_path` 为回执绝对路径，`schema_path` 为当前 intake 技能声明的回执 schema 绝对路径，`format` 与文档实际 YAML/JSON 格式一致；两个路径都必须获准读取。工具结果中的 `valid` 是结构校验结果，不能替代回执自己的 verdict，也不能由回执或 sidecar 自签。校验工具调用失败（`success:false`）与工具成功返回 `valid:false` 必须分别记录；任一情形都不启动下游。统筹官的非空工具允许清单必须含该工具，否则平台的父子工具交集会使 intake 也无法使用。
 
-Lead 不写 intake 回执，不改 verdict，不复制成员推理。conditional 继续向下游传递 pending；blocked 终止流程。
+```json validator-example:O1
+{
+  "document_path": "${intake_receipt_absolute_path}",
+  "schema_path": "${intake_receipt_schema_absolute_path}",
+  "format": "yaml"
+}
+```
+
+Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，并用标准 YAML/JSON 解析器解析；不得自建简化 YAML parser。对完整回读字节计算 SHA-256，并要求真实工具报告的 `document_sha256` 与它一致；同样完整读取实际 schema 字节并要求报告的 `schema_sha256` 一致，同时保留 `report_sha256`。任何解析失败、schema `additionalProperties`/必需字段错误、摘要不一致、无回执、超时、取消或身份不符都不合格：失败产物原路径保留，另记失败回执，`handoff.to:null`，O2/O3/O4/O5 dispatch 均为 0。只有工具调用成功、工具报告 `valid:true`、两个摘要完全绑定，且回执 verdict 严格为白名单 `passed` 或 `conditional` 时进入 O2；`blocked`、`unknown`、缺失或其他值均不派发，conditional 的 pending 原样携带；`passed` 的回执也可能带非阻断 pending（如 R7 范围待办），同样原样携带。不得通过字符串匹配、sidecar 或内存中未落盘对象绕过门禁。
+
+回执仅因序列化或 schema 校验失败（解析失败、必需字段缺失、`additionalProperties` 违例）而不合格时，可重派 O1 一次：使用新的 intake_id 与新的 canonical 子根，`task` 正文只附 validator 诊断（文件路径与错误类别，不附业务判断）；旧产物原样保留。重派仍不合格则按上文停止。intake 报告 `detail.yaml` 语法校验失败时不阻断有效回执进入 O2，但登记 serialization 欠账，并在交付时说明 detail 只能按文本追溯。
+
+`<intake_id>.receipt.yaml` 是唯一机器摘要；`<intake_id>.detail.yaml` 保存原文证据、签章观察、四元组、版本矩阵和补料动作，机器摘要中的 finding id/source_scope/action 必须可追到 detail，但 detail 不能覆盖或授权机器摘要。`<intake_id>.validation.json` 只记录真实 validator 报告的摘要绑定和诊断，是审计 sidecar，不是自主授权。三者都只读取本次任务明确列出的绝对路径，且必须在同一 `<canonical_artifact_root>/intake/` 下；不得借此枚举目录、读取父目录或其他 run。
 
 ## O2 条款事实
 
-以 sync + isolated 委派 clause-extractor。要求一次最小事实检查点：重要条款、原文引文、文件和位置、
-covered/not_applicable/unknown 状态。收到并回读后才更新矩阵：把条款回执中的 `category` / `key_missing_facts` 映射到预先存在的固定 `check_id`，逐行写入 `status`、`receipt_ref`、证据位置和未知原因，并重算 `summary`。缺证据就打回一次；第二次仍不合格转人工。不得只追加成员产物而留下矩阵初始 `blank`。
+以 sync + isolated 调用 `clause-extractor`，传对象、原件、范围、预定检查目标与 canonical 根，并附 O1 回执绝对路径与回执 `handoff.pending` 原文：每项整项照抄（含 id、`must_escalate`、`source_scope` 与动作），不改写、不升级；回执没有 pending 时写明「上游无 pending」。技能要求写在 `task` 正文，不使用虚构 `skill` 参数。要求事实、原文位置、未知/缺失及附件状态；不得要求它做风险或法律判断。合格回执后更新 `clause-facts`。
 
-## O3 两条独立分支
-
-必须使用一次真正的 fan-out 委派，同时传入两个目标：
-
-```yaml
-targets: [jurisdiction-auditor, risk-scanner]
-mode: fan-out
-strategy: parallel
-contextMode: isolated
-intentId: ${case_id}:o3
+```json delegate-example:O2
+{
+  "target": "clause-extractor",
+  "task": "对 ${case_id} 调用你的条款事实提取技能；只提交可回原文的事实、未知项和附件状态，并使用任务中给出的 canonical 根。O1 回执：${intake_receipt_absolute_path}；上游 pending 原文（整项照抄，无 pending 时写「上游无 pending」）：${intake_handoff_pending_verbatim}",
+  "mode": "sync",
+  "contextMode": "isolated",
+  "intentId": "${case_id}:o2-clause-facts",
+  "contextReason": "O2 是区别于输入治理的条款事实提取任务。"
+}
 ```
 
-不得把 `strategy` 写成 `sequential`，也不得先完成一个目标再调用另一个目标来模拟并行。
-两支只读原文和 O2 事实，不读对方推理；每支只允许一个最小回合。法域支报告法域线索、适用性和缺口，
-风险支报告固定风险检查、精确证据和未知项。
+## O3 真正并行
 
-收到任一支回执后立即更新它负责的矩阵行；两支均有回执才能进入 O4。某支因规则包或平台能力不可用时，
-保留 `capability_debt` 和 `blocked`，不得由另一支代填；可以生成范围受限报告，但不得生成该能力对应的法律结论、自动放行或完整评分。
+```json delegate-example:O3
+{
+  "targets": ["risk-scanner", "jurisdiction-auditor"],
+  "task": "并行处理 ${case_id}：各目标调用自己的运行技能，只读相同的 O2 净化事实与原件；risk-scanner 产出风险证据，jurisdiction-auditor 产出法域范围或转介边界；不得读取或代填另一分支。",
+  "mode": "fan-out",
+  "strategy": "parallel",
+  "contextSelections": [
+    {
+      "target": "risk-scanner",
+      "contextMode": "isolated",
+      "intentId": "${case_id}:o3-risk",
+      "contextReason": "O3 风险扫描是独立于法域审计的并行任务。"
+    },
+    {
+      "target": "jurisdiction-auditor",
+      "contextMode": "isolated",
+      "intentId": "${case_id}:o3-jurisdiction",
+      "contextReason": "O3 法域审计是独立于风险扫描的并行任务。"
+    }
+  ]
+}
+```
 
-## O4 独立复核
+两支只接收相同的原件身份、O2 净化事实、范围与各自预定检查目标，不读对方输出。分别更新 `risk`、`jurisdiction`。task 正文只给输入路径、canonical 根、Plan 与边界；检查范围与条数上限以成员技能为准（风险九类固定分母、候选不超过 8 条、可比事实不超过 4 条；法域观察不超过 5 条），不在 task 里另列检查类别或要求“全部产出”。2026-10-29 真机运行中，task 另列十几类风险，成员把取证扩到 60 多条引文，单次回复过长而反复断流。
 
-O4 只做一次独立重新取证。它从原文和 O2/O3 的事实索引开始，不接受上游的结论、严重度理由或建议文本。
-每个重点断言只允许四类结果：`confirmed`、`refuted`、`unlocatable`、`additional`。合格标准是：
-每条结果都有原文位置，且明确写出上游断言是否被采信；没有独立证据时不得复述上游。
+fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍在后台继续执行”，汇总里也可能显示成功，这些都不是成员回报。成员真正结束后，结果作为后台回报逐支送达。只收到一支回报时，另一支仍在运行：继续等它，不重派、不另起同支运行；同一支任何时候只保留一个运行。回收按下列各条处理：
 
-## O5 评分、报告与交付
+1. **核对产物与回执。** 回收产物与回执时，和 O2 一样用 `StructuredFileValidate` 做 YAML 语法校验；没有回执的半成品只算欠账，不当作 covered。覆盖矩阵只按核对过的产物与回执更新，成员回复里的完成声明与统计不作数。
+2. **判断是否完成。** 成员声称完成，但回执文件不存在，或产物仍有未完成的骨架字段时，按回报失败处理。骨架字段只看各支技能交付前自检的那几项，各用一次 `Grep`（`is_regex: true`）核对：法域 `pattern: "^ {0,2}(clues|governing_law|venue|jurisdiction|rule_pack|rule_candidates): null"`；风险 `pattern: "<<追加 lexicon>>|^ {0,2}(redlines|coverage_debt): [{] ?status: deferred([^a-z_]|$)|status: hit([^a-z_]|$)"`；再用一次 `literals` 查 `<<追加`，看有没有残留锚点。其他字段里的 `null`（如回执的 `blocked_reason`、转介观察的 `rule_ref`）是合法取值，不算占位。
+3. **续跑。** 某支回报失败（含第 2 条判定的失败）时，优先用 `DelegateControl` 的 `resume` 续跑一次，要求它回读本次产物、从未完成的下一项接着做。
+4. **点名续写。** 平台因该运行已正常结束而拒绝 `resume` 时，改用 `Delegate`（`contextMode: continue`，`workContextId` 照抄拒绝消息里给出的值），在任务里点名续写该产物 id，并写明产物绝对路径与 canonical 根。
+5. **续跑与续写的正文。** `message` 或任务正文只写平台返回的失败原因与核对到的事实（哪个文件不存在、哪些字段仍是占位），不附自己的判断；不照抄成员回复里声称已完成的条目、统计或观察清单，也不替它另列检查项。2026-10-30 真机：法域支在冲突判定之后虚报「回执已落盘、5 条观察」，回执文件并不存在；Lead 先按回复把覆盖矩阵记成 covered，续跑被平台以「运行已正常结束」拒绝后，又把虚报里的五条观察照抄进了重派任务。
+6. **重新定义任务。** 除第 4 条的点名续写外，只有任务本身需要重新定义时才重新 Delegate：先对仍在后台的旧运行用超时提示里的 `session_id` 执行 `DelegateControl` 的 `terminate`，新调用使用新的产物 id。
+7. **仍失败。** 续跑或续写仍失败就保留该行欠账；已有证据仍可进入范围受限报告，但不得冒充完整合规或完整评分。
 
-O4 有真实回执后，才调用 `review-reporter` 形成报告。Reporter 只负责评分、行动清单、Human Gate 和报告排版；
-独立复核不得在 Reporter 内隐式完成。无历史基线时显式标记 `not_applicable`。
+## O4 独立取证
 
-报告必须列出：已覆盖检查、欠账/阻塞、证据位置、待人工确认和下一步动作。任何 Human Gate 保持 pending，
-不得自动通过。报告回执返回后，必须再读一次矩阵，把 `REPORT-*` 行和已确认的前置行更新并重算 `summary`；
-最终交付前若矩阵仍有 `blank`，必须逐行说明原因，不能只在报告正文中概括。
+首次独立调用 `review-reporter`：
 
-O3/O4 未完成时不生成最终评分或修订版 DOCX。O3 能力受限时允许交付阻塞摘要，但不能将范围受限结果包装成完整法律审查。
+```json delegate-example:O4
+{
+  "target": "review-reporter",
+  "task": "对 ${case_id} 调用 independent-verification 技能；仅据任务逐项列出的 read_allowlist 具体文件、冻结范围、预定清单及净化事实候选完成独立取证，候选结果仅三态并另列 additional[]；只向 write_allowlist 列出的唯一 O4 回执绝对路径写入并回读。禁止目录枚举、读取未列路径及读取 O3 推理、严重度、评分或建议。memoryScope:none 不强制文件隔离，须记录平台欠账。",
+  "mode": "sync",
+  "contextMode": "isolated",
+  "intentId": "${case_id}:o4-independent-verification",
+  "contextReason": "O4 必须在不继承 O3 推理与历史记忆的新 Work Context 中独立取证。",
+  "childContext": { "memoryScope": "none" }
+}
+```
 
-## 账本与输出不变量
+每次调用必须显式列出具体文件绝对路径的 `read_allowlist` 与 `write_allowlist`；禁止列目录、通配目录、canonical 根或成员工作区目录。O4 的 `read_allowlist` 同时列入 `write_allowlist` 里的 O4 回执路径，供分段写入时回读、`Edit` 与续跑。只传 allowlist 内原件、对象/范围、预定检查清单，以及事实候选 `id`、断言、来源位置。对象/范围里照抄 O1 回执的附件结论：R7 是否命中（已列明附件的正文未送达）、R9 是否命中（O1 是否报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE`）。禁止传 O3 推理、严重度、评分、建议和对话历史。每个候选仅允许 `confirmed/refuted/unlocatable`；unlocatable 写检索范围和原因；补漏单列 `additional[]`，可为 0。污染拒收后必须发起新的 isolated 调用，不能在旧调用续做。`memoryScope:none` 仅关闭记忆注入，平台尚无 per-call 文件能力沙箱，必须作为未验隔离欠账，不能谎称文件隔离已被强制。
 
-- 每次委派前写 dispatch，每次返回后立即回读账本和矩阵，并更新状态、负责人、回执、产物路径及矩阵 `summary`。矩阵的 `blank` 计数只能在确实没有对应回执时保留。
-- covered 必须能指向真实回执和文件；blank、blocked、unknown、not_applicable 必须有自然语言原因。
-- 矩阵行集合固定，不能因成员漏提而消失；同一类输入必须使用相同的状态词和检查组。
-- 摘要缺失时可以继续事实审查，但不得宣称“同一版本”“无差异”或“差异为零”；一致性结论记为 undetermined。
+## O5 评分、报告与修订建议
 
-## 交付前验收
+第二次独立调用同一 `review-reporter`：
 
-先读账本，再读矩阵，再列出实际文件。给出 KPI 结果：文件覆盖、证据可回查、成员回执、矩阵逐行状态及 `summary`、欠账数量、Human Gate 和交付物路径。逐项核对：每个 `covered` 必须指向真实回执；每个 `blank` / `blocked` / `unknown` / `deferred` 必须有原因；若计数与行状态不一致，先修正矩阵再交付。
-明确哪些步骤有真实回执、哪些步骤阻塞、哪些结论不存在。只有所有必需步骤均有合格回执且人工门禁已处理时，才可交付最终报告；
-否则交付阻塞摘要和可执行的补齐清单。
+```json delegate-example:O5
+{
+  "target": "review-reporter",
+  "task": "对 ${case_id} 依次调用 review-scoring 与 report-composition 技能；只读取 read_allowlist 逐项列出的文件（合格 O4 回执、scoring-rules-cn-v1.0.3 绝对路径、适用 CN 规则包、原件与四个产出文件）；只写 write_allowlist 逐项列出的 scorecard、report、pending receipt 与导出尝试回执并逐一回读。禁止目录枚举和未列路径，不得重做 O4；memoryScope:none 不强制文件隔离，须记录平台欠账。",
+  "mode": "sync",
+  "contextMode": "isolated",
+  "intentId": "${case_id}:o5-report-delivery",
+  "contextReason": "O5 是消费 O4 回执的评分交付任务，不继承 O3 或 O4 的会话推理。",
+  "childContext": { "memoryScope": "none" }
+}
+```
 
+只接收合格 O4 回执、适用规则/标尺来源、canonical 根、交付要求，以及按下文格式列出的 pending 事实条目。Lead 必须把 reporter 安装包内 `resources/scoring-rules-cn-v1.0.3.json` 解析为实际绝对路径，调用 `FileDigest`，并在 O5 任务中传 `rule_id=scoring-rules-cn`、`version=1.0.3`、实际绝对路径、真实摘要及规则计数；摘要失败则停止 O5，不得凭记忆评分。每次 O5 都逐项列具体文件的 `read_allowlist`/`write_allowlist`，禁止目录枚举或读取未列出的 O3/O4 会话外文件。不得要求或允许它隐式重做完整 O4。只有中国大陆范围或法域待定、且适用 CN 规则来源完整时才计算（法域待定按下文 `DED-D3-JURIS-UNDETERMINED` 处理）；域外只做通用文档治理与转介。任何维度未覆盖仍保留固定分母和该维欠账，不重归一；不得输出伪装完整的五维总分。
 
-## Redline DOCX 状态收口
+O5 的 `read_allowlist` 逐项写绝对路径：合格 O4 回执；评分规则；存在原始可导出文件时一律列原件；以及 `write_allowlist` 中的四个文件（供回读、`Edit` 前读取、续跑与追加导出历史）。中国大陆案件与法域待定案件另列团队 `shared/resources/jurisdiction-packs/jurisdiction-cn/pack.yaml` 与 `rules.yaml`，并在任务中传 `pack_id=jurisdiction-cn`、`pack_version`（取两个文件的 meta，须一致）和两个文件的 `FileDigest` 摘要；同时写明：O5 只用 CN 包核对 D3 命中项的 rule id、pack_version 与 confidence，`requires_pack: [base]`、时间效力与 statutes 流程属于 O3 法域审计，O5 不加载 base、不重做法域审计，缺 base 不算规则包不匹配；法域待定由 D3 按评分规则的 `DED-D3-JURIS-UNDETERMINED` 处理。域外（含港澳台）不列 CN 包。评分规则的合规维只认 allowlist 内的 CN 包，漏列就只能判该维未覆盖。
 
-当 O5 调用 `ExportRedlineDocument` 成功后，交付前必须完成一次状态收口：
+`write_allowlist` 原样使用 report-composition 规定的四个固定文件，展开为绝对路径：`<canonical_artifact_root>/report-delivery/scorecard.json`、`<canonical_artifact_root>/report-delivery/report.md`、`<canonical_artifact_root>/report-delivery/pending-receipt.json`、`<canonical_artifact_root>/report-delivery/export-attempts.json`，不改名、不换扩展名；导出入口经核验可用时，再列目标 DOCX 的绝对路径。
 
-1. 使用 canonical 相对路径 `contract-review/redline/<case-id>-redline.docx` 写入账本的 `RedlineDOCX` 节，至少包含 `status: success`、`path`、目标发现和可回读的包验证摘要。
-2. 重新读取账本、报告和覆盖矩阵；若任一文件仍保留 `RedlineDOCX.status: failed` 或 `redline_docx_status: failed`，必须用 `Write` 重写完整目标文件后再次 `Read`，不得以“已调用工具”代替一致性验收。
-3. 报告交付物清单必须包含同一 DOCX 路径；若工具失败或无法验证，保持 `failed` 并记录真实原因，不得把草稿路径标为成功。
+R7 范围待办（`from_flag: SCOPE-ATTACHMENT-BODY-ABSENT`）只作范围留白，不作为 Human Gate 透传。要求成员透传的 Human Gate/pending 逐条只写：`id`；Gate 类别（用评分规则的 `GATE-PAYMENT`/`GATE-DISPUTE`/`GATE-LIABILITY`/`GATE-EXECUTION`，依次对应 HG-01..HG-04）；一句可回原文核对的事实（条款位置加原文要点，粒度同 O4 候选断言；已有对应 O4 候选的只写候选 id）；来源阶段与回执 id。不写 O3 推理或理由、严重度、评分、建议、`recommended_action`、`required_downstream_action`。透传项只供成员照列进 pending 清单与报告，不作评分依据；成员不读取来源回执。只给编号、不给内容，等于让成员猜。
+
+Human Gate pending 不阻止文件交付。O5 先写并回读 scorecard、report、pending receipt；有证据支持且 anchors 在原始文件各恰好匹配一次时，先预检真实导出入口。当前平台未发现 `ExportRedlineDocument` 时记录真实 tool-not-found/blocked，入口待协调者核验；禁止发明工具或用外部脚本冒充自主导出。除非缺失事实阻止识别审查对象，或明确要求立即业务决定，否则不调用 `AskUserQuestion` 阻塞同步委派。
+
+## Lead 对账
+
+回读账本、矩阵和每个实际路径。风险方向仅 `up/down/flat/undetermined`；单版本比较适用状态为 `not_applicable`。范围缺项不能 flat；局部下降可描述但全局可为 undetermined。R7 附件正文未交与 R9 权威清单不完整分别列示；R9 只在 O1 报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE` 时成立，否则写未命中，不列欠账。
+
+超时/取消以真实返回为准；sync 等待时不宣称已停止。任何阶段的同步等待超时都只表示成员仍在后台运行：等后台回报再推进，不当作完成或失败。有界重试，不无限 poll。控制已有 run 使用独立 `DelegateControl`，不得在 Delegate 参数中造 `action`/`stop`；若未获准控制工具，登记“不能中止”而非伪称已停止。最终交付区分完整结果、范围受限结果、业务 pending 与导出 failed/blocked，绝不把工具结束或模拟批准写成业务批准。
