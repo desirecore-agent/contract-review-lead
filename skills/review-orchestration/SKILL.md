@@ -123,7 +123,7 @@ fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍
 ```json delegate-example:O5
 {
   "target": "review-reporter",
-  "task": "对 ${case_id} 依次调用 review-scoring 与 report-composition 技能；只读取 read_allowlist 逐项列出的合格 O4 回执、scoring-rules-cn-v1.0.3 绝对路径及适用 CN 规则文件；只写 write_allowlist 逐项列出的 scorecard、report、pending receipt 与导出尝试回执并逐一回读。禁止目录枚举和未列路径，不得重做 O4；memoryScope:none 不强制文件隔离，须记录平台欠账。",
+  "task": "对 ${case_id} 依次调用 review-scoring 与 report-composition 技能；只读取 read_allowlist 逐项列出的文件（合格 O4 回执、scoring-rules-cn-v1.0.3 绝对路径、适用 CN 规则包、原件与四个产出文件）；只写 write_allowlist 逐项列出的 scorecard、report、pending receipt 与导出尝试回执并逐一回读。禁止目录枚举和未列路径，不得重做 O4；memoryScope:none 不强制文件隔离，须记录平台欠账。",
   "mode": "sync",
   "contextMode": "isolated",
   "intentId": "${case_id}:o5-report-delivery",
@@ -132,7 +132,7 @@ fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍
 }
 ```
 
-只接收合格 O4 回执、适用规则/标尺来源、canonical 根、交付要求，以及按下文格式列出的 pending 事实条目。Lead 必须把 reporter 安装包内 `resources/scoring-rules-cn-v1.0.3.json` 解析为实际绝对路径，调用 `FileDigest`，并在 O5 任务中传 `rule_id=scoring-rules-cn`、`version=1.0.3`、实际绝对路径、真实摘要及规则计数；摘要失败则停止 O5，不得凭记忆评分。每次 O5 都逐项列具体文件的 `read_allowlist`/`write_allowlist`，禁止目录枚举或读取未列出的 O3/O4 会话外文件。不得要求或允许它隐式重做完整 O4。只有中国大陆范围且适用 CN 规则来源完整时才计算；域外只做通用文档治理与转介。任何维度未覆盖仍保留固定分母和该维欠账，不重归一；不得输出伪装完整的五维总分。
+只接收合格 O4 回执、适用规则/标尺来源、canonical 根、交付要求，以及按下文格式列出的 pending 事实条目。Lead 必须把 reporter 安装包内 `resources/scoring-rules-cn-v1.0.3.json` 解析为实际绝对路径，调用 `FileDigest`，并在 O5 任务中传 `rule_id=scoring-rules-cn`、`version=1.0.3`、实际绝对路径、真实摘要及规则计数；摘要失败则停止 O5，不得凭记忆评分。每次 O5 都逐项列具体文件的 `read_allowlist`/`write_allowlist`，禁止目录枚举或读取未列出的 O3/O4 会话外文件。不得要求或允许它隐式重做完整 O4。只有中国大陆范围或法域待定、且适用 CN 规则来源完整时才计算（法域待定按下文 `DED-D3-JURIS-UNDETERMINED` 处理）；域外只做通用文档治理与转介。任何维度未覆盖仍保留固定分母和该维欠账，不重归一；不得输出伪装完整的五维总分。
 
 O5 的 `read_allowlist` 逐项写绝对路径：合格 O4 回执；评分规则；存在原始可导出文件时一律列原件；以及 `write_allowlist` 中的四个文件（供回读、`Edit` 前读取、续跑与追加导出历史）。中国大陆案件与法域待定案件另列团队 `shared/resources/jurisdiction-packs/jurisdiction-cn/pack.yaml` 与 `rules.yaml`，并在任务中传 `pack_id=jurisdiction-cn`、`pack_version`（取两个文件的 meta，须一致）和两个文件的 `FileDigest` 摘要；同时写明：O5 只用 CN 包核对 D3 命中项的 rule id、pack_version 与 confidence，`requires_pack: [base]`、时间效力与 statutes 流程属于 O3 法域审计，O5 不加载 base、不重做法域审计，缺 base 不算规则包不匹配；法域待定由 D3 按评分规则的 `DED-D3-JURIS-UNDETERMINED` 处理。域外（含港澳台）不列 CN 包。评分规则的合规维只认 allowlist 内的 CN 包，漏列就只能判该维未覆盖。
 
