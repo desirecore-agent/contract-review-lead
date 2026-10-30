@@ -1,7 +1,7 @@
 ---
 name: review-orchestration
 description: 以 O0→O1→O2→O3 真并行→O4 独立取证→O5 报告交付→Lead 对账编排合同审查。
-version: 1.4.1
+version: 1.4.2
 type: procedural
 risk_level: medium
 status: enabled
@@ -9,7 +9,7 @@ requires:
   tools: [Read, Ls, Glob, Grep, Write, Edit, MathCalc, GenerateUUID, Delegate, SendMessage, FileDigest, StructuredFileValidate]
 metadata:
   author: DesireCore
-  version: 1.4.1
+  version: 1.4.2
   updated_at: '2026-10-30'
 ---
 
@@ -96,7 +96,15 @@ Lead 不写 intake 回执。回执落盘后必须从实际路径完整回读，�
 
 两支只接收相同的原件身份、O2 净化事实、范围与各自预定检查目标，不读对方输出。分别更新 `risk`、`jurisdiction`。task 正文只给输入路径、canonical 根、Plan 与边界；检查范围与条数上限以成员技能为准（风险九类固定分母、候选不超过 8 条、可比事实不超过 4 条；法域观察不超过 5 条），不在 task 里另列检查类别或要求“全部产出”。2026-10-29 真机运行中，task 另列十几类风险，成员把取证扩到 60 多条引文，单次回复过长而反复断流。
 
-fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍在后台继续执行”，汇总里也可能显示成功，这些都不是成员回报。成员真正结束后，结果作为后台回报逐支送达。只收到一支回报时，另一支仍在运行：继续等它，不重派、不另起同支运行；同一支任何时候只保留一个运行。某支回报失败时，优先用 `DelegateControl` 的 `resume` 续跑一次，`message` 只写平台返回的失败原因，并要求它回读本次产物、从未完成的下一项接着做，不附自己的判断。只有任务本身需要重新定义时才重新 Delegate：先对仍在后台的旧运行用超时提示里的 `session_id` 执行 `DelegateControl` 的 `terminate`，新调用使用新的产物 id。回收产物与回执时，和 O2 一样用 `StructuredFileValidate` 做 YAML 语法校验；没有回执的半成品只算欠账，不当作 covered。续跑仍失败就保留该行欠账；已有证据仍可进入范围受限报告，但不得冒充完整合规或完整评分。
+fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍在后台继续执行”，汇总里也可能显示成功，这些都不是成员回报。成员真正结束后，结果作为后台回报逐支送达。只收到一支回报时，另一支仍在运行：继续等它，不重派、不另起同支运行；同一支任何时候只保留一个运行。回收按下列各条处理：
+
+1. **核对产物与回执。** 回收产物与回执时，和 O2 一样用 `StructuredFileValidate` 做 YAML 语法校验；没有回执的半成品只算欠账，不当作 covered。覆盖矩阵只按核对过的产物与回执更新，成员回复里的完成声明与统计不作数。
+2. **判断是否完成。** 成员声称完成，但回执文件不存在，或产物仍有未完成的骨架字段时，按回报失败处理。骨架字段只看各支技能交付前自检的那几项，各用一次 `Grep`（`is_regex: true`）核对：法域 `pattern: "^ {0,2}(clues|governing_law|venue|jurisdiction|rule_pack|rule_candidates): null"`；风险 `pattern: "<<追加 lexicon>>|^ {0,2}(redlines|coverage_debt): [{] ?status: deferred([^a-z_]|$)|status: hit([^a-z_]|$)"`；再用一次 `literals` 查 `<<追加`，看有没有残留锚点。其他字段里的 `null`（如回执的 `blocked_reason`、转介观察的 `rule_ref`）是合法取值，不算占位。
+3. **续跑。** 某支回报失败（含第 2 条判定的失败）时，优先用 `DelegateControl` 的 `resume` 续跑一次，要求它回读本次产物、从未完成的下一项接着做。
+4. **点名续写。** 平台因该运行已正常结束而拒绝 `resume` 时，改用 `Delegate`（`contextMode: continue`，`workContextId` 照抄拒绝消息里给出的值），在任务里点名续写该产物 id，并写明产物绝对路径与 canonical 根。
+5. **续跑与续写的正文。** `message` 或任务正文只写平台返回的失败原因与核对到的事实（哪个文件不存在、哪些字段仍是占位），不附自己的判断；不照抄成员回复里声称已完成的条目、统计或观察清单，也不替它另列检查项。2026-10-30 真机：法域支在冲突判定之后虚报「回执已落盘、5 条观察」，回执文件并不存在；Lead 先按回复把覆盖矩阵记成 covered，续跑被平台以「运行已正常结束」拒绝后，又把虚报里的五条观察照抄进了重派任务。
+6. **重新定义任务。** 除第 4 条的点名续写外，只有任务本身需要重新定义时才重新 Delegate：先对仍在后台的旧运行用超时提示里的 `session_id` 执行 `DelegateControl` 的 `terminate`，新调用使用新的产物 id。
+7. **仍失败。** 续跑或续写仍失败就保留该行欠账；已有证据仍可进入范围受限报告，但不得冒充完整合规或完整评分。
 
 ## O4 独立取证
 
@@ -114,7 +122,7 @@ fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍
 }
 ```
 
-每次调用必须显式列出具体文件绝对路径的 `read_allowlist` 与 `write_allowlist`；禁止列目录、通配目录、canonical 根或成员工作区目录。只传 allowlist 内原件、对象/范围、预定检查清单，以及事实候选 `id`、断言、来源位置。对象/范围里照抄 O1 回执的附件结论：R7 是否命中（已列明附件的正文未送达）、R9 是否命中（O1 是否报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE`）。禁止传 O3 推理、严重度、评分、建议和对话历史。每个候选仅允许 `confirmed/refuted/unlocatable`；unlocatable 写检索范围和原因；补漏单列 `additional[]`，可为 0。污染拒收后必须发起新的 isolated 调用，不能在旧调用续做。`memoryScope:none` 仅关闭记忆注入，平台尚无 per-call 文件能力沙箱，必须作为未验隔离欠账，不能谎称文件隔离已被强制。
+每次调用必须显式列出具体文件绝对路径的 `read_allowlist` 与 `write_allowlist`；禁止列目录、通配目录、canonical 根或成员工作区目录。O4 的 `read_allowlist` 同时列入 `write_allowlist` 里的 O4 回执路径，供分段写入时回读、`Edit` 与续跑。只传 allowlist 内原件、对象/范围、预定检查清单，以及事实候选 `id`、断言、来源位置。对象/范围里照抄 O1 回执的附件结论：R7 是否命中（已列明附件的正文未送达）、R9 是否命中（O1 是否报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE`）。禁止传 O3 推理、严重度、评分、建议和对话历史。每个候选仅允许 `confirmed/refuted/unlocatable`；unlocatable 写检索范围和原因；补漏单列 `additional[]`，可为 0。污染拒收后必须发起新的 isolated 调用，不能在旧调用续做。`memoryScope:none` 仅关闭记忆注入，平台尚无 per-call 文件能力沙箱，必须作为未验隔离欠账，不能谎称文件隔离已被强制。
 
 ## O5 评分、报告与修订建议
 

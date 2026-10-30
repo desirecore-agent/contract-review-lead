@@ -4,7 +4,7 @@
   "version": "1.0.23",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/o1-boundary.contract.test.mjs",
+    "test": "node --test tests/o1-boundary.contract.test.mjs tests/o3-receipt-verification.contract.test.mjs",
     "test:intake": "node --test tests/intake-integration.contract.test.mjs",
     "test:platform": "node --experimental-strip-types --loader ./tests/ts-extension-loader.mjs --test tests/delegate-api.contract.test.mjs",
     "test:routing": "node tests/run-routing-normalize.mjs"
