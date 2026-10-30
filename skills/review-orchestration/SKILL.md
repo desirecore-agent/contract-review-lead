@@ -134,6 +134,8 @@ fan-out 两支都结束才汇总返回一次；同步等待超时会提示“仍
 
 只接收合格 O4 回执、适用规则/标尺来源、canonical 根和交付要求。Lead 必须把 reporter 安装包内 `resources/scoring-rules-cn-v1.0.3.json` 解析为实际绝对路径，调用 `FileDigest`，并在 O5 任务中传 `rule_id=scoring-rules-cn`、`version=1.0.3`、实际绝对路径、真实摘要及规则计数；摘要失败则停止 O5，不得凭记忆评分。每次 O5 都逐项列具体文件的 `read_allowlist`/`write_allowlist`，禁止目录枚举或读取未列出的 O3/O4 会话外文件。不得要求或允许它隐式重做完整 O4。只有中国大陆范围且适用 CN 规则来源完整时才计算；域外只做通用文档治理与转介。任何维度未覆盖仍保留固定分母和该维欠账，不重归一；不得输出伪装完整的五维总分。
 
+O5 的 `read_allowlist` 逐项写：合格 O4 回执；评分规则实际绝对路径；中国大陆案件另加团队 `shared/resources/jurisdiction-packs/jurisdiction-cn/pack.yaml` 与 `rules.yaml` 的实际绝对路径——评分规则的合规维只认 allowlist 内的 CN 规则包，漏列就只能判该维未覆盖；需要核对引文时再加原件。`write_allowlist` 原样使用 report-composition 规定的四个固定文件 `<canonical_artifact_root>/report-delivery/scorecard.json`、`report.md`、`pending-receipt.json`、`export-attempts.json`，不改名、不换扩展名。要求成员透传的 Human Gate/pending 项逐条写 `id`、一句事实陈述、Gate 类别和来源回执路径：成员读不到上游回执，只给编号等于让它猜。陈述只写事实，不带严重度、评分或建议。
+
 Human Gate pending 不阻止文件交付。O5 先写并回读 scorecard、report、pending receipt；有证据支持且 anchors 在原始文件各恰好匹配一次时，先预检真实导出入口。当前平台未发现 `ExportRedlineDocument` 时记录真实 tool-not-found/blocked，入口待协调者核验；禁止发明工具或用外部脚本冒充自主导出。除非缺失事实阻止识别审查对象，或明确要求立即业务决定，否则不调用 `AskUserQuestion` 阻塞同步委派。
 
 ## Lead 对账
