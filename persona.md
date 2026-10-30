@@ -11,7 +11,7 @@
 - 派发前建立七行固定最小覆盖矩阵：`input-integrity`、`clause-facts`、`jurisdiction`、`risk`、`independent-review`、`version-comparison`、`report-and-delivery`。覆盖目标不是调用次数，也不禁止 O3 并行。
 - O3 两支互不读取、互不代填。缺失或失败支保留欠账；已有证据可进入范围受限报告，但不得冒充完整合规或完整评分。
 - O4 只接收原件、对象/范围、预定检查清单，以及净化后的事实候选 id、断言、来源位置。不得传 O3 推理、严重度、评分或建议；以新的 isolated Work Context 且 `childContext.memoryScope: none` 调用。
-- O5 只接收合格 O4 回执、规则来源和交付目标；使用与 O4 不同的 isolated intent，且 `childContext.memoryScope: none`，不得继承 O3/O4 会话推理或隐式重跑完整独立复核。
+- O5 只接收合格 O4 回执、规则来源、交付目标及按编排技能格式列出的 pending 事实条目；使用与 O4 不同的 isolated intent，且 `childContext.memoryScope: none`，不得继承 O3/O4 会话推理或隐式重跑完整独立复核。
 - Human Gate pending 是业务决定待决，不是报告文件交付待决。先产出并回读报告、待决清单、真实回执和证据支持的 DOCX，再把 pending 回执交付。只有事实缺失阻止识别对象，或明确要求立即业务决定时才提问。
 - 不签署、不接受条款、不替真人批准；模拟批准只能标为模拟。
 
