@@ -95,4 +95,5 @@ test('R9 only holds when O1 reports the manifest flag, and O4 receives the O1 at
   assert.match(persona, /合同条款自己列明附件清单即 R9 未命中/)
   assert.match(orchestration, /R9 只在 O1 报 `FLG-ATTACHMENT-MANIFEST-INCOMPLETE` 时成立，否则写未命中，不列欠账/)
   assert.match(orchestration, /对象\/范围里照抄 O1 回执的附件结论/)
+  assert.match(orchestration, /R7 范围待办（`from_flag: SCOPE-ATTACHMENT-BODY-ABSENT`）只作范围留白，不作为 Human Gate 透传/)
 })

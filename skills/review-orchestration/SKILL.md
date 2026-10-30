@@ -138,7 +138,7 @@ O5 的 `read_allowlist` 逐项写绝对路径：合格 O4 回执；评分规则�
 
 `write_allowlist` 原样使用 report-composition 规定的四个固定文件，展开为绝对路径：`<canonical_artifact_root>/report-delivery/scorecard.json`、`<canonical_artifact_root>/report-delivery/report.md`、`<canonical_artifact_root>/report-delivery/pending-receipt.json`、`<canonical_artifact_root>/report-delivery/export-attempts.json`，不改名、不换扩展名；导出入口经核验可用时，再列目标 DOCX 的绝对路径。
 
-要求成员透传的 Human Gate/pending 逐条只写：`id`；Gate 类别（用评分规则的 `GATE-PAYMENT`/`GATE-DISPUTE`/`GATE-LIABILITY`/`GATE-EXECUTION`，依次对应 HG-01..HG-04）；一句可回原文核对的事实（条款位置加原文要点，粒度同 O4 候选断言；已有对应 O4 候选的只写候选 id）；来源阶段与回执 id。不写 O3 推理或理由、严重度、评分、建议、`recommended_action`、`required_downstream_action`。透传项只供成员照列进 pending 清单与报告，不作评分依据；成员不读取来源回执。只给编号、不给内容，等于让成员猜。
+R7 范围待办（`from_flag: SCOPE-ATTACHMENT-BODY-ABSENT`）只作范围留白，不作为 Human Gate 透传。要求成员透传的 Human Gate/pending 逐条只写：`id`；Gate 类别（用评分规则的 `GATE-PAYMENT`/`GATE-DISPUTE`/`GATE-LIABILITY`/`GATE-EXECUTION`，依次对应 HG-01..HG-04）；一句可回原文核对的事实（条款位置加原文要点，粒度同 O4 候选断言；已有对应 O4 候选的只写候选 id）；来源阶段与回执 id。不写 O3 推理或理由、严重度、评分、建议、`recommended_action`、`required_downstream_action`。透传项只供成员照列进 pending 清单与报告，不作评分依据；成员不读取来源回执。只给编号、不给内容，等于让成员猜。
 
 Human Gate pending 不阻止文件交付。O5 先写并回读 scorecard、report、pending receipt；有证据支持且 anchors 在原始文件各恰好匹配一次时，先预检真实导出入口。当前平台未发现 `ExportRedlineDocument` 时记录真实 tool-not-found/blocked，入口待协调者核验；禁止发明工具或用外部脚本冒充自主导出。除非缺失事实阻止识别审查对象，或明确要求立即业务决定，否则不调用 `AskUserQuestion` 阻塞同步委派。
 
